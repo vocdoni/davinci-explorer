@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro'
 import { isAddress } from 'viem'
 import { parseVoteId } from '~protocol/blob'
 import { isProcessId } from '~protocol/process-id'
@@ -5,7 +6,7 @@ import { paths } from '~routes/paths'
 
 /**
  * Where a search query sends the user: an in-app route, the block explorer,
- * or nowhere, with the reason to show.
+ * or nowhere, with the reason to show (in the active language).
  */
 export type SearchTarget =
   | { kind: 'route'; path: string; label: string }
@@ -34,41 +35,44 @@ const trim = (url: string) => url.replace(/\/+$/, '')
  */
 export function resolveSearch(raw: string, ctx: SearchContext = {}, extra: SearchResolver[] = []): SearchTarget {
   const query = raw.trim()
-  if (query === '') return { kind: 'unknown', label: 'Type a process id, vote id, transaction, address or block' }
+  if (query === '') return { kind: 'unknown', label: t`Type a process id, vote id, transaction, address or block` }
 
   for (const resolver of extra) {
     const hit = resolver(query, ctx)
     if (hit) return hit
   }
 
-  if (isProcessId(query)) return { kind: 'route', path: paths.process(query.toLowerCase()), label: `Process ${query}` }
+  if (isProcessId(query)) {
+    const pid = query
+    return { kind: 'route', path: paths.process(pid.toLowerCase()), label: t`Process ${pid}` }
+  }
 
-  if (BYTES32.test(query)) return { kind: 'route', path: paths.tx(query.toLowerCase()), label: `Transaction ${query}` }
+  if (BYTES32.test(query)) return { kind: 'route', path: paths.tx(query.toLowerCase()), label: t`Transaction ${query}` }
 
   if (isAddress(query, { strict: false })) {
     return {
       kind: 'route',
       path: paths.processes({ organizer: query.toLowerCase() }),
-      label: `Processes organized by ${query}`,
+      label: t`Processes organized by ${query}`,
     }
   }
 
   const voteId = parseVoteId(query)
-  if (voteId != null) return { kind: 'route', path: paths.votes({ voteId: query }), label: `Vote ${query}` }
+  if (voteId != null) return { kind: 'route', path: paths.votes({ voteId: query }), label: t`Vote ${query}` }
 
   if (BYTES12.test(query)) {
     if (ctx.dkgExplorerUrl) {
-      return { kind: 'external', url: `${trim(ctx.dkgExplorerUrl)}/epochs/${query.toLowerCase()}`, label: 'DKG epoch' }
+      return { kind: 'external', url: `${trim(ctx.dkgExplorerUrl)}/epochs/${query.toLowerCase()}`, label: t`DKG epoch` }
     }
-    return { kind: 'unknown', label: 'Looks like a DKG epoch id, but no DKG explorer is configured' }
+    return { kind: 'unknown', label: t`Looks like a DKG epoch id, but no DKG explorer is configured` }
   }
 
   if (DIGITS.test(query)) {
     if (ctx.blockExplorerUrl) {
-      return { kind: 'external', url: `${trim(ctx.blockExplorerUrl)}/block/${query}`, label: `Block ${query}` }
+      return { kind: 'external', url: `${trim(ctx.blockExplorerUrl)}/block/${query}`, label: t`Block ${query}` }
     }
-    return { kind: 'unknown', label: 'Looks like a block number, but no block explorer is configured' }
+    return { kind: 'unknown', label: t`Looks like a block number, but no block explorer is configured` }
   }
 
-  return { kind: 'unknown', label: `No process, vote, transaction or address matches “${query}”` }
+  return { kind: 'unknown', label: t`No process, vote, transaction or address matches “${query}”` }
 }

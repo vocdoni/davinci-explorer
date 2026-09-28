@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { plural } from '@lingui/core/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { CheckMark, Explain, ProcessIdLink, ProcessPhaseBadge } from '~components'
 import type { SequencerState } from '~data/queries'
 import type { SequencerEndpoint } from '~data/services'
@@ -25,31 +27,43 @@ export function SequencerCard({
   rows: Map<string, ProcessRow>
   settlerRows: SettlerRow[]
 }) {
+  const { i18n, t } = useLingui()
   const { endpoint, info, processes } = state
   const data = info.data
   const status = info.isSuccess ? 'up' : info.isError ? 'down' : 'checking'
   const onChain = settledBy(settlerRows, data?.sequencerAddress)
+  const number = endpoint.index + 1
+  const infoError = info.isError ? (info.error as Error).message : null
+  const sent = onChain?.transitions ?? 0
+  const served = onChain?.processes ?? 0
+  const settlingHint = data?.observer
+    ? t`An observer has no key: it follows and serves reads, but never settles.`
+    : onChain
+      ? t`sent ${plural(sent, { one: '# transition', other: '# transitions' })} on this registry, for ${plural(served, { one: '# process', other: '# processes' })}`
+      : t`has not settled a transition on this registry yet`
 
   return (
     <Card flush className='overflow-hidden' data-testid={`sequencer-${endpoint.index}`}>
       <CardHeader
-        label={`Sequencer ${endpoint.index + 1}`}
+        label={t`Sequencer ${number}`}
         title={<span className='font-mono text-[14px]'>{endpoint.upstream}</span>}
         actions={
           <>
             {data ? (
-              <Badge tone={data.observer ? 'neutral' : 'accent'}>{data.observer ? 'Observer' : 'Signer'}</Badge>
+              <Badge tone={data.observer ? 'neutral' : 'accent'}>{data.observer ? t`Observer` : t`Signer`}</Badge>
             ) : null}
             <Badge tone={status === 'up' ? 'ok' : status === 'down' ? 'danger' : 'neutral'} dot={status === 'up'}>
-              {status === 'up' ? 'Up' : status === 'down' ? 'Down' : 'Checking'}
+              {status === 'up' ? t`Up` : status === 'down' ? t`Down` : t`Checking`}
             </Badge>
           </>
         }
       />
       <div className='p-5'>
-        {info.isError ? (
+        {infoError != null ? (
           <p className='mb-4 text-[13px] text-red' role='alert'>
-            /info did not answer: {(info.error as Error).message}
+            <Trans>
+              <code>/info</code> did not answer: {infoError}
+            </Trans>
           </p>
         ) : null}
         {info.isLoading ? <SkeletonText lines={4} className='max-w-lg' /> : null}
@@ -59,19 +73,21 @@ export function SequencerCard({
               <KeyValue
                 items={[
                   {
-                    label: 'Settling account',
-                    value: data.sequencerAddress ? <Address value={data.sequencerAddress} chars={6} /> : 'none',
-                    hint: data.observer
-                      ? 'An observer has no key: it follows and serves reads, but never settles.'
-                      : onChain
-                        ? `sent ${formatNumber(onChain.transitions)} transitions on this registry, for ${formatNumber(onChain.processes)} processes`
-                        : 'has not settled a transition on this registry yet',
+                    label: t`Settling account`,
+                    value: data.sequencerAddress ? (
+                      <Address value={data.sequencerAddress} chars={6} />
+                    ) : (
+                      t({ message: 'none', context: 'no address' })
+                    ),
+                    hint: settlingHint,
                   },
                   {
                     label: (
                       <span className='inline-flex items-center gap-1'>
-                        Settled by itself
-                        <Explain>Batches this node proved and settled.</Explain>
+                        <Trans>Settled by itself</Trans>
+                        <Explain>
+                          <Trans>Batches this node proved and settled.</Trans>
+                        </Explain>
                       </span>
                     ),
                     value: formatNumber(data.settledBySelf),
@@ -80,10 +96,12 @@ export function SequencerCard({
                   {
                     label: (
                       <span className='inline-flex items-center gap-1'>
-                        Synced from others
+                        <Trans>Synced from others</Trans>
                         <Explain>
-                          Transitions another node settled, which this one rebuilt from their blobs and accepted only
-                          because replaying them gave the event’s new root.
+                          <Trans>
+                            Transitions another node settled, which this one rebuilt from their blobs and accepted only
+                            because replaying them gave the event’s new root.
+                          </Trans>
                         </Explain>
                       </span>
                     ),
@@ -93,10 +111,12 @@ export function SequencerCard({
                   {
                     label: (
                       <span className='inline-flex items-center gap-1'>
-                        Lost races
+                        <Trans>Lost races</Trans>
                         <Explain>
-                          Batches that another node’s transition beat to the chain. The node rolled back, synced the
-                          winner and put the votes back in its queue: the only cost is the reverted transaction’s gas.
+                          <Trans>
+                            Batches that another node’s transition beat to the chain. The node rolled back, synced the
+                            winner and put the votes back in its queue: the only cost is the reverted transaction’s gas.
+                          </Trans>
                         </Explain>
                       </span>
                     ),
@@ -107,16 +127,20 @@ export function SequencerCard({
               />
             </div>
             <div>
-              <div className='label-caps text-[11px] text-pewter'>Configured for this deployment</div>
+              <div className='label-caps text-[11px] text-pewter'>
+                <Trans>Configured for this deployment</Trans>
+              </div>
               <p className='mt-1 text-[12px] leading-relaxed text-ash'>
-                The node’s /info against the registry. A node checks these at boot and will not start on a mismatch, so
-                a ✗ means it serves another deployment.
+                <Trans>
+                  The node’s <code>/info</code> against the registry. A node checks these at boot and will not start on
+                  a mismatch, so a ✗ means it serves another deployment.
+                </Trans>
               </p>
               <ul className='mt-3 flex flex-col gap-2' data-testid='sequencer-info-checks'>
                 {infoChecks(data, chain).map((c) => (
                   <li key={c.id} className='flex items-center gap-2.5 text-[13px] text-silver'>
                     <CheckMark state={c.state} />
-                    {c.label}
+                    {i18n._(c.label)}
                   </li>
                 ))}
               </ul>
@@ -152,41 +176,61 @@ function ServedProcesses({
   store: IndexerStore
   rows: Map<string, ProcessRow>
 }) {
+  const { t } = useLingui()
   const [page, setPage] = useState(0)
   const all = useMemo(() => pids ?? [], [pids])
   const pageCount = Math.max(1, Math.ceil(all.length / PAGE))
   const current = Math.min(page, pageCount - 1)
   const slice = useMemo(() => all.slice(current * PAGE, current * PAGE + PAGE), [all, current])
+  const known = all.length
   const views = useSequencerProcessViews(endpoint, slice)
 
   return (
     <div className='mt-8'>
       <div className='flex flex-wrap items-baseline justify-between gap-2'>
-        <div className='label-caps text-[11px] text-pewter'>Processes it serves</div>
-        {pids ? <span className='text-[12px] text-ash'>{formatNumber(pids.length)} known to the node</span> : null}
+        <div className='label-caps text-[11px] text-pewter'>
+          <Trans>Processes it serves</Trans>
+        </div>
+        {pids ? (
+          <span className='text-[12px] text-ash'>
+            <Plural value={known} one='# known to the node' other='# known to the node' />
+          </span>
+        ) : null}
       </div>
       <p className='mt-1 text-[12px] leading-relaxed text-ash'>
-        Each process with its phase on chain and the node’s own view: whether it takes votes and whether its committed
-        tree is at the registry’s latest root.
+        <Trans>
+          Each process with its phase on chain and the node’s own view: whether it takes votes and whether its committed
+          tree is at the registry’s latest root.
+        </Trans>
       </p>
       {error ? (
         <p className='mt-3 text-[13px] text-red' role='alert'>
-          /processes did not answer: {error}
+          <Trans>
+            <code>/processes</code> did not answer: {error}
+          </Trans>
         </p>
       ) : loading ? (
         <Skeleton className='mt-3 h-24 w-full' />
       ) : all.length === 0 ? (
-        <EmptyState compact title='No processes yet' description='The node knows no process of this registry.' />
+        <EmptyState compact title={t`No processes yet`} description={t`The node knows no process of this registry.`} />
       ) : (
         <>
           <div className='scroll-slim mt-3 overflow-x-auto rounded-md border border-charcoal'>
             <table className='w-full min-w-[640px] text-left text-[13px]'>
               <thead>
                 <tr className='border-b border-charcoal text-pewter'>
-                  <th className='label-caps px-3 py-2 text-[11px] font-semibold'>Process</th>
-                  <th className='label-caps px-3 py-2 text-[11px] font-semibold'>On chain</th>
-                  <th className='label-caps px-3 py-2 text-[11px] font-semibold'>Votes</th>
-                  <th className='label-caps px-3 py-2 text-[11px] font-semibold'>Node’s root</th>
+                  <th className='label-caps px-3 py-2 text-[11px] font-semibold'>
+                    <Trans>Process</Trans>
+                  </th>
+                  <th className='label-caps px-3 py-2 text-[11px] font-semibold'>
+                    <Trans>On chain</Trans>
+                  </th>
+                  <th className='label-caps px-3 py-2 text-[11px] font-semibold'>
+                    <Trans>Votes</Trans>
+                  </th>
+                  <th className='label-caps px-3 py-2 text-[11px] font-semibold'>
+                    <Trans>Node’s root</Trans>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -195,6 +239,7 @@ function ServedProcesses({
                   const view = views[i]
                   const onchainRoot = store.processes[pid.toLowerCase()]?.state?.latestStateRoot
                   const sync = syncState(view?.data, onchainRoot)
+                  const note = view?.data?.note
                   return (
                     <tr key={pid} className='border-b border-charcoal last:border-b-0'>
                       <td className='px-3 py-2'>
@@ -204,20 +249,24 @@ function ServedProcesses({
                         {row ? (
                           <ProcessPhaseBadge phase={row.phase} size='sm' />
                         ) : (
-                          <span className='text-[12px] text-ash'>not indexed</span>
+                          <span className='text-[12px] text-ash'>
+                            <Trans>not indexed</Trans>
+                          </span>
                         )}
                       </td>
                       <td className='px-3 py-2 text-[12px]'>
                         {view?.isLoading ? (
                           <Skeleton className='h-3 w-20' />
                         ) : view?.data?.ignored ? (
-                          <span className='text-amber'>ignored{view.data.note ? `: ${view.data.note}` : ''}</span>
+                          <span className='text-amber'>{note ? t`ignored: ${note}` : t`ignored`}</span>
                         ) : view?.data ? (
                           <span className={view.data.isAcceptingVotes ? 'text-emerald' : 'text-ash'}>
-                            {view.data.isAcceptingVotes ? 'accepting' : 'not accepting'}
+                            {view.data.isAcceptingVotes ? t`accepting` : t`not accepting`}
                           </span>
                         ) : view?.isError ? (
-                          <span className='text-ash'>no answer</span>
+                          <span className='text-ash'>
+                            <Trans>no answer</Trans>
+                          </span>
                         ) : (
                           '—'
                         )}
@@ -228,7 +277,11 @@ function ServedProcesses({
                             <CheckMark state={sync === 'in-sync' ? 'pass' : 'unknown'} />
                             <Hash value={view.data.localStateRoot} chars={6} copy={false} />
                             <span className='text-ash'>
-                              {sync === 'in-sync' ? 'at the on-chain root' : sync === 'differs' ? 'not at it yet' : ''}
+                              {sync === 'in-sync'
+                                ? t`at the on-chain root`
+                                : sync === 'differs'
+                                  ? t`not at it yet`
+                                  : ''}
                             </span>
                           </span>
                         ) : (

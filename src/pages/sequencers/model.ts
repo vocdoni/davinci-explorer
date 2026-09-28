@@ -1,6 +1,8 @@
 // Pure derivations for the sequencers page: who settled what according to the
 // registry events, and whether a node's /info describes this deployment.
 
+import type { MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
 import type { Address, Hex } from 'viem'
 import type { CheckState } from '~indexer/selectors'
 import type { ChainMeta, IndexerStore } from '~indexer/types'
@@ -42,7 +44,8 @@ export function settlers(store: IndexerStore): SettlerRow[] {
 
 export interface InfoCheck {
   id: string
-  label: string
+  /** Render with `i18n._`. */
+  label: MessageDescriptor
   state: CheckState
 }
 
@@ -53,11 +56,11 @@ const same = (a: string | null | undefined, b: string | null | undefined): Check
 export function infoChecks(info: SequencerInfo, chain: ChainMeta): InfoCheck[] {
   const r = chain.registry
   return [
-    { id: 'chain', label: 'Chain id', state: info.chainId === chain.chainId ? 'pass' : 'fail' },
-    { id: 'registry', label: 'Registry', state: same(info.processRegistry, chain.registryAddress) },
-    { id: 'ballot-vk', label: 'Ballot VK hash', state: same(info.ballotVkHash, r?.ballotVKHash) },
-    { id: 'batch-vk', label: 'Vote-batch program vk', state: same(info.batchProgramVk, r?.batchProgramVK) },
-    { id: 'results-vk', label: 'Results program vk', state: same(info.resultsProgramVk, r?.resultsProgramVK) },
+    { id: 'chain', label: msg`Chain id`, state: info.chainId === chain.chainId ? 'pass' : 'fail' },
+    { id: 'registry', label: msg`Registry`, state: same(info.processRegistry, chain.registryAddress) },
+    { id: 'ballot-vk', label: msg`Ballot VK hash`, state: same(info.ballotVkHash, r?.ballotVKHash) },
+    { id: 'batch-vk', label: msg`Vote-batch program vk`, state: same(info.batchProgramVk, r?.batchProgramVK) },
+    { id: 'results-vk', label: msg`Results program vk`, state: same(info.resultsProgramVk, r?.resultsProgramVK) },
   ]
 }
 

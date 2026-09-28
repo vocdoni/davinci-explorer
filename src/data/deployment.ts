@@ -8,6 +8,7 @@
 // shape from the fixture store, so pages never branch on the mode.
 
 import { useMemo } from 'react'
+import { msg } from '@lingui/core/macro'
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { parseAbi, type Abi, type Address, type Hex, type PublicClient } from 'viem'
 import { useRuntimeConfig } from '~config/config-context'
@@ -17,6 +18,7 @@ import type { IndexerStore, RegistryInfo } from '~indexer/types'
 import { createChainClient } from './client'
 import { useServices } from './context'
 import { useStore } from './hooks'
+import { ServiceError } from './services'
 
 /** `DKGTypes.EpochPhase`, by ordinal (`Completed` is reserved). */
 export const DKG_EPOCH_PHASES = ['none', 'committee-selection', 'key-assembly', 'live', 'aborted', 'completed'] as const
@@ -234,7 +236,7 @@ async function readAll(client: PublicClient, calls: Call[]): Promise<Read[]> {
         .catch(() => ({ ok: false as const }))
     )
   )
-  if (single.every((r) => !r.ok)) throw new Error('The RPC answered none of the contract reads')
+  if (single.every((r) => !r.ok)) throw new ServiceError(msg`The RPC answered none of the contract reads`)
   return single
 }
 

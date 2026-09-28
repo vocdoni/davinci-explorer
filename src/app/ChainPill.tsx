@@ -1,11 +1,15 @@
-import { useRuntimeConfig } from '~config/config-context'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { useNetworkName, useRuntimeConfig } from '~config/config-context'
 import { useIndexer } from '~data/hooks'
 import { Badge, Tooltip } from '~kit'
 import { cn } from '~lib/cn'
+import { formatNumber, formatPercent } from '~lib/format'
 
 /** Chain identity in the top bar: network name, live head and indexing state. */
 export function ChainPill({ className }: { className?: string }) {
+  const { t } = useLingui()
   const config = useRuntimeConfig()
+  const networkName = useNetworkName()
   const { status } = useIndexer()
   const mismatch = status.chainMismatch != null
   const error = status.phase === 'error'
@@ -14,37 +18,44 @@ export function ChainPill({ className }: { className?: string }) {
   const lag = head != null ? Math.max(0, head - status.lastBlock) : 0
 
   const dot = mismatch || error ? 'bg-red' : syncing ? 'bg-amber' : 'animate-skeleton bg-emerald'
+  const progress = formatPercent(status.progress, 0)
+  const lastBlock = status.lastBlock
+  const behind = formatNumber(lag)
+  const actual = status.chainMismatch?.actual
+  const expected = status.chainMismatch?.expected
+  const chainId = config.chainId
+  // Block numbers and chain ids are identifiers: printed as they are, never grouped.
   const title = mismatch
-    ? `The RPC is on chain ${status.chainMismatch!.actual}, not ${status.chainMismatch!.expected}`
+    ? t`The RPC is on chain ${actual}, not ${expected}`
     : error
-      ? (status.errors[status.errors.length - 1]?.message ?? 'The RPC is not answering')
+      ? (status.errors[status.errors.length - 1]?.message ?? t`The RPC is not answering`)
       : syncing
-        ? `Indexing: ${Math.round(status.progress * 100)}%`
-        : `Indexed to block ${status.lastBlock}${lag > 0 ? ` (${lag} behind the head)` : ''}`
+        ? t`Indexing: ${progress}`
+        : lag > 0
+          ? t`Indexed to block ${lastBlock} (${behind} behind the head)`
+          : t`Indexed to block ${lastBlock}`
 
   return (
     <div
       className={cn('flex items-center gap-2.5 rounded-pill border border-charcoal bg-carbon px-3 py-1', className)}
       data-testid='chain-pill'
     >
-      <Tooltip content={`Chain id ${config.chainId}`}>
+      <Tooltip content={t`Chain id ${chainId}`}>
         <span className='flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-silver'>
           <span className={cn('h-1.5 w-1.5 rounded-full', dot)} />
-          {config.networkName}
+          {networkName}
         </span>
       </Tooltip>
       <span aria-hidden='true' className='h-3 w-px bg-charcoal' />
       <Tooltip content={title}>
         <span className='font-mono text-[11px] tnum text-pewter'>
           {head == null ? '—' : `#${head}`}
-          {syncing && head != null ? (
-            <span className='ml-1 text-amber'>{Math.round(status.progress * 100)}%</span>
-          ) : null}
+          {syncing && head != null ? <span className='ml-1 text-amber'>{progress}</span> : null}
         </span>
       </Tooltip>
       {config.demo ? (
         <Badge tone='warn' size='sm' className='ml-0.5'>
-          demo
+          <Trans>demo</Trans>
         </Badge>
       ) : null}
     </div>

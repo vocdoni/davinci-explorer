@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { ConfigContext } from './config-context'
 import { isDemoRequested, loadRuntimeConfig, type RuntimeConfig } from './runtime-config'
 
@@ -7,6 +8,7 @@ import { isDemoRequested, loadRuntimeConfig, type RuntimeConfig } from './runtim
  * the config resolves, so no hook has to cope with a half-known deployment.
  */
 export function ConfigProvider({ children }: { children: ReactNode }) {
+  const { t } = useLingui()
   const [config, setConfig] = useState<RuntimeConfig | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,13 +30,19 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     return (
       <div className='flex min-h-screen items-center justify-center p-8'>
         <div className='max-w-lg rounded-md border border-charcoal bg-carbon p-6'>
-          <p className='label-caps text-red'>Config error</p>
-          <h1 className='mt-2 text-lg font-semibold text-ghost'>The explorer could not read its configuration</h1>
+          <p className='label-caps text-red'>
+            <Trans>Config error</Trans>
+          </p>
+          <h1 className='mt-2 text-lg font-semibold text-ghost'>
+            <Trans>The explorer could not read its configuration</Trans>
+          </h1>
           <p className='mt-3 text-sm leading-relaxed text-ash'>
-            <code className='text-pewter'>/config.json</code> is missing or malformed. The Docker image renders it from{' '}
-            <code className='text-pewter'>CHAIN_ID</code>, <code className='text-pewter'>RPC_URL</code>,{' '}
-            <code className='text-pewter'>REGISTRY_ADDRESS</code> and the other variables in the README. Append{' '}
-            <code className='text-pewter'>?demo=1</code> to browse the synthetic demo network instead.
+            <Trans>
+              <code className='text-pewter'>/config.json</code> is missing or malformed. The Docker image renders it
+              from <code className='text-pewter'>CHAIN_ID</code>, <code className='text-pewter'>RPC_URL</code>,{' '}
+              <code className='text-pewter'>REGISTRY_ADDRESS</code> and the other variables in the README. Append{' '}
+              <code className='text-pewter'>?demo=1</code> to browse the synthetic demo network instead.
+            </Trans>
           </p>
           <p className='mt-4 font-mono text-xs break-all text-red'>{error}</p>
         </div>
@@ -44,7 +52,11 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
   if (!config) {
     return (
-      <div className='flex min-h-screen items-center justify-center' role='status' aria-label='Loading configuration'>
+      <div
+        className='flex min-h-screen items-center justify-center'
+        role='status'
+        aria-label={t`Loading configuration`}
+      >
         <div className='h-6 w-6 animate-spin rounded-full border-2 border-charcoal border-t-emerald' />
       </div>
     )

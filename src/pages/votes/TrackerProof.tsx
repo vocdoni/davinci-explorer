@@ -1,3 +1,4 @@
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { CheckMark } from '~components'
@@ -28,32 +29,37 @@ export function TrackerProof({
   transitions: TransitionRow[]
   genesisRoot: string | null
 }) {
+  const { t } = useLingui()
   const data = tracker.data
   const root = data?.proof.root.toLowerCase()
-  const at = root ? transitions.find((t) => t.rootAfter === root) : undefined
+  const at = root ? transitions.find((tr) => tr.rootAfter === root) : undefined
 
   return (
     <Panel
-      label='Recorded as cast'
-      title='Tracker proof'
-      description="A sequencer's proof that the vote id is a leaf of the state tree under a root the registry holds. The explorer recomputes the path here: the leaf is sha256(vote id as 8 little-endian bytes ‖ 32 zero bytes ‖ 0x01), each level hashes sha256(left ‖ right), and the vote id's bits say which side, the lowest bit at the root."
+      label={t`Recorded as cast`}
+      title={t`Tracker proof`}
+      description={t`A sequencer's proof that the vote id is a leaf of the state tree under a root the registry holds. The explorer recomputes the path here: the leaf is sha256(vote id as 8 little-endian bytes ‖ 32 zero bytes ‖ 0x01), each level hashes sha256(left ‖ right), and the vote id's bits say which side, the lowest bit at the root.`}
     >
       <div className='flex flex-col gap-3' data-testid='tracker-proof'>
         {sequencers === 0 ? (
-          <Callout title='No sequencer is configured'>
-            Tracker proofs come from a sequencer node's copy of the state tree, and this explorer has none to ask. The
-            inclusion check does the same job from the blobs.
+          <Callout title={t`No sequencer is configured`}>
+            <Trans>
+              Tracker proofs come from a sequencer node's copy of the state tree, and this explorer has none to ask. The
+              inclusion check does the same job from the blobs.
+            </Trans>
           </Callout>
         ) : tracker.isLoading ? (
           <SkeletonText lines={3} />
         ) : tracker.error ? (
-          <Callout tone='warn' title='No tracker proof'>
+          <Callout tone='warn' title={t`No tracker proof`}>
             {tracker.error.message}
           </Callout>
         ) : data == null ? (
-          <Callout title='No configured sequencer knows this vote'>
-            A node serves a tracker proof once the vote id is in its tree, which happens when the batch carrying it
-            settles.
+          <Callout title={t`No configured sequencer knows this vote`}>
+            <Trans>
+              A node serves a tracker proof once the vote id is in its tree, which happens when the batch carrying it
+              settles.
+            </Trans>
           </Callout>
         ) : (
           <>
@@ -62,25 +68,12 @@ export function TrackerProof({
                 <CheckMark state={data.valid ? 'pass' : 'fail'} className='mt-0.5' />
                 <span>
                   {data.otherVote
-                    ? 'The sequencer answered with a proof for another vote'
+                    ? t`The sequencer answered with a proof for another vote`
                     : data.valid
-                      ? 'The path reaches the root the proof names'
-                      : 'The path does not reach its root'}
+                      ? t`The path reaches the root the proof names`
+                      : t`The path does not reach its root`}
                   <span className='block text-[12px] text-ash'>
-                    {data.otherVote ? (
-                      <>
-                        it names vote {formatVoteId(data.proof.voteId)}
-                        {data.proof.processId?.toLowerCase() !== pid.toLowerCase()
-                          ? ` of process ${data.proof.processId}`
-                          : ''}
-                        , not the one asked for, from {data.sequencer.upstream}
-                      </>
-                    ) : (
-                      <>
-                        {data.proof.siblings.length} sibling{data.proof.siblings.length === 1 ? '' : 's'} of at most{' '}
-                        {SMT_LEVELS} levels, from {data.sequencer.upstream}
-                      </>
-                    )}
+                    <PathDetail data={data} pid={pid} />
                   </span>
                 </span>
               </li>
@@ -88,31 +81,28 @@ export function TrackerProof({
                 <CheckMark state={data.rootOnChain ? 'pass' : 'fail'} className='mt-0.5' />
                 <span>
                   {data.rootOnChain
-                    ? 'That root is one the registry held for this process'
-                    : 'That root is not one the registry held for this process'}
+                    ? t`That root is one the registry held for this process`
+                    : t`That root is not one the registry held for this process`}
                   <span className='block text-[12px] text-ash'>
                     {at ? (
-                      <>
-                        the root after{' '}
-                        <Link to={paths.transition(pid, at.index)} className='text-silver hover:text-emerald'>
-                          transition #{at.index}
-                        </Link>
-                      </>
+                      <RootAfter pid={pid} index={at.index} />
                     ) : root && root === genesisRoot ? (
-                      'the genesis root'
+                      t`the genesis root`
                     ) : data.rootOnChain ? (
-                      'the latest root'
+                      t`the latest root`
                     ) : (
-                      'not the genesis root nor any transition root'
+                      t`not the genesis root nor any transition root`
                     )}
                   </span>
                 </span>
               </li>
             </ul>
             <div className='flex items-center gap-2 text-[12px] text-ash'>
-              Root <Hash value={data.proof.root} chars={10} />
+              <Trans>
+                Root <Hash value={data.proof.root} chars={10} />
+              </Trans>
             </div>
-            <Disclosure summary='The proof as served'>
+            <Disclosure summary={t`The proof as served`}>
               <CodeBlock
                 code={JSON.stringify(
                   {
@@ -124,23 +114,61 @@ export function TrackerProof({
                   null,
                   2
                 )}
-                label='Copy the tracker proof'
+                label={t`Copy the tracker proof`}
                 maxHeight={280}
               />
             </Disclosure>
-            <Disclosure summary='Fetch it yourself'>
+            <Disclosure summary={t`Fetch it yourself`}>
               <p className='mb-2 text-[12px] text-ash'>
-                The node route is in the sequencer README; davinci_client::api::verify_tracker checks the answer against
-                the registry.
+                <Trans>
+                  The node route is in the sequencer README; davinci_client::api::verify_tracker checks the answer
+                  against the registry.
+                </Trans>
               </p>
               <CodeBlock
                 code={`curl ${data.sequencer.upstream.replace(/\/+$/, '')}/votes/${pid}/voteId/${formatVoteId(voteId)}/proof`}
-                label='Copy the command'
+                label={t`Copy the command`}
               />
             </Disclosure>
           </>
         )}
       </div>
     </Panel>
+  )
+}
+
+function RootAfter({ pid, index }: { pid: string; index: number }) {
+  return (
+    <Trans>
+      the root after{' '}
+      <Link to={paths.transition(pid, index)} className='text-silver hover:text-emerald'>
+        transition #{index}
+      </Link>
+    </Trans>
+  )
+}
+
+/** Which vote the path is for and how long it is, and which node served it. */
+function PathDetail({ data, pid }: { data: TrackerCheck; pid: string }) {
+  const upstream = data.sequencer.upstream
+  if (data.otherVote) {
+    const vote = formatVoteId(data.proof.voteId)
+    const otherProcess = data.proof.processId
+    return otherProcess?.toLowerCase() !== pid.toLowerCase() ? (
+      <Trans>
+        it names vote {vote} of process {otherProcess}, not the one asked for, from {upstream}
+      </Trans>
+    ) : (
+      <Trans>
+        it names vote {vote}, not the one asked for, from {upstream}
+      </Trans>
+    )
+  }
+  const siblings = data.proof.siblings.length
+  const levels = SMT_LEVELS
+  return (
+    <Trans>
+      <Plural value={siblings} one='# sibling' other='# siblings' /> of at most {levels} levels, from {upstream}
+    </Trans>
   )
 }

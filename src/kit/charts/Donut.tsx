@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { useLingui } from '@lingui/react/macro'
+import { formatNumber } from '~lib/format'
 import { arcPath, formatPercent } from './scale'
 import { CHART_COLORS, seriesColor } from './colors'
 import { ChartFrame, type LegendItem } from './ChartFrame'
@@ -31,13 +33,14 @@ export function Donut({
   loading = false,
   className,
 }: DonutProps) {
+  const { t } = useLingui()
   const { tooltip, show, hide } = useChartTooltip()
   const total = slices.reduce((sum, s) => sum + Math.max(s.value, 0), 0)
   const colors = slices.map((s, i) => s.color ?? seriesColor(i))
   const legend: LegendItem[] = slices.map((s, i) => ({
     label: s.label,
     color: colors[i] as string,
-    value: total > 0 ? formatPercent(s.value / total, 0) : '0%',
+    value: formatPercent(total > 0 ? s.value / total : 0, 0),
   }))
 
   return (
@@ -46,7 +49,7 @@ export function Donut({
       legend={legend}
       loading={loading}
       empty={total === 0}
-      emptyLabel='Nothing to break down'
+      emptyLabel={t`Nothing to break down`}
       tooltip={tooltip}
       className={className}
     >
@@ -57,7 +60,7 @@ export function Donut({
         const inner = Math.max(outer - thickness, 4)
         let angle = 0
         return (
-          <svg width={width} height={size} role='img' aria-label='Distribution'>
+          <svg width={width} height={size} role='img' aria-label={t`Distribution`}>
             {slices.map((slice, i) => {
               const sweep = (Math.max(slice.value, 0) / total) * 360
               const d = arcPath(cx, cy, outer, inner, angle, angle + sweep)
@@ -74,7 +77,7 @@ export function Donut({
                       <div>
                         <div className='text-ghost'>{slice.label}</div>
                         <div className='font-mono tnum text-[10px] text-ash'>
-                          {slice.value} · {formatPercent(slice.value / total, 1)}
+                          {formatNumber(slice.value)} · {formatPercent(slice.value / total, 1)}
                         </div>
                       </div>
                     )
@@ -92,7 +95,7 @@ export function Donut({
               fill={CHART_COLORS.text}
               fontFamily='var(--font-mono)'
             >
-              {centerValue ?? total}
+              {centerValue ?? formatNumber(total)}
             </text>
             {centerLabel ? (
               <text x={cx} y={cy + 16} textAnchor='middle' fontSize={10} fill={CHART_COLORS.axis}>

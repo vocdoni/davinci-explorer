@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { plural } from '@lingui/core/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { SortingState } from '@tanstack/react-table'
 import { Link } from 'react-router'
 import { CheckMark, Explain, NativeAmount, Timestamp, TxLink } from '~components'
@@ -10,97 +12,112 @@ import { cn } from '~lib/cn'
 import { formatNumber } from '~lib/format'
 import { paths } from '~routes/paths'
 
-function columns(pid: string): AnyColumnDef<TransitionRow>[] {
-  return [
-    {
-      id: 'index',
-      header: '#',
-      accessorKey: 'index',
-      cell: ({ row }) => (
-        <Link
-          to={paths.transition(pid, row.original.index)}
-          onClick={(e) => e.stopPropagation()}
-          className='font-mono text-emerald hover:underline'
-        >
-          #{row.original.index}
-        </Link>
-      ),
-      meta: { width: '64px', headerTooltip: 'Position among the process’s transitions, from 0.' },
-    },
-    {
-      id: 'block',
-      header: 'Block',
-      accessorKey: 'block',
-      cell: ({ row }) => <BlockCell block={row.original.block} />,
-      meta: { width: '110px' },
-    },
-    {
-      id: 'time',
-      header: 'Time',
-      accessorFn: (r) => r.timestamp ?? 0,
-      cell: ({ row }) => <Timestamp value={row.original.timestamp} className='text-[12px]' />,
-      meta: { width: '110px' },
-    },
-    {
-      id: 'tx',
-      header: 'Transaction',
-      accessorFn: (r) => r.tx ?? '',
-      cell: ({ row }) => (row.original.tx ? <TxLink hash={row.original.tx} chars={4} /> : '—'),
-      meta: { width: '170px' },
-    },
-    {
-      id: 'sender',
-      header: 'Sender',
-      accessorKey: 'sender',
-      cell: ({ row }) => <Address value={row.original.sender} explorer={false} />,
-      meta: {
-        headerTooltip:
-          'The sequencer that sent the settlement. Settlement is permissionless; the proof authenticates it.',
-      },
-    },
-    {
-      id: 'newVoters',
-      header: 'New voters',
-      accessorKey: 'newVoters',
-      meta: { numeric: true, width: '100px', headerTooltip: 'Ballot slots written for the first time.' },
-    },
-    {
-      id: 'overwrites',
-      header: 'Overwrites',
-      accessorKey: 'overwrites',
-      meta: { numeric: true, width: '100px', headerTooltip: 'Votes that replaced an earlier vote of the same voter.' },
-    },
-    {
-      id: 'blobs',
-      header: 'Blobs',
-      accessorKey: 'nBlobs',
-      meta: { numeric: true, width: '70px' },
-    },
-    {
-      id: 'gas',
-      header: 'Gas',
-      accessorFn: (r) => (r.gasUsed == null ? -1 : Number(r.gasUsed)),
-      cell: ({ row }) => (row.original.gasUsed == null ? '…' : formatNumber(row.original.gasUsed)),
-      meta: { numeric: true, width: '100px' },
-    },
-    {
-      id: 'fee',
-      header: 'Fee',
-      accessorFn: (r) => (r.fee == null ? -1 : Number(r.fee)),
-      cell: ({ row }) => <NativeAmount wei={row.original.fee} digits={6} className='text-[12px]' />,
-      meta: {
-        numeric: true,
-        width: '130px',
-        headerTooltip: 'Execution gas plus blob gas, at the prices the transaction paid.',
-      },
-    },
-  ]
-}
-
 export function TransitionsTab({ view }: { view: ProcessView }) {
+  const { t } = useLingui()
   const source = useDataSource()
   const { process: p, transitions, rootChain } = view
-  const cols = useMemo(() => columns(p.id), [p.id])
+  const pid = p.id
+
+  // Built here, not at module scope: the headers and tooltips are text.
+  const cols = useMemo<AnyColumnDef<TransitionRow>[]>(
+    () => [
+      {
+        id: 'index',
+        header: '#',
+        accessorKey: 'index',
+        cell: ({ row }) => (
+          <Link
+            to={paths.transition(pid, row.original.index)}
+            onClick={(e) => e.stopPropagation()}
+            className='font-mono text-emerald hover:underline'
+          >
+            #{row.original.index}
+          </Link>
+        ),
+        meta: { width: '64px', headerTooltip: t`Position among the process’s transitions, from 0.` },
+      },
+      {
+        id: 'block',
+        header: t`Block`,
+        accessorKey: 'block',
+        cell: ({ row }) => <BlockCell block={row.original.block} />,
+        meta: { width: '110px' },
+      },
+      {
+        id: 'time',
+        header: t`Time`,
+        accessorFn: (r) => r.timestamp ?? 0,
+        cell: ({ row }) => <Timestamp value={row.original.timestamp} className='text-[12px]' />,
+        meta: { width: '110px' },
+      },
+      {
+        id: 'tx',
+        header: t`Transaction`,
+        accessorFn: (r) => r.tx ?? '',
+        cell: ({ row }) => (row.original.tx ? <TxLink hash={row.original.tx} chars={4} /> : '—'),
+        meta: { width: '170px' },
+      },
+      {
+        id: 'sender',
+        header: t`Sender`,
+        accessorKey: 'sender',
+        cell: ({ row }) => <Address value={row.original.sender} explorer={false} />,
+        meta: {
+          headerTooltip: t`The sequencer that sent the settlement. Settlement is permissionless; the proof authenticates it.`,
+        },
+      },
+      {
+        id: 'newVoters',
+        header: t`New voters`,
+        accessorKey: 'newVoters',
+        cell: ({ row }) => formatNumber(row.original.newVoters),
+        meta: {
+          numeric: true,
+          width: '100px',
+          headerWrap: true,
+          headerTooltip: t`Ballot slots written for the first time.`,
+        },
+      },
+      {
+        id: 'overwrites',
+        header: t`Overwrites`,
+        accessorKey: 'overwrites',
+        cell: ({ row }) => formatNumber(row.original.overwrites),
+        meta: {
+          numeric: true,
+          width: '100px',
+          headerWrap: true,
+          headerTooltip: t`Votes that replaced an earlier vote of the same voter.`,
+        },
+      },
+      {
+        id: 'blobs',
+        header: t`Blobs`,
+        accessorKey: 'nBlobs',
+        cell: ({ row }) => formatNumber(row.original.nBlobs),
+        meta: { numeric: true, width: '70px' },
+      },
+      {
+        id: 'gas',
+        header: t`Gas`,
+        accessorFn: (r) => (r.gasUsed == null ? -1 : Number(r.gasUsed)),
+        cell: ({ row }) => (row.original.gasUsed == null ? '…' : formatNumber(row.original.gasUsed)),
+        meta: { numeric: true, width: '100px' },
+      },
+      {
+        id: 'fee',
+        header: t`Fee`,
+        accessorFn: (r) => (r.fee == null ? -1 : Number(r.fee)),
+        cell: ({ row }) => <NativeAmount wei={row.original.fee} digits={6} className='text-[12px]' />,
+        meta: {
+          numeric: true,
+          width: '130px',
+          headerTooltip: t`Execution gas plus blob gas, at the prices the transaction paid.`,
+        },
+      },
+    ],
+    [t, pid]
+  )
   const [sorting, setSorting] = useState<SortingState>([])
 
   // Gas and fees need each settlement's receipt: ask for this process's first.
@@ -123,17 +140,22 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
 
   const headText =
     rootChain.headMatches == null
-      ? 'the registry’s current root is not read yet'
+      ? t`the registry’s current root is not read yet`
       : rootChain.headMatches
-        ? 'the last root is the registry’s current root'
-        : 'the last root is not the registry’s current root'
+        ? t`the last root is the registry’s current root`
+        : t`the last root is not the registry’s current root`
+  const count = transitions.length
+  const gaps = rootChain.gaps
+  const ballots = totals.ballots
+  const blobs = totals.blobs
+  const gas = formatNumber(totals.gas)
 
   return (
     <div data-testid='tab-transitions' className='flex flex-col gap-6'>
       <Panel
-        title='State-root chain'
-        label='Root continuity'
-        description='Every transition must start from the root the previous one ended at, the first from the genesis root the registry computed at creation. The registry enforces it on-chain; here it is recomputed from the events.'
+        title={t`State-root chain`}
+        label={t`Root continuity`}
+        description={t`Every transition must start from the root the previous one ended at, the first from the genesis root the registry computed at creation. The registry enforces it on-chain; here it is recomputed from the events.`}
       >
         <p data-testid='transition-summary' className='mb-4 flex flex-wrap items-center gap-2 text-[13px] text-silver'>
           <CheckMark
@@ -146,10 +168,10 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
             }
           />
           <span>
-            {formatNumber(transitions.length)} transition{transitions.length === 1 ? '' : 's'} ·{' '}
-            {rootChain.gaps === 0
-              ? 'the chain is continuous'
-              : `${rootChain.gaps} gap${rootChain.gaps === 1 ? '' : 's'} in the chain`}{' '}
+            {t`${plural(count, { one: '# transition', other: '# transitions' })}`} ·{' '}
+            {gaps === 0
+              ? t`the chain is continuous`
+              : t`${plural(gaps, { one: '# gap in the chain', other: '# gaps in the chain' })}`}{' '}
             · {headText}
           </span>
         </p>
@@ -158,15 +180,21 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
 
       <Card flush className='overflow-hidden'>
         <CardHeader
-          title='Transitions'
-          label='Settled batches'
-          description='Each row is one batch a sequencer proved and settled with submitStateTransition. Open one to see its decoded public values, its blobs and every check the contract ran.'
+          title={t`Transitions`}
+          label={t`Settled batches`}
+          description={t`Each row is one batch a sequencer proved and settled with submitStateTransition. Open one to see its decoded public values, its blobs and every check the contract ran.`}
           actions={
             transitions.length > 0 ? (
               <span className='flex flex-wrap gap-x-4 gap-y-1 font-mono text-[12px] text-ash tnum'>
-                <span>{formatNumber(totals.ballots)} ballots</span>
-                <span>{formatNumber(totals.blobs)} blobs</span>
-                <span>{formatNumber(totals.gas)} gas</span>
+                <span>
+                  <Plural value={ballots} one='# ballot' other='# ballots' />
+                </span>
+                <span>
+                  <Plural value={blobs} one='# blob' other='# blobs' />
+                </span>
+                <span>
+                  <Trans>{gas} gas</Trans>
+                </span>
                 <span>
                   {totals.known ? '' : '≥ '}
                   <NativeAmount wei={totals.fee} />
@@ -185,8 +213,8 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
           maxHeight={transitions.length > 15 ? 600 : 100_000}
           empty={
             <EmptyState
-              title='No transitions yet'
-              description='When a sequencer settles the first batch of votes, it appears here with its block, blobs and fee.'
+              title={t`No transitions yet`}
+              description={t`When a sequencer settles the first batch of votes, it appears here with its block, blobs and fee.`}
             />
           }
         />
@@ -196,58 +224,73 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
 }
 
 function RootChainList({ view }: { view: ProcessView }) {
+  const { t } = useLingui()
   const { process: p, rootChain } = view
   const latest = p.state?.latestStateRoot ?? null
   return (
     <ol
       className='max-h-[420px] overflow-y-auto rounded-sm border border-charcoal scroll-slim'
-      aria-label='State roots'
+      aria-label={t`State roots`}
     >
       <li className='flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-charcoal/60 px-3 py-2 text-[13px]'>
         <span className='w-24 shrink-0 text-pewter'>
-          Genesis
+          <Trans>Genesis</Trans>
           <Explain className='ml-1'>
-            The root of the process’s state tree before any vote: the registry derives it from the process id, ballot
-            mode, encryption key, census origin and ballot VK hash.
+            <Trans>
+              The root of the process’s state tree before any vote: the registry derives it from the process id, ballot
+              mode, encryption key, census origin and ballot VK hash.
+            </Trans>
           </Explain>
         </span>
         {rootChain.genesisRoot ? (
           <Hash value={rootChain.genesisRoot} chars={10} />
         ) : (
-          <span className='text-ash'>not read yet</span>
+          <span className='text-ash'>
+            <Trans>not read yet</Trans>
+          </span>
         )}
       </li>
-      {rootChain.links.map((l) => (
-        <li
-          key={l.index}
-          className={cn(
-            'flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-charcoal/60 px-3 py-2 text-[13px]',
-            l.continuous === false && 'bg-red/5'
-          )}
-        >
-          <Link to={paths.transition(p.id, l.index)} className='w-24 shrink-0 font-mono text-emerald hover:underline'>
-            #{l.index}
-          </Link>
-          <CheckMark state={l.continuous == null ? 'unknown' : l.continuous ? 'pass' : 'fail'} />
-          {l.continuous === false ? (
-            <span className='inline-flex flex-wrap items-center gap-1 text-red'>
-              starts from <Hash value={l.rootBefore} chars={6} />, expected{' '}
-              {l.expectedBefore ? <Hash value={l.expectedBefore} chars={6} /> : '…'}
-            </span>
-          ) : null}
-          <span className='text-ash'>→</span>
-          <Hash value={l.rootAfter} chars={10} />
-        </li>
-      ))}
+      {rootChain.links.map((l) => {
+        const expected = l.expectedBefore ? <Hash value={l.expectedBefore} chars={6} /> : '…'
+        return (
+          <li
+            key={l.index}
+            className={cn(
+              'flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-charcoal/60 px-3 py-2 text-[13px]',
+              l.continuous === false && 'bg-red/5'
+            )}
+          >
+            <Link to={paths.transition(p.id, l.index)} className='w-24 shrink-0 font-mono text-emerald hover:underline'>
+              #{l.index}
+            </Link>
+            <CheckMark state={l.continuous == null ? 'unknown' : l.continuous ? 'pass' : 'fail'} />
+            {l.continuous === false ? (
+              <span className='inline-flex flex-wrap items-center gap-1 text-red'>
+                <Trans>
+                  starts from <Hash value={l.rootBefore} chars={6} />, expected {expected}
+                </Trans>
+              </span>
+            ) : null}
+            <span className='text-ash'>→</span>
+            <Hash value={l.rootAfter} chars={10} />
+          </li>
+        )
+      })}
       <li className='flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[13px]'>
         <span className='w-24 shrink-0 text-pewter'>
-          Registry now
+          <Trans>Registry now</Trans>
           <Explain className='ml-1'>
-            latestStateRoot in getProcess: the root the next transition must start from.
+            <Trans>latestStateRoot in getProcess: the root the next transition must start from.</Trans>
           </Explain>
         </span>
         <CheckMark state={rootChain.headMatches == null ? 'unknown' : rootChain.headMatches ? 'pass' : 'fail'} />
-        {latest ? <Hash value={latest} chars={10} /> : <span className='text-ash'>not read yet</span>}
+        {latest ? (
+          <Hash value={latest} chars={10} />
+        ) : (
+          <span className='text-ash'>
+            <Trans>not read yet</Trans>
+          </span>
+        )}
       </li>
     </ol>
   )

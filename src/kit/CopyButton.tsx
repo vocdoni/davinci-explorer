@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useCopy } from '~hooks/use-copy'
 import { cn } from '~lib/cn'
 import { CheckIcon, CopyIcon } from './icons'
@@ -5,20 +6,22 @@ import { Tooltip } from './Tooltip'
 
 export interface CopyButtonProps {
   value: string
-  /** Accessible name; defaults to "Copy". */
+  /** Accessible name; defaults to "Copy" in the active language. */
   label?: string
   size?: number
   className?: string
 }
 
 /** Icon-only copy affordance. Flashes a check for 1.5 s. */
-export function CopyButton({ value, label = 'Copy', size = 13, className }: CopyButtonProps) {
+export function CopyButton({ value, label, size = 13, className }: CopyButtonProps) {
+  const { t } = useLingui()
   const { copied, copy } = useCopy()
+  const name = label ?? t`Copy`
   return (
-    <Tooltip content={copied ? 'Copied' : label}>
+    <Tooltip content={copied ? t`Copied` : name}>
       <button
         type='button'
-        aria-label={label}
+        aria-label={name}
         onClick={(e) => {
           e.stopPropagation()
           e.preventDefault()

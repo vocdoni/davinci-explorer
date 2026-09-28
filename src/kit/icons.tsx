@@ -139,6 +139,13 @@ export const MonitorIcon = (p: IconProps) => (
   </Icon>
 )
 
+export const GlobeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx='8' cy='8' r='6' />
+    <path d='M2 8h12M8 2c1.6 1.7 2.4 3.7 2.4 6S9.6 12.3 8 14C6.4 12.3 5.6 10.3 5.6 8S6.4 3.7 8 2z' />
+  </Icon>
+)
+
 export const RefreshIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d='M13.25 8a5.25 5.25 0 1 1-1.54-3.71' />

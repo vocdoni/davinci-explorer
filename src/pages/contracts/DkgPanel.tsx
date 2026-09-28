@@ -1,3 +1,6 @@
+import type { MessageDescriptor } from '@lingui/core'
+import { msg, plural } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import { CheckMark, Timestamp } from '~components'
 import { useRuntimeConfig } from '~config/config-context'
@@ -28,38 +31,45 @@ import { paths } from '~routes/paths'
 import { DKG_VERIFIER_LABELS, dkgExplorerLink } from './model'
 import { Code, SourceLink, SubHeading } from './parts'
 
-const PHASES: Record<DkgEpochPhase, { label: string; tone: BadgeTone; description: string }> = {
-  none: { label: 'Not created', tone: 'neutral', description: 'No epoch has been created yet.' },
+const PHASES: Record<DkgEpochPhase, { label: MessageDescriptor; tone: BadgeTone; description: MessageDescriptor }> = {
+  none: {
+    label: msg`Not created`,
+    tone: 'neutral',
+    description: msg`No epoch has been created yet.`,
+  },
   'committee-selection': {
-    label: 'Committee selection',
+    label: msg`Committee selection`,
     tone: 'warn',
-    description: 'The lottery is drawing the committee: eligible operators claim slots until n are filled.',
+    description: msg`The lottery is drawing the committee: eligible operators claim slots until n are filled.`,
   },
   'key-assembly': {
-    label: 'Key assembly',
+    label: msg`Key assembly`,
     tone: 'warn',
-    description: 'Each member submits one proof-carrying contribution that deals its shares of all 16 pool keys.',
+    description: msg`Each member submits one proof-carrying contribution that deals its shares of all 16 pool keys.`,
   },
   live: {
-    label: 'Live',
+    label: msg`Live`,
     tone: 'ok',
-    description:
-      'finalizeEpoch stored all 16 pool keys: applications can register, submit ciphertexts and get them decrypted.',
+    description: msg`finalizeEpoch stored all 16 pool keys: applications can register, submit ciphertexts and get them decrypted.`,
   },
   aborted: {
-    label: 'Aborted',
+    label: msg`Aborted`,
     tone: 'danger',
-    description:
-      'The committee did not fill in time, or too few members contributed during key assembly, so the epoch serves nobody. The nodes create the next one.',
+    description: msg`The committee did not fill in time, or too few members contributed during key assembly, so the epoch serves nobody. The nodes create the next one.`,
   },
-  completed: { label: 'Completed', tone: 'neutral', description: 'Reserved by the contract; not used.' },
+  completed: {
+    label: msg`Completed`,
+    tone: 'neutral',
+    description: msg`Reserved by the contract; not used.`,
+  },
 }
 
 export function DkgPhaseBadge({ phase }: { phase: DkgEpochPhase }) {
+  const { i18n } = useLingui()
   const p = PHASES[phase]
   return (
-    <Badge tone={p.tone} dot={phase === 'live'} title={p.description}>
-      {p.label}
+    <Badge tone={p.tone} dot={phase === 'live'} title={i18n._(p.description)}>
+      {i18n._(p.label)}
     </Badge>
   )
 }
@@ -95,26 +105,30 @@ export function DkgPanel({
   loading: boolean
   error: string | null
 }) {
+  const { i18n, t } = useLingui()
   const config = useRuntimeConfig()
   const r = chain.registry
-  const description =
-    'The davinci-dkg committee that holds the election keys of DKG-mode processes and decrypts their tallies.'
+  const title = t`DKG committee`
+  const label = t`Threshold keys`
+  const description = t`The davinci-dkg committee that holds the election keys of DKG-mode processes and decrypts their tallies.`
 
   if (r && !r.dkgAdapter) {
     return (
-      <Panel title='DKG committee' label='Threshold keys' description={description}>
-        <Callout title='The DKG key modes are disabled on this registry'>
-          It was deployed without a DKG manager, so it has no adapter and <Code>newProcess</Code> in a DKG mode reverts
-          with <Code>DKGDisabled</Code>. Every process here uses a sequencer key.
+      <Panel title={title} label={label} description={description}>
+        <Callout title={t`The DKG key modes are disabled on this registry`}>
+          <Trans>
+            It was deployed without a DKG manager, so it has no adapter and <Code>newProcess</Code> in a DKG mode
+            reverts with <Code>DKGDisabled</Code>. Every process here uses a sequencer key.
+          </Trans>
         </Callout>
       </Panel>
     )
   }
   if (!dkg) {
     return (
-      <Panel title='DKG committee' label='Threshold keys' description={description}>
+      <Panel title={title} label={label} description={description}>
         {error && !loading ? (
-          <Callout tone='warn' title='Could not read the DKG contracts'>
+          <Callout tone='warn' title={t`Could not read the DKG contracts`}>
             {error}
           </Callout>
         ) : (
@@ -127,38 +141,50 @@ export function DkgPanel({
   const e = dkg.newestEpoch
   const epochLink = e ? dkgExplorerLink(config.dkgExplorerUrl, 'epoch', e.id) : null
   const nextStart = dkg.nextEpochStartBlock
+  // Named, so the catalog shows the translator what each placeholder is.
+  const nonce = e?.nonce
+  const threshold = e?.threshold
+  const committeeSize = e?.committeeSize
+  const registered = formatNumber(dkg.nodeCount)
+  const blocks = (blockCount: number) => {
+    const duration = formatDuration(blockCount * chain.blockTimeSeconds)
+    return t`${plural(blockCount, { one: '# block', other: '# blocks' })} · ~${duration}`
+  }
+  const minThreshold = dkg.minThreshold
+  const minCommitteeSize = dkg.minCommitteeSize
+  const maxAlpha = formatNumber((dkg.maxLotteryAlphaBps ?? 0) / 10_000)
   return (
     <Panel
-      title='DKG committee'
-      label='Threshold keys'
+      title={title}
+      label={label}
       description={description}
       actions={
-        config.dkgExplorerUrl ? <ExternalText href={config.dkgExplorerUrl}>DKG explorer</ExternalText> : undefined
+        config.dkgExplorerUrl ? <ExternalText href={config.dkgExplorerUrl}>{t`DKG explorer`}</ExternalText> : undefined
       }
     >
       <StatRow>
         <StatCell
-          label='Newest epoch'
-          value={e ? `#${e.nonce}` : 'none'}
-          hint={e ? PHASES[e.phase].label : 'no epoch created yet'}
+          label={t`Newest epoch`}
+          value={e ? t`#${nonce}` : t({ message: 'none', context: 'no epoch' })}
+          hint={e ? i18n._(PHASES[e.phase].label) : t`no epoch created yet`}
           mono
         />
         <StatCell
-          label='Threshold'
-          value={e ? `${e.threshold} of ${e.committeeSize}` : '—'}
-          hint='members needed to decrypt'
+          label={t`Threshold`}
+          value={e ? t`${threshold} of ${committeeSize}` : '—'}
+          hint={t`members needed to decrypt`}
           mono
         />
         <StatCell
-          label='Pool keys claimed'
+          label={t`Pool keys claimed`}
           value={e?.poolKeysClaimed != null ? `${e.poolKeysClaimed} / ${DKG_POOL_KEYS}` : '—'}
-          hint='one per application'
+          hint={t`one per application`}
           mono
         />
         <StatCell
-          label='Operators'
+          label={t`Operators`}
           value={dkg.activeCount != null ? formatNumber(dkg.activeCount) : '—'}
-          hint={dkg.nodeCount != null ? `active, of ${formatNumber(dkg.nodeCount)} registered` : 'active'}
+          hint={dkg.nodeCount != null ? t`active, of ${registered} registered` : t`active`}
           mono
         />
       </StatRow>
@@ -167,41 +193,42 @@ export function DkgPanel({
 
       <div className='mt-6 grid gap-6 lg:grid-cols-2'>
         <div>
-          <SubHeading>Where a new DKG process gets its key</SubHeading>
+          <SubHeading>
+            <Trans>Where a new DKG process gets its key</Trans>
+          </SubHeading>
           <div className='mt-2 text-[13px] leading-relaxed text-ash' data-testid='registration-epoch'>
             {dkg.registrationEpoch ? (
-              <>
+              <Trans>
                 A <span className='text-silver'>DKG automatic</span> process created now takes the next free pool key of
                 epoch <Hash value={dkg.registrationEpoch} chars={8} className='align-middle' /> (the adapter’s{' '}
                 <Code>registrationEpoch()</Code>: the newest Live epoch with a free key, looking back at most 8 epochs).
                 A <span className='text-silver'>DKG locked</span> process names its epoch itself, because the
                 organizer’s proof of possession binds it; clients read the same value.
-              </>
+              </Trans>
             ) : dkg.registrationEpochReverted ? (
-              <>
+              <Trans>
                 No Live epoch with a free pool key among the last 8, so <Code>registrationEpoch()</Code> reverts and
                 automatic processes revert <Code>NoLiveEpoch</Code> until a new epoch is Live. Locked processes name
                 their epoch and are unaffected.
-              </>
+              </Trans>
             ) : (
               '…'
             )}
           </div>
         </div>
         <div>
-          <SubHeading>Epoch cadence</SubHeading>
+          <SubHeading>
+            <Trans>Epoch cadence</Trans>
+          </SubHeading>
           <KeyValue
             className='mt-1'
             items={[
               {
-                label: 'Epoch length',
-                value:
-                  dkg.epochDurationBlocks != null
-                    ? `${formatNumber(dkg.epochDurationBlocks)} blocks · ~${formatDuration(dkg.epochDurationBlocks * chain.blockTimeSeconds)}`
-                    : '…',
+                label: t`Epoch length`,
+                value: dkg.epochDurationBlocks != null ? blocks(dkg.epochDurationBlocks) : '…',
               },
               {
-                label: 'Next epoch possible from',
+                label: t`Next epoch possible from`,
                 value:
                   nextStart != null ? (
                     <span className='inline-flex items-center gap-2'>
@@ -211,23 +238,17 @@ export function DkgPanel({
                   ) : (
                     '…'
                   ),
-                hint: 'or earlier, once the newest pool is nearly spent or the epoch aborted',
+                hint: t`or earlier, once the newest pool is nearly spent or the epoch aborted`,
               },
               {
-                label: 'Epoch policy bounds',
-                value:
-                  dkg.minThreshold != null
-                    ? `t ≥ ${dkg.minThreshold}, n ≥ ${dkg.minCommitteeSize}, 1 ≤ α ≤ ${(dkg.maxLotteryAlphaBps ?? 0) / 10_000}`
-                    : '…',
-                hint: 'whoever creates an epoch picks t, n and α within these',
+                label: t`Epoch policy bounds`,
+                value: minThreshold != null ? `t ≥ ${minThreshold}, n ≥ ${minCommitteeSize}, 1 ≤ α ≤ ${maxAlpha}` : '…',
+                hint: t`whoever creates an epoch picks t, n and α within these`,
               },
               {
-                label: 'Inactivity window',
-                value:
-                  dkg.inactivityWindow != null
-                    ? `${formatNumber(dkg.inactivityWindow)} blocks · ~${formatDuration(dkg.inactivityWindow * chain.blockTimeSeconds)}`
-                    : '…',
-                hint: 'an operator silent this long can be marked inactive',
+                label: t`Inactivity window`,
+                value: dkg.inactivityWindow != null ? blocks(dkg.inactivityWindow) : '…',
+                hint: t`an operator silent this long can be marked inactive`,
               },
             ]}
           />
@@ -237,12 +258,16 @@ export function DkgPanel({
       <Registration dkg={dkg} adapter={r?.dkgAdapter ?? null} />
 
       <div className='mt-6'>
-        <SubHeading>Groth16 verifiers</SubHeading>
+        <SubHeading>
+          <Trans>Groth16 verifiers</Trans>
+        </SubHeading>
         <p className='mt-1 text-[12px] leading-relaxed text-ash'>
-          Every contribution, finalization, partial decryption and combine is one proof-carrying call, checked by one of
-          these; there is no dispute phase. Each verifier reports the SHA-256 of its circuit’s proving key, compared
-          here with the davinci-dkg <Code>circuits-v6</Code> release, whose files the committee’s nodes download and
-          check against the same hashes.
+          <Trans>
+            Every contribution, finalization, partial decryption and combine is one proof-carrying call, checked by one
+            of these; there is no dispute phase. Each verifier reports the SHA-256 of its circuit’s proving key,
+            compared here with the davinci-dkg <Code>circuits-v6</Code> release, whose files the committee’s nodes
+            download and check against the same hashes.
+          </Trans>
         </p>
         <ul className='mt-3 flex flex-col divide-y divide-charcoal rounded-md border border-charcoal'>
           {dkg.verifiers.map((v) => {
@@ -261,7 +286,9 @@ export function DkgPanel({
                 <div className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 md:justify-end'>
                   {v.keyHash ? (
                     <span className='inline-flex items-center gap-1 text-[12px] text-ash'>
-                      key <Hash value={v.keyHash} chars={8} />
+                      <Trans>
+                        key <Hash value={v.keyHash} chars={8} />
+                      </Trans>
                     </span>
                   ) : null}
                   {v.address ? (
@@ -277,16 +304,18 @@ export function DkgPanel({
         </ul>
       </div>
 
-      <Callout className='mt-6' title='What you trust in the DKG modes'>
-        A threshold of an epoch’s committee could decrypt every ballot of the processes keyed on that epoch (with the
-        organizer secret as well, in locked mode); the design trusts that threshold not to collude. A process’s key
-        belongs to one epoch’s committee and there is no resharing, so if more than n − t of its members leave before
-        the process ends, its results are lost.{' '}
+      <Callout className='mt-6' title={t`What you trust in the DKG modes`}>
+        <Trans>
+          A threshold of an epoch’s committee could decrypt every ballot of the processes keyed on that epoch (with the
+          organizer secret as well, in locked mode); the design trusts that threshold not to collude. A process’s key
+          belongs to one epoch’s committee and there is no resharing, so if more than n − t of its members leave before
+          the process ends, its results are lost.
+        </Trans>{' '}
         <Link
           to={paths.learn('key-modes')}
           className='text-pewter underline-offset-2 hover:text-emerald hover:underline'
         >
-          The key modes, explained
+          <Trans>The key modes, explained</Trans>
         </Link>
       </Callout>
     </Panel>
@@ -294,48 +323,60 @@ export function DkgPanel({
 }
 
 function EpochDetails({ epoch: e, epochLink }: { epoch: DkgEpochView; epochLink: string | null }) {
+  const { i18n, t } = useLingui()
   const config = useRuntimeConfig()
+  const nonce = e.nonce
+  const contributions = e.contributionCount
+  const committeeSize = e.committeeSize
+  const minValid = e.minValidContributions
+  const threshold = e.threshold
   return (
     <div className='mt-6 grid gap-6 lg:grid-cols-2' data-testid='dkg-epoch'>
       <div>
-        <SubHeading>Epoch #{e.nonce}</SubHeading>
+        <SubHeading>
+          <Trans>Epoch #{nonce}</Trans>
+        </SubHeading>
         <KeyValue
           className='mt-1'
           items={[
             {
-              label: 'Epoch id',
+              label: t`Epoch id`,
               value: (
                 <span className='inline-flex items-center gap-2'>
                   <Hash value={e.id} chars={8} />
-                  {epochLink ? <ExternalText href={epochLink}>DKG explorer</ExternalText> : null}
+                  {epochLink ? <ExternalText href={epochLink}>{t`DKG explorer`}</ExternalText> : null}
                 </span>
               ),
-              hint: 'the manager’s 4-byte prefix and the epoch nonce',
+              hint: t`the manager’s 4-byte prefix and the epoch nonce`,
             },
             {
-              label: 'Phase',
+              label: t`Phase`,
               value: <DkgPhaseBadge phase={e.phase} />,
-              hint: PHASES[e.phase].description,
+              hint: i18n._(PHASES[e.phase].description),
             },
-            { label: 'Created at block', value: <BlockCell block={e.startBlock} /> },
+            { label: t`Created at block`, value: <BlockCell block={e.startBlock} /> },
             {
-              label: 'Contributions accepted',
-              value: `${e.contributionCount} of ${e.committeeSize}`,
-              hint: `at least ${e.minValidContributions} needed to finalize`,
+              label: t`Contributions accepted`,
+              value: t`${contributions} of ${committeeSize}`,
+              hint: t`at least ${minValid} needed to finalize`,
             },
             {
-              label: 'Applications',
+              label: t`Applications`,
               value: e.applications != null ? formatNumber(e.applications) : '—',
-              hint: 'DAVINCI processes and any other application on this epoch',
+              hint: t`DAVINCI processes and any other application on this epoch`,
             },
           ]}
         />
       </div>
       <div>
-        <SubHeading>Committee, in slot order</SubHeading>
+        <SubHeading>
+          <Trans>Committee, in slot order</Trans>
+        </SubHeading>
         <p className='mt-1 text-[12px] leading-relaxed text-ash'>
-          Drawn by an on-chain lottery from the registered operators, first come first served among the eligible ones.
-          Any {e.threshold} of them can decrypt; fewer cannot.
+          <Trans>
+            Drawn by an on-chain lottery from the registered operators, first come first served among the eligible ones.
+            Any {threshold} of them can decrypt; fewer cannot.
+          </Trans>
         </p>
         {e.committee.length ? (
           <ol className='mt-2 flex flex-col gap-1.5'>
@@ -345,13 +386,15 @@ function EpochDetails({ epoch: e, epochLink }: { epoch: DkgEpochView; epochLink:
                 <li key={a} className='flex items-center gap-2 text-[12px]'>
                   <span className='w-5 text-right font-mono text-ash'>{i + 1}</span>
                   <Address value={a} chars={6} />
-                  {link ? <ExternalText href={link}>operator</ExternalText> : null}
+                  {link ? <ExternalText href={link}>{t`operator`}</ExternalText> : null}
                 </li>
               )
             })}
           </ol>
         ) : (
-          <p className='mt-2 text-[12px] text-ash'>Not selected yet.</p>
+          <p className='mt-2 text-[12px] text-ash'>
+            <Trans>Not selected yet.</Trans>
+          </p>
         )}
       </div>
     </div>
@@ -359,25 +402,47 @@ function EpochDetails({ epoch: e, epochLink }: { epoch: DkgEpochView; epochLink:
 }
 
 function Registration({ dkg, adapter }: { dkg: DkgDeployment; adapter: string | null }) {
+  const { t } = useLingui()
   const reg = dkg.registration
   if (reg.kind === 'registrar') {
     const isAdapter = adapter != null && reg.address === adapter.toLowerCase()
+    const registrar = <Address value={reg.address} chars={6} className='align-middle' />
     return (
-      <Callout className='mt-6' title='Application registration is restricted' tone='info'>
-        Only <Address value={reg.address} chars={6} className='align-middle' />
-        {isAdapter ? ', this registry’s adapter,' : ''} may register applications on this DKGAppManager, so this
-        committee serves only that integrator.
+      <Callout className='mt-6' title={t`Application registration is restricted`} tone='info'>
+        {isAdapter ? (
+          <Trans>
+            Only {registrar}, this registry’s adapter, may register applications on this DKGAppManager, so this
+            committee serves only that integrator.
+          </Trans>
+        ) : (
+          <Trans>
+            Only {registrar} may register applications on this DKGAppManager, so this committee serves only that
+            integrator.
+          </Trans>
+        )}
       </Callout>
     )
   }
   if (reg.kind === 'unknown') return null
+  const poolKeys = DKG_POOL_KEYS
   return (
-    <Callout className='mt-6' title='Anyone can register an application' tone='ok'>
-      The DKGAppManager has {reg.reason === 'no-gate' ? 'no registrar' : 'no registrar set'}: any contract or account
-      can register an application on a Live epoch, so other applications can share this committee with DAVINCI. Each
-      registration claims one of the epoch’s {DKG_POOL_KEYS} pool keys. Once one key or fewer is left the contract
-      allows the next epoch early and the nodes create it; if the pool runs out first, DKG-mode process creation waits
-      for it (about one epoch setup).
+    <Callout className='mt-6' title={t`Anyone can register an application`} tone='ok'>
+      {reg.reason === 'no-gate' ? (
+        <Trans>
+          The DKGAppManager has no registrar: any contract or account can register an application on a Live epoch, so
+          other applications can share this committee with DAVINCI.
+        </Trans>
+      ) : (
+        <Trans>
+          The DKGAppManager has no registrar set: any contract or account can register an application on a Live epoch,
+          so other applications can share this committee with DAVINCI.
+        </Trans>
+      )}{' '}
+      <Trans>
+        Each registration claims one of the epoch’s {poolKeys} pool keys. Once one key or fewer is left the contract
+        allows the next epoch early and the nodes create it; if the pool runs out first, DKG-mode process creation waits
+        for it (about one epoch setup).
+      </Trans>
     </Callout>
   )
 }

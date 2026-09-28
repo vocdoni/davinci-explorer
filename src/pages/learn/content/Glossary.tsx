@@ -1,14 +1,16 @@
 import { useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { Link, useLocation } from 'react-router'
 import { HashLink } from '~components/HashLink'
 import { EmptyState, Input } from '~kit'
 import { cn } from '~lib/cn'
-import { filterGlossary } from '../glossary'
+import { filterGlossary, readGlossary } from '../glossary'
 import { Rich } from '../prose'
 
 export function Glossary() {
+  const { i18n, t } = useLingui()
   const [query, setQuery] = useState('')
-  const entries = filterGlossary(query)
+  const entries = filterGlossary(query, readGlossary(i18n))
   const { hash } = useLocation()
   const target = hash.startsWith('#term-') ? decodeURIComponent(hash.slice('#term-'.length)) : null
   return (
@@ -17,12 +19,12 @@ export function Glossary() {
         type='search'
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder='Filter the glossary'
-        aria-label='Filter the glossary'
+        placeholder={t`Filter the glossary`}
+        aria-label={t`Filter the glossary`}
         wrapperClassName='max-w-sm'
       />
       {entries.length === 0 ? (
-        <EmptyState compact title='No term matches' description='Try a shorter word, or clear the filter.' />
+        <EmptyState compact title={t`No term matches`} description={t`Try a shorter word, or clear the filter.`} />
       ) : (
         <dl className='mt-6 flex flex-col divide-y divide-charcoal' data-testid='glossary'>
           {entries.map((e) => (

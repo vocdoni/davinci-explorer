@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { ChevronDownIcon, CopyButton } from '~kit'
 import { cn } from '~lib/cn'
 
@@ -21,6 +22,7 @@ export function CodeBlock({
   maxHeight?: number
   className?: string
 }) {
+  const { t } = useLingui()
   return (
     <div className={cn('relative min-w-0 rounded-sm border border-charcoal bg-obsidian', className)}>
       <pre
@@ -32,7 +34,7 @@ export function CodeBlock({
       >
         <code>{code}</code>
       </pre>
-      <CopyButton value={code} label={label ?? 'Copy'} className='absolute top-1.5 right-1.5 bg-obsidian' />
+      <CopyButton value={code} label={label ?? t`Copy`} className='absolute top-1.5 right-1.5 bg-obsidian' />
     </div>
   )
 }

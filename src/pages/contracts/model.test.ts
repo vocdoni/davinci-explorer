@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
+import { i18n } from '@lingui/core'
 import { demoFixture } from '~fixtures/demo'
 import { demoDeploymentDetails } from '~data/deployment'
 import type { ChainMeta } from '~indexer/types'
-import { KNOWN_RELEASES, matchRelease } from '~protocol/releases'
+import { KNOWN_RELEASES, matchRelease, PIN_NAMES } from '~protocol/releases'
 import {
   castCommands,
   contractRows,
+  DKG_VERIFIER_LABELS,
   dkgExplorerLink,
+  PIN_DETAILS,
   publicRpc,
   releasePins,
   releaseVerdict,
@@ -18,6 +21,34 @@ const store = demoFixture().store
 const chain = store.chain
 const details = demoDeploymentDetails(store)
 const release = KNOWN_RELEASES[0]!
+const allPins = {
+  batchProgramVK: release.batchProgramVK,
+  resultsProgramVK: release.resultsProgramVK,
+  rootCVadcopFinal: release.rootCVadcopFinal,
+  ziskVerifierCodeHash: release.ziskVerifierCodeHash,
+  ballotVKHash: release.ballotVKHash,
+}
+
+describe('the explanations', () => {
+  it('explain every pin in whole sentences, with the code names kept', () => {
+    for (const pin of PIN_NAMES) {
+      const d = PIN_DETAILS[pin]
+      for (const text of [d.what, d.why, d.mismatch].map((m) => i18n._(m))) {
+        expect(text.length).toBeGreaterThan(20)
+        expect(text.trim().endsWith('.')).toBe(true)
+      }
+      // The mismatch stands alone after "It differs." or "What a mismatch would mean."
+      expect(i18n._(d.mismatch)).toMatch(/^[A-Z]/)
+    }
+    expect(i18n._(PIN_DETAILS.batchProgramVK.why)).toContain('submitStateTransition')
+    expect(PIN_DETAILS.ziskVerifierCodeHash.source).toBe('keccak256(eth_getCode(ziskVerifier))')
+  })
+
+  it('keep the DKG verifier contract names out of the translated text', () => {
+    expect(DKG_VERIFIER_LABELS.finalize.name).toBe('FinalizeVerifier')
+    expect(i18n._(DKG_VERIFIER_LABELS.finalize.role)).toContain('finalizeEpoch')
+  })
+})
 
 describe('verifyDeploymentCommand', () => {
   it('fills in the script the way the davinci-contracts README runs it', () => {
@@ -77,6 +108,7 @@ describe('contractRows', () => {
       'DecryptCombineVerifier',
     ])
     expect(rows.every((r) => r.address != null)).toBe(true)
+    expect(rows.every((r) => i18n._(r.role).length > 0)).toBe(true)
   })
 
   it('says the DKG modes are off without an adapter', () => {
@@ -87,7 +119,7 @@ describe('contractRows', () => {
     const rows = contractRows(noDkg, undefined)
     expect(rows).toHaveLength(3)
     expect(rows[2]!.address).toBeNull()
-    expect(rows[2]!.note).toMatch(/disabled/)
+    expect(i18n._(rows[2]!.note!)).toMatch(/disabled/)
   })
 
   it('keeps the rows, unread, before the registry is read', () => {
@@ -102,6 +134,10 @@ describe('wiringChecks', () => {
     const checks = wiringChecks(chain, details, chain.chainId)
     expect(checks.map((c) => c.state)).toEqual(checks.map(() => 'pass'))
     expect(checks).toHaveLength(7)
+    const detail = Object.fromEntries(checks.map((c) => [c.id, i18n._(c.detail)]))
+    expect(detail['chain-id']).toBe(`registry chainID() = ${chain.chainId}, configured chain ${chain.chainId}`)
+    expect(detail['pid-prefix']).toMatch(/^on chain 0x[0-9a-f]{8}, recomputed 0x[0-9a-f]{8}$/)
+    expect(detail['dkg-chain']).toBe(`CHAIN_ID() = ${chain.chainId}, configured chain ${chain.chainId}`)
   })
 
   it('flags a verifier on another setup and an adapter of another registry', () => {
@@ -128,39 +164,31 @@ describe('wiringChecks', () => {
   it('is unknown before anything is read', () => {
     const checks = wiringChecks({ ...chain, registry: null }, undefined, chain.chainId)
     expect(checks.every((c) => c.state === 'unknown')).toBe(true)
+    const detail = Object.fromEntries(checks.map((c) => [c.id, i18n._(c.detail)]))
+    expect(detail['chain-id']).toBe(`registry chainID() = …, configured chain ${chain.chainId}`)
+    expect(detail['pid-prefix']).toBe('not read yet')
   })
 })
 
 describe('releaseVerdict', () => {
   it('names the release every pin matches', () => {
-    const v = releaseVerdict(
-      matchRelease({
-        batchProgramVK: release.batchProgramVK,
-        resultsProgramVK: release.resultsProgramVK,
-        rootCVadcopFinal: release.rootCVadcopFinal,
-        ziskVerifierCodeHash: release.ziskVerifierCodeHash,
-        ballotVKHash: release.ballotVKHash,
-      })
-    )
-    expect(v).toEqual({ tone: 'ok', text: `All five pins match ${release.label}.` })
+    const v = releaseVerdict(matchRelease(allPins))
+    expect(v.tone).toBe('ok')
+    expect(i18n._(v.text)).toBe(`All five pins match ${release.label}.`)
   })
 
-  it('counts the pins that differ', () => {
-    const v = releaseVerdict(
-      matchRelease({
-        batchProgramVK: '0x00',
-        resultsProgramVK: release.resultsProgramVK,
-        rootCVadcopFinal: release.rootCVadcopFinal,
-        ziskVerifierCodeHash: release.ziskVerifierCodeHash,
-        ballotVKHash: release.ballotVKHash,
-      })
-    )
-    expect(v.tone).toBe('danger')
-    expect(v.text).toMatch(/^1 of 5 pins differ/)
+  it('counts the pins that differ, one or several', () => {
+    const one = releaseVerdict(matchRelease({ ...allPins, batchProgramVK: '0x00' }))
+    expect(one.tone).toBe('danger')
+    expect(i18n._(one.text)).toBe(`1 of 5 pins differs from ${release.label}, the closest release this explorer knows.`)
+    const two = releaseVerdict(matchRelease({ ...allPins, batchProgramVK: '0x00', ballotVKHash: '0x00' }))
+    expect(i18n._(two.text)).toMatch(/^2 of 5 pins differ from /)
   })
 
   it('waits while nothing is read', () => {
-    expect(releaseVerdict(matchRelease({})).tone).toBe('info')
+    const v = releaseVerdict(matchRelease({}))
+    expect(v.tone).toBe('info')
+    expect(i18n._(v.text)).toBe('Reading the pins from the registry…')
   })
 })
 

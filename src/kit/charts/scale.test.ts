@@ -121,10 +121,10 @@ describe('formatters', () => {
   it('formats compact numbers', () => {
     expect(formatCompact(0)).toBe('0')
     expect(formatCompact(999)).toBe('999')
-    expect(formatCompact(1200)).toBe('1.2k')
+    expect(formatCompact(1200)).toBe('1.2K')
     expect(formatCompact(5_400_000)).toBe('5.4M')
     expect(formatCompact(2_000_000_000)).toBe('2B')
-    expect(formatCompact(1000)).toBe('1k')
+    expect(formatCompact(1000)).toBe('1K')
   })
 
   it('formats percentages', () => {

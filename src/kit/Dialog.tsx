@@ -1,4 +1,5 @@
 import * as RadixDialog from '@radix-ui/react-dialog'
+import { useLingui } from '@lingui/react/macro'
 import type { ReactNode } from 'react'
 import { cn } from '~lib/cn'
 import { CloseIcon } from './icons'
@@ -28,6 +29,7 @@ export function Dialog({
   size = 'md',
   children,
 }: DialogProps) {
+  const { t } = useLingui()
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger ? <RadixDialog.Trigger asChild>{trigger}</RadixDialog.Trigger> : null}
@@ -50,7 +52,7 @@ export function Dialog({
               ) : null}
             </div>
             <RadixDialog.Close
-              aria-label='Close'
+              aria-label={t`Close`}
               className='shrink-0 rounded-sm p-1 text-pewter transition-colors hover:bg-onyx hover:text-ghost'
             >
               <CloseIcon />

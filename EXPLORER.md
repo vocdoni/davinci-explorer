@@ -183,7 +183,8 @@ Pure functions, unit-tested; use them directly when a hook does not fit.
 - `~protocol/process-id`: `parseProcessId` (organizer, registry prefix,
   nonce), `processIdPrefix`, `computeProcessId`.
 - `~protocol/types`: the enums with a label and a one-line explanation each
-  (`PROCESS_STATUS_INFO`, `CENSUS_ORIGIN_INFO`, `KEY_MODE_INFO`).
+  (`PROCESS_STATUS_INFO`, `CENSUS_ORIGIN_INFO`, `KEY_MODE_INFO`), in the
+  active language when read.
 - `~protocol/releases`: `KNOWN_RELEASES` (the davinci-zkvm pins from
   `rust-sdk/src/release.rs`: both program vks, `rootCVadcopFinal`, the
   verifier code hash, the ballot VK hash) and `matchRelease`. Add a row per
@@ -230,6 +231,17 @@ glyph), `MissingEntity` (skeleton until the first poll, then "not found"),
 `CodeBlock` (a command with a copy button) and `HashLink`. Link to a section
 of the page with `HashLink`, never a plain `href="#id"`: the router's scroll
 restoration sends a plain fragment link to the top of the page.
+
+## Text and languages
+
+The pages are in English, Spanish and Catalan (Lingui v5). Every string a
+user sees goes through a macro, the English in the code being the source,
+and `src/locales/<locale>/messages.po` holds the translations. Numbers,
+dates and relative times go through `~lib/format`, which follows the active
+language; hex and protocol names never change. A language switch remounts
+the routed tree, so text built outside the Lingui hooks (selectors,
+formatters, memoised rows) follows it. The patterns, with examples, are in
+[docs/translations.md](docs/translations.md).
 
 ## Design rules
 

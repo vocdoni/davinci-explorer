@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react'
+import type { MessageDescriptor } from '@lingui/core'
+import { msg, plural } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { CensusOriginBadge, CheckMark, Explain, Timestamp, TxLink } from '~components'
 import { useChain, type ProcessView } from '~data/hooks'
 import { useJsonDocument } from '~data/queries'
@@ -6,7 +9,7 @@ import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar,
 import { formatDuration, formatNumber, formatTimestamp } from '~lib/format'
 import { NUM_FIELDS } from '~protocol/limits'
 import { parseProcessId } from '~protocol/process-id'
-import { CENSUS_ORIGIN_INFO } from '~protocol/types'
+import { CENSUS_ORIGIN_INFO, type CensusOriginName } from '~protocol/types'
 import { describeBallotMode } from '../ballot-mode'
 import { toJson } from '../json'
 import { browsableUri, fetchableUri, metadataChoices, metadataDescription, metadataTitle } from '../metadata'
@@ -14,15 +17,13 @@ import { browsableUri, fetchableUri, metadataChoices, metadataDescription, metad
 /** Result cap of `newProcess`: maxValue ≤ 10^12 / maxVoters. */
 const MAX_POSSIBLE_RESULT = 1_000_000_000_000n
 
-const CENSUS_ROOT_RULE = {
-  unknown: 'Not an origin the registry accepts.',
-  'merkle-static': 'Every batch must be proven against the root fixed at creation.',
-  'merkle-dynamic':
-    'The organizer may replace the root while the process is Ready or Paused and before its end; each batch must use the current root.',
-  'onchain-dynamic':
-    'Each batch may use any root the census contract recorded at or after the creation block; the registry asks the contract at every settlement.',
-  csp: 'Every vote carries a signature from the CSP signer; the root is that signer’s address and never changes.',
-} as const
+const CENSUS_ROOT_RULE: Record<CensusOriginName, MessageDescriptor> = {
+  unknown: msg`Not an origin the registry accepts.`,
+  'merkle-static': msg`Every batch must be proven against the root fixed at creation.`,
+  'merkle-dynamic': msg`The organizer may replace the root while the process is Ready or Paused and before its end; each batch must use the current root.`,
+  'onchain-dynamic': msg`Each batch may use any root the census contract recorded at or after the creation block; the registry asks the contract at every settlement.`,
+  csp: msg`Every vote carries a signature from the CSP signer; the root is that signer’s address and never changes.`,
+}
 
 function Label({ children, help }: { children: ReactNode; help: ReactNode }) {
   return (
@@ -35,7 +36,12 @@ function Label({ children, help }: { children: ReactNode; help: ReactNode }) {
 
 function UriLink({ uri }: { uri: string }) {
   const href = browsableUri(uri)
-  if (!uri) return <span className='text-ash'>none</span>
+  if (!uri)
+    return (
+      <span className='text-ash'>
+        <Trans>none</Trans>
+      </span>
+    )
   return href ? (
     <a
       href={href}
@@ -78,10 +84,17 @@ export function OverviewTab({ view }: { view: ProcessView }) {
 }
 
 function BallotPanel({ view }: { view: ProcessView }) {
+  const { t } = useLingui()
   const bm = view.process.state!.ballotMode
   const d = describeBallotMode(bm)
+  const pattern = d.label
+  const capacity = NUM_FIELDS
   return (
-    <Panel title='Ballot' label={d.kind === 'unsatisfiable' ? d.label : `Reads as: ${d.label}`} description={d.summary}>
+    <Panel
+      title={t`Ballot`}
+      label={d.kind === 'unsatisfiable' ? pattern : t`Reads as: ${pattern}`}
+      description={d.summary}
+    >
       <ul className='flex flex-col gap-1.5 text-[13px] leading-relaxed text-silver' data-testid='ballot-rules'>
         {d.rules.map((r) => (
           <li key={r} className='flex gap-2'>
@@ -91,8 +104,11 @@ function BallotPanel({ view }: { view: ProcessView }) {
         ))}
       </ul>
       <p className='mt-3 text-xs leading-relaxed text-ash'>
-        Each voter&apos;s ballot proof enforces these rules on the encrypted ballot, and the batch program checks every
-        ballot proof against the ballot mode pinned in state leaf 0x02, so a ballot built for other rules is rejected.
+        <Trans>
+          Each voter&apos;s ballot proof enforces these rules on the encrypted ballot, and the batch program checks
+          every ballot proof against the ballot mode pinned in state leaf 0x02, so a ballot built for other rules is
+          rejected.
+        </Trans>
       </p>
       <KeyValue
         className='mt-4'
@@ -100,50 +116,74 @@ function BallotPanel({ view }: { view: ProcessView }) {
         items={[
           {
             label: (
-              <Label help={`Numbers per ballot, 1 to ${NUM_FIELDS}. Unused capacity is padded and skipped.`}>
-                Fields
+              <Label help={t`Numbers per ballot, 1 to ${capacity}. Unused capacity is padded and skipped.`}>
+                <Trans>Fields</Trans>
               </Label>
             ),
             value: bm.numFields,
             mono: true,
           },
           {
-            label: <Label help='No two fields may carry the same value.'>Unique values</Label>,
-            value: bm.uniqueValues ? 'yes' : 'no',
+            label: (
+              <Label help={t`No two fields may carry the same value.`}>
+                <Trans>Unique values</Trans>
+              </Label>
+            ),
+            value: bm.uniqueValues ? t`yes` : t`no`,
             mono: true,
           },
           {
-            label: <Label help='Lowest value a field may take.'>Min value</Label>,
+            label: (
+              <Label help={t`Lowest value a field may take.`}>
+                <Trans>Min value</Trans>
+              </Label>
+            ),
             value: formatNumber(bm.minValue),
             mono: true,
           },
           {
-            label: <Label help='Highest value a field may take.'>Max value</Label>,
+            label: (
+              <Label help={t`Highest value a field may take.`}>
+                <Trans>Max value</Trans>
+              </Label>
+            ),
             value: formatNumber(bm.maxValue),
             mono: true,
           },
           {
             label: (
-              <Label help='Each value is raised to this power before summing: 2 makes votes cost their square.'>
-                Cost exponent
+              <Label help={t`Each value is raised to this power before summing: 2 makes votes cost their square.`}>
+                <Trans>Cost exponent</Trans>
               </Label>
             ),
             value: bm.costExponent,
             mono: true,
           },
           {
-            label: <Label help='Groups of fields for multi-question ballots; 0 when unused.'>Group size</Label>,
+            label: (
+              <Label help={t`Groups of fields for multi-question ballots; 0 when unused.`}>
+                <Trans>Group size</Trans>
+              </Label>
+            ),
             value: bm.groupSize,
             mono: true,
           },
           {
-            label: <Label help='Lower bound of the cost sum; 0 means none.'>Min sum</Label>,
+            label: (
+              <Label help={t`Lower bound of the cost sum; 0 means none.`}>
+                <Trans>Min sum</Trans>
+              </Label>
+            ),
             value: formatNumber(bm.minValueSum),
             mono: true,
           },
           {
-            label: <Label help="Upper bound of the cost sum; 0 means the voter's census weight.">Max sum</Label>,
-            value: bm.maxValueSum === 0n ? '0 (weight)' : formatNumber(bm.maxValueSum),
+            label: (
+              <Label help={t`Upper bound of the cost sum; 0 means the voter's census weight.`}>
+                <Trans>Max sum</Trans>
+              </Label>
+            ),
+            value: bm.maxValueSum === 0n ? t`0 (weight)` : formatNumber(bm.maxValueSum),
             mono: true,
           },
         ]}
@@ -153,6 +193,7 @@ function BallotPanel({ view }: { view: ProcessView }) {
 }
 
 function CensusPanel({ view }: { view: ProcessView }) {
+  const { i18n, t } = useLingui()
   const { process: p } = view
   const c = p.state!.census
   const updates = p.censusUpdates
@@ -160,12 +201,12 @@ function CensusPanel({ view }: { view: ProcessView }) {
   const cspAddress = isCsp ? `0x${c.root.slice(-40)}` : null
   return (
     <Panel
-      title='Census'
-      label='Who may vote'
+      title={t`Census`}
+      label={t`Who may vote`}
       description={CENSUS_ORIGIN_INFO[c.origin].description}
       actions={<CensusOriginBadge origin={c.origin} />}
     >
-      <Callout tone='info'>{CENSUS_ROOT_RULE[c.origin]}</Callout>
+      <Callout tone='info'>{i18n._(CENSUS_ROOT_RULE[c.origin])}</Callout>
       <KeyValue
         className='mt-3'
         items={[
@@ -174,13 +215,13 @@ function CensusPanel({ view }: { view: ProcessView }) {
               <Label
                 help={
                   isCsp
-                    ? 'The address of the credential service provider whose signatures admit voters, stored as a big-endian integer.'
+                    ? t`The address of the credential service provider whose signatures admit voters, stored as a big-endian integer.`
                     : c.origin === 'onchain-dynamic'
-                      ? 'The census contract’s root when the process was created, kept for information: batches are checked against the contract instead.'
-                      : 'Root of the lean-IMT Merkle tree of eligible voters and their weights, a big-endian integer. Voters prove membership against it.'
+                      ? t`The census contract’s root when the process was created, kept for information: batches are checked against the contract instead.`
+                      : t`Root of the lean-IMT Merkle tree of eligible voters and their weights, a big-endian integer. Voters prove membership against it.`
                 }
               >
-                {isCsp ? 'CSP signer' : c.origin === 'onchain-dynamic' ? 'Root at creation' : 'Census root'}
+                {isCsp ? t`CSP signer` : c.origin === 'onchain-dynamic' ? t`Root at creation` : t`Census root`}
               </Label>
             ),
             value: cspAddress ? <Address value={cspAddress} /> : <Hash value={c.root} chars={10} />,
@@ -189,8 +230,10 @@ function CensusPanel({ view }: { view: ProcessView }) {
             ? [
                 {
                   label: (
-                    <Label help='The ICensusValidator contract the registry asks, at every settlement, whether it held the batch’s census root.'>
-                      Census contract
+                    <Label
+                      help={t`The ICensusValidator contract the registry asks, at every settlement, whether it held the batch’s census root.`}
+                    >
+                      <Trans>Census contract</Trans>
                     </Label>
                   ),
                   value: <Address value={c.contractAddress} />,
@@ -202,11 +245,11 @@ function CensusPanel({ view }: { view: ProcessView }) {
               <Label
                 help={
                   isCsp
-                    ? 'Where voters get their signatures.'
-                    : 'Where sequencers download the census; they check its root before serving votes.'
+                    ? t`Where voters get their signatures.`
+                    : t`Where sequencers download the census; they check its root before serving votes.`
                 }
               >
-                Census URI
+                <Trans>Census URI</Trans>
               </Label>
             ),
             value: <UriLink uri={c.uri} />,
@@ -215,9 +258,13 @@ function CensusPanel({ view }: { view: ProcessView }) {
       />
       {c.origin === 'merkle-dynamic' ? (
         <div className='mt-4'>
-          <div className='label-caps mb-2 text-[11px] text-pewter'>Census updates</div>
+          <div className='label-caps mb-2 text-[11px] text-pewter'>
+            <Trans>Census updates</Trans>
+          </div>
           {updates.length === 0 ? (
-            <p className='text-[13px] text-ash'>The organizer has not replaced the census root.</p>
+            <p className='text-[13px] text-ash'>
+              <Trans>The organizer has not replaced the census root.</Trans>
+            </p>
           ) : (
             <ul className='flex flex-col divide-y divide-charcoal/60 text-[13px]'>
               {updates.map((u, i) => (
@@ -239,14 +286,15 @@ function CensusPanel({ view }: { view: ProcessView }) {
 }
 
 function DatesPanel({ view }: { view: ProcessView }) {
+  const { t } = useLingui()
   const { process: p, row } = view
   const s = p.state!
   return (
-    <Panel title='Dates' label='Voting window'>
+    <Panel title={t`Dates`} label={t`Voting window`}>
       <KeyValue
         items={[
           {
-            label: 'Created',
+            label: t`Created`,
             value: (
               <span className='inline-flex flex-wrap items-center justify-end gap-2'>
                 <Timestamp value={row.createdAt} />
@@ -255,36 +303,50 @@ function DatesPanel({ view }: { view: ProcessView }) {
               </span>
             ),
           },
-          { label: 'Start', value: <Timestamp value={s.startTime} />, hint: formatTimestamp(s.startTime) },
+          { label: t`Start`, value: <Timestamp value={s.startTime} />, hint: formatTimestamp(s.startTime) },
           {
-            label: <Label help='Start time plus duration. Batches settle only inside this window.'>End</Label>,
+            label: (
+              <Label help={t`Start time plus duration. Batches settle only inside this window.`}>
+                <Trans>End</Trans>
+              </Label>
+            ),
             value: <Timestamp value={row.endTime} />,
             hint: formatTimestamp(row.endTime),
           },
-          { label: 'Duration', value: formatDuration(s.duration), mono: true },
+          { label: t`Duration`, value: formatDuration(s.duration), mono: true },
         ]}
       />
       <div className='mt-4'>
         <div className='label-caps mb-2 inline-flex items-center gap-1 text-[11px] text-pewter'>
-          Duration changes
+          <Trans>Duration changes</Trans>
           <Explain>
-            While a process is Ready or Paused and before its end, the organizer may only extend it. Ending it early
-            (status Ended) sets the duration to the time elapsed since the start.
+            <Trans>
+              While a process is Ready or Paused and before its end, the organizer may only extend it. Ending it early
+              (status Ended) sets the duration to the time elapsed since the start.
+            </Trans>
           </Explain>
         </div>
         {p.durationChanges.length === 0 ? (
-          <p className='text-[13px] text-ash'>The duration has not changed since creation.</p>
+          <p className='text-[13px] text-ash'>
+            <Trans>The duration has not changed since creation.</Trans>
+          </p>
         ) : (
           <ul className='flex flex-col divide-y divide-charcoal/60 text-[13px]'>
-            {p.durationChanges.map((c, i) => (
-              <li key={`${c.block}:${i}`} className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
-                <Timestamp value={c.timestamp} className='text-ash' />
-                <span className='flex-1 text-silver'>
-                  duration {formatDuration(c.value)}, ends {formatTimestamp(s.startTime + c.value)}
-                </span>
-                {c.tx ? <TxLink hash={c.tx} chars={4} /> : null}
-              </li>
-            ))}
+            {p.durationChanges.map((c, i) => {
+              const duration = formatDuration(c.value)
+              const ends = formatTimestamp(s.startTime + c.value)
+              return (
+                <li key={`${c.block}:${i}`} className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
+                  <Timestamp value={c.timestamp} className='text-ash' />
+                  <span className='flex-1 text-silver'>
+                    <Trans>
+                      duration {duration}, ends {ends}
+                    </Trans>
+                  </span>
+                  {c.tx ? <TxLink hash={c.tx} chars={4} /> : null}
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
@@ -293,15 +355,21 @@ function DatesPanel({ view }: { view: ProcessView }) {
 }
 
 function LimitsPanel({ view }: { view: ProcessView }) {
+  const { t } = useLingui()
   const { process: p, row } = view
   const s = p.state!
   const worst = BigInt(s.maxVoters) * s.ballotMode.maxValue
+  const changes = p.maxVotersChanges.length
+  const last = changes > 0 ? formatNumber(p.maxVotersChanges[changes - 1]!.value) : null
+  const used = formatNumber(s.ballotMode.numFields)
+  const capacity = formatNumber(NUM_FIELDS)
+  const cap = formatNumber(MAX_POSSIBLE_RESULT)
   return (
-    <Panel title='Limits' label='Capacity'>
+    <Panel title={t`Limits`} label={t`Capacity`}>
       <ProgressBar
         value={row.votersCount}
         total={Math.max(s.maxVoters, 1)}
-        label='Voters against the maximum'
+        label={t`Voters against the maximum`}
         tone={row.votersCount >= s.maxVoters ? 'warn' : 'accent'}
       />
       <KeyValue
@@ -309,35 +377,41 @@ function LimitsPanel({ view }: { view: ProcessView }) {
         items={[
           {
             label: (
-              <Label help='The registry refuses a batch that would take the voter count above this. The organizer may change it while the process is Ready or Paused, but never below the current voter count.'>
-                Max voters
+              <Label
+                help={t`The registry refuses a batch that would take the voter count above this. The organizer may change it while the process is Ready or Paused, but never below the current voter count.`}
+              >
+                <Trans>Max voters</Trans>
               </Label>
             ),
             value: formatNumber(s.maxVoters),
             mono: true,
             hint:
-              p.maxVotersChanges.length > 0
-                ? `changed ${p.maxVotersChanges.length} time${p.maxVotersChanges.length === 1 ? '' : 's'}, last to ${formatNumber(p.maxVotersChanges[p.maxVotersChanges.length - 1]!.value)}`
-                : 'unchanged since creation',
+              last != null
+                ? t`${plural(changes, { one: 'changed # time', other: 'changed # times' })}, last to ${last}`
+                : t`unchanged since creation`,
           },
           {
             label: (
-              <Label help='Every ballot carries 16 encrypted fields; the process uses the first numFields and the rest are fixed padding.'>
-                Fields in use
+              <Label
+                help={t`Every ballot carries ${capacity} encrypted fields; the process uses the first numFields and the rest are fixed padding.`}
+              >
+                <Trans>Fields in use</Trans>
               </Label>
             ),
-            value: `${s.ballotMode.numFields} of ${NUM_FIELDS}`,
+            value: t`${used} of ${capacity}`,
             mono: true,
           },
           {
             label: (
-              <Label help='The registry requires maxValue × maxVoters to stay within 10^12, so any tally stays inside the bounded search that decrypts it.'>
-                Largest possible tally per field
+              <Label
+                help={t`The registry requires maxValue × maxVoters to stay within 10^12, so any tally stays inside the bounded search that decrypts it.`}
+              >
+                <Trans>Largest possible tally per field</Trans>
               </Label>
             ),
             value: formatNumber(worst),
             mono: true,
-            hint: `cap ${formatNumber(MAX_POSSIBLE_RESULT)}`,
+            hint: t`cap ${cap}`,
           },
         ]}
       />
@@ -346,23 +420,26 @@ function LimitsPanel({ view }: { view: ProcessView }) {
 }
 
 function ProcessIdPanel({ view }: { view: ProcessView }) {
+  const { t } = useLingui()
   const chain = useChain()
   const parsed = parseProcessId(view.process.id)
   const expected = chain.registry?.pidPrefix
   const prefixHex = `0x${parsed.prefix.toString(16).padStart(8, '0')}`
   return (
     <Panel
-      title='Process id'
-      label='Decoded'
-      description='31 bytes: the organizer’s address, a 4-byte prefix of this registry and chain, and the organizer’s nonce.'
+      title={t`Process id`}
+      label={t`Decoded`}
+      description={t`31 bytes: the organizer’s address, a 4-byte prefix of this registry and chain, and the organizer’s nonce.`}
     >
       <KeyValue
         items={[
-          { label: 'Organizer', value: <Address value={parsed.organizer} />, hint: 'bytes 0–19' },
+          { label: t`Organizer`, value: <Address value={parsed.organizer} />, hint: t`bytes 0–19` },
           {
             label: (
-              <Label help='The last 4 bytes of keccak256(chainId ‖ registry address). The registry refuses ids with another prefix, so an id cannot be replayed on another chain or registry.'>
-                Registry prefix
+              <Label
+                help={t`The last 4 bytes of keccak256(chainId ‖ registry address). The registry refuses ids with another prefix, so an id cannot be replayed on another chain or registry.`}
+              >
+                <Trans>Registry prefix</Trans>
               </Label>
             ),
             value: (
@@ -373,18 +450,20 @@ function ProcessIdPanel({ view }: { view: ProcessView }) {
             ),
             hint:
               expected == null
-                ? 'bytes 20–23'
+                ? t`bytes 20–23`
                 : expected === parsed.prefix
-                  ? 'bytes 20–23, matches this registry'
-                  : 'bytes 20–23, does not match this registry',
+                  ? t`bytes 20–23, matches this registry`
+                  : t`bytes 20–23, does not match this registry`,
           },
           {
             label: (
-              <Label help='How many processes the organizer had created on this registry before this one.'>Nonce</Label>
+              <Label help={t`How many processes the organizer had created on this registry before this one.`}>
+                <Trans>Nonce</Trans>
+              </Label>
             ),
             value: formatNumber(parsed.nonce),
             mono: true,
-            hint: 'bytes 24–30',
+            hint: t`bytes 24–30`,
           },
         ]}
       />
@@ -393,30 +472,36 @@ function ProcessIdPanel({ view }: { view: ProcessView }) {
 }
 
 function MetadataPanel({ uri, numFields }: { uri: string; numFields: number }) {
+  const { t } = useLingui()
   const doc = useJsonDocument(fetchableUri(uri))
   const title = metadataTitle(doc.data)
   const description = metadataDescription(doc.data)
   const choices = metadataChoices(doc.data, numFields)
+  // The failure as it came (an HTTP status, a parse error), inside a translated sentence.
+  const detail = doc.error instanceof Error ? doc.error.message : String(doc.error)
   return (
     <Panel
-      title='Metadata'
-      label='Published by the organizer'
-      description='The registry stores only this URI. The document (title, questions, options) is not verified on-chain; read it as the organizer’s description.'
+      title={t`Metadata`}
+      label={t`Published by the organizer`}
+      description={t`The registry stores only this URI. The document (title, questions, options) is not verified on-chain; read it as the organizer’s description.`}
     >
-      <KeyValue items={[{ label: 'Metadata URI', value: <UriLink uri={uri} /> }]} />
+      <KeyValue items={[{ label: t`Metadata URI`, value: <UriLink uri={uri} /> }]} />
       <div className='mt-3' data-testid='process-metadata'>
         {!uri ? (
-          <p className='text-[13px] text-ash'>This process has no metadata document.</p>
+          <p className='text-[13px] text-ash'>
+            <Trans>This process has no metadata document.</Trans>
+          </p>
         ) : !fetchableUri(uri) ? (
           <p className='text-[13px] text-ash'>
-            A browser cannot fetch this URI (only http, https and ipfs are read), so the explorer does not show it.
+            <Trans>
+              A browser cannot fetch this URI (only http, https and ipfs are read), so the explorer does not show it.
+            </Trans>
           </p>
         ) : doc.isLoading ? (
           <SkeletonText lines={3} />
         ) : doc.error ? (
-          <Callout tone='warn' title='Could not read the metadata'>
-            {doc.error instanceof Error ? doc.error.message : String(doc.error)}. It may be offline, block cross-origin
-            requests, or not be JSON.
+          <Callout tone='warn' title={t`Could not read the metadata`}>
+            <Trans>{detail}. It may be offline, block cross-origin requests, or not be JSON.</Trans>
           </Callout>
         ) : doc.data !== undefined ? (
           <div className='flex flex-col gap-3'>
@@ -424,16 +509,21 @@ function MetadataPanel({ uri, numFields }: { uri: string; numFields: number }) {
             {description ? <p className='text-[13px] leading-relaxed text-ash'>{description}</p> : null}
             {choices ? (
               <div className='flex flex-wrap gap-2'>
-                {choices.map((c, i) => (
-                  <Badge key={i}>
-                    field {i + 1}: {c}
-                  </Badge>
-                ))}
+                {choices.map((choice, i) => {
+                  const position = i + 1
+                  return (
+                    <Badge key={i}>
+                      <Trans>
+                        field {position}: {choice}
+                      </Trans>
+                    </Badge>
+                  )
+                })}
               </div>
             ) : null}
             <details className='rounded-sm border border-charcoal'>
               <summary className='cursor-pointer px-3 py-2 text-[13px] text-pewter hover:text-ghost'>
-                The document as JSON
+                <Trans>The document as JSON</Trans>
               </summary>
               <pre className='max-h-80 overflow-auto border-t border-charcoal p-3 text-[11px] leading-relaxed text-silver scroll-slim'>
                 {toJson(doc.data)}

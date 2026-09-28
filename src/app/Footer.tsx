@@ -1,3 +1,4 @@
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import { useRuntimeConfig } from '~config/config-context'
 import { Address, PageContainer } from '~kit'
@@ -8,6 +9,7 @@ const VERSION = import.meta.env.VITE_BUILD_VERSION || 'dev'
 
 /** Deployment identity, source links and the route to the `/kit` showcase. */
 export function Footer() {
+  const { t } = useLingui()
   const config = useRuntimeConfig()
   return (
     <footer className='mt-16 border-t border-charcoal py-6'>
@@ -18,17 +20,19 @@ export function Footer() {
           </span>
           <span aria-hidden='true'>·</span>
           <span className='inline-flex items-center gap-1'>
-            registry <Address value={config.registryAddress} copy={false} />
+            <Trans>registry</Trans> <Address value={config.registryAddress} copy={false} />
           </span>
           <span aria-hidden='true'>·</span>
-          <span>read-only, straight from the chain</span>
+          <span>
+            <Trans>read-only, straight from the chain</Trans>
+          </span>
         </div>
-        <nav aria-label='Footer' className='flex flex-wrap items-center gap-4 text-[12px]'>
+        <nav aria-label={t`Footer`} className='flex flex-wrap items-center gap-4 text-[12px]'>
           <Link to={paths.learn()} className={LINK}>
-            How it works
+            <Trans>How it works</Trans>
           </Link>
           <Link to={paths.contracts()} className={LINK}>
-            Verify the deployment
+            <Trans>Verify the deployment</Trans>
           </Link>
           <a
             href='https://github.com/vocdoni/davinci-explorer'
@@ -36,10 +40,10 @@ export function Footer() {
             rel='noreferrer noopener'
             className={LINK}
           >
-            Source
+            <Trans>Source</Trans>
           </a>
           <Link to={paths.kit()} className={LINK}>
-            Design kit
+            <Trans>Design kit</Trans>
           </Link>
         </nav>
       </PageContainer>

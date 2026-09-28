@@ -2,7 +2,10 @@
 // the document is whatever the organizer published. Vocdoni clients write
 // `{ title, description, questions: [{ title, choices: [{ title, value }] }] }`
 // with multi-language strings (`{ default: "…", en: "…" }`); anything else is
-// shown raw.
+// shown raw. The organizer's text is content, not interface: it is shown in
+// the visitor's language when the document carries it, never translated here.
+
+import { i18n } from '@lingui/core'
 
 type Json = unknown
 
@@ -10,13 +13,23 @@ function isObject(v: Json): v is Record<string, Json> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
-/** A plain or multi-language string: `"x"`, `{ default: "x" }`, or the first language. */
-export function localized(v: Json): string | null {
-  if (typeof v === 'string') return v.trim() || null
+const text = (v: Json): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
+
+/**
+ * A plain or multi-language string: `"x"`, or from `{ default, en, es, … }` the
+ * active language, else `default`, else the first language with text.
+ */
+export function localized(v: Json, locale: string = i18n.locale): string | null {
+  if (typeof v === 'string') return text(v)
   if (!isObject(v)) return null
-  if (typeof v.default === 'string' && v.default.trim()) return v.default.trim()
-  for (const value of Object.values(v)) if (typeof value === 'string' && value.trim()) return value.trim()
-  return null
+  return (
+    (locale ? text(v[locale]) : null) ??
+    text(v.default) ??
+    Object.values(v)
+      .map(text)
+      .find((s) => s != null) ??
+    null
+  )
 }
 
 export function metadataTitle(doc: Json): string | null {

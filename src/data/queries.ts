@@ -3,6 +3,7 @@
 // the persisted store.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { t } from '@lingui/core/macro'
 import { useQueries, useQuery, useQueryClient, type QueryClient, type UseQueryResult } from '@tanstack/react-query'
 import { useRuntimeConfig } from '~config/config-context'
 import { onchainRoots } from '~indexer/selectors'
@@ -168,7 +169,7 @@ export function useVoteInclusion(pid: string | undefined, voteId: bigint | null)
         if (cancelled) return
         const job = blobJob(storeRef.current, pid, i)
         if (!job) {
-          errors.push(`#${i}: the settlement transaction could not be read from the RPC`)
+          errors.push(t`#${i}: the settlement transaction could not be read from the RPC`)
           if (!cancelled) setResult({ state: 'searching', transitionIndex: null, checked, total, errors: [...errors] })
           continue
         }

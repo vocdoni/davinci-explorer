@@ -343,6 +343,45 @@ const SPECS: Spec[] = [
   },
 ]
 
+// The demo organizers publish their metadata in the explorer's three
+// languages, as a real organizer may (Vocdoni metadata strings are
+// `{ default, <lang>: … }`). Organizer text is content, not interface, so it
+// lives in the documents and never in the explorer's catalogs.
+const TITLES: Record<string, { es: string; ca: string }> = {
+  'Board election 2026': { es: 'Elección de la junta directiva 2026', ca: 'Elecció de la junta directiva 2026' },
+  'Budget allocation': { es: 'Asignación del presupuesto', ca: 'Assignació del pressupost' },
+  'Statute reform': { es: 'Reforma de los estatutos', ca: 'Reforma dels estatuts' },
+  'Community fund round': { es: 'Ronda del fondo comunitario', ca: 'Ronda del fons comunitari' },
+  'Park renovation poll': { es: 'Consulta sobre la renovación del parque', ca: 'Consulta sobre la renovació del parc' },
+  'Union ballot': { es: 'Votación sindical', ca: 'Votació sindical' },
+  'Next season schedule': { es: 'Calendario de la próxima temporada', ca: 'Calendari de la propera temporada' },
+  'Logo contest': { es: 'Concurso de logotipos', ca: 'Concurs de logotips' },
+  'Annual assembly minutes': { es: 'Acta de la asamblea anual', ca: "Acta de l'assemblea anual" },
+  'Tooling survey': { es: 'Encuesta sobre herramientas', ca: 'Enquesta sobre eines' },
+}
+
+/** A process's metadata document, in English (the default), Spanish and Catalan. */
+function metadataDocument(title: string, numFields: number) {
+  const tr = TITLES[title] ?? { es: title, ca: title }
+  return {
+    title: { default: title, es: tr.es, ca: tr.ca },
+    description: {
+      default: `${title}: a synthetic process of the demo network.`,
+      es: `${tr.es}: un proceso sintético de la red de demostración.`,
+      ca: `${tr.ca}: un procés sintètic de la xarxa de demostració.`,
+    },
+    questions: [
+      {
+        title: { default: title, es: tr.es, ca: tr.ca },
+        choices: Array.from({ length: numFields }, (_, i) => ({
+          title: { default: `Option ${i + 1}`, es: `Opción ${i + 1}`, ca: `Opció ${i + 1}` },
+          value: i,
+        })),
+      },
+    ],
+  }
+}
+
 const ORGANIZERS: Address[] = [
   '0x42fc20654efd78c6887ff0bd1cc50c9ec1dab589',
   '0x7e5f4552091a69125d5dfcb7b8c2659029395bdf',
@@ -788,16 +827,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
     }
 
     const metadataURI = `https://metadata.example.org/${pid}.json`
-    metadata.set(metadataURI, {
-      title: { default: spec.title },
-      description: { default: `${spec.title}: a synthetic process of the demo network.` },
-      questions: [
-        {
-          title: { default: spec.title },
-          choices: Array.from({ length: nf }, (_, i) => ({ title: { default: `Option ${i + 1}` }, value: i })),
-        },
-      ],
-    })
+    metadata.set(metadataURI, metadataDocument(spec.title, nf))
 
     states.set(pid, {
       status,

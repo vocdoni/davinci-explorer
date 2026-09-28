@@ -1,4 +1,5 @@
 import { useRef, type ReactNode } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import {
   flexRender,
   getCoreRowModel,
@@ -68,6 +69,7 @@ export function DataTable<T>({
   stickyHeader = true,
   className,
 }: DataTableProps<T>) {
+  const { t } = useLingui()
   const table = useReactTable({
     data,
     columns,
@@ -111,7 +113,7 @@ export function DataTable<T>({
     return (
       <div className={cn('w-full', className)}>
         <HeaderRow headers={headers} sticky={false} onSort={undefined} />
-        {empty ?? <EmptyState title='Nothing here yet' description='No rows matched this view.' />}
+        {empty ?? <EmptyState title={t`Nothing here yet`} description={t`No rows matched this view.`} />}
       </div>
     )
   }
@@ -145,7 +147,8 @@ export function DataTable<T>({
                   title={meta?.headerTooltip}
                   style={{ width: meta?.width }}
                   className={cn(
-                    'label-caps border-b border-charcoal px-4 py-2.5 text-[10px] whitespace-nowrap text-pewter',
+                    'label-caps border-b border-charcoal px-4 py-2.5 text-[10px] text-pewter',
+                    meta?.headerWrap ? 'align-bottom' : 'whitespace-nowrap',
                     ALIGN[align],
                     sortable && 'cursor-pointer select-none hover:text-ghost'
                   )}

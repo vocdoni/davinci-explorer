@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { useLingui } from '@lingui/react/macro'
+import { formatNumber } from '~lib/format'
 import { cn } from '~lib/cn'
 
 export interface ProgressBarProps {
@@ -36,6 +38,7 @@ export function ProgressBar({
   size = 'md',
   className,
 }: ProgressBarProps) {
+  const { t } = useLingui()
   const filled = pct(value, total)
   const mark = threshold != null ? pct(threshold, total) : null
   const reached = threshold == null || value >= threshold
@@ -45,8 +48,8 @@ export function ProgressBar({
         <div className='mb-1.5 flex items-baseline justify-between gap-2 text-[11px]'>
           <span className='text-pewter'>{label}</span>
           <span className={cn('font-mono tnum', reached ? 'text-emerald' : 'text-silver')}>
-            {value}
-            <span className='text-ash'> / {total}</span>
+            {formatNumber(value)}
+            <span className='text-ash'> / {formatNumber(total)}</span>
             {threshold != null ? <span className='text-ash'> · t={threshold}</span> : null}
           </span>
         </div>
@@ -65,7 +68,7 @@ export function ProgressBar({
         {mark != null ? (
           <div
             aria-hidden='true'
-            title={`threshold ${threshold}`}
+            title={t`threshold ${threshold}`}
             className='absolute inset-y-[-2px] w-px bg-pewter'
             style={{ left: `${mark}%` }}
           />

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { t } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Button, Pagination } from '~kit'
 import { beToBigInt } from '~protocol/bytes'
 import { formatVoteId } from '~protocol/blob'
@@ -10,6 +12,7 @@ import { cellBytes, describeCell, formatSlotKey, sectionSpans, type CellCounts, 
 
 const PAGE = 32
 
+/** What the cell's bytes say, read as the kind of cell it is. Runs while rendering. */
 function reading(info: CellInfo | null, bytes: Uint8Array): string {
   if (!info) return ''
   const v = beToBigInt(bytes)
@@ -22,9 +25,9 @@ function reading(info: CellInfo | null, bytes: Uint8Array): string {
     case 'slot-key':
       return formatSlotKey(v)
     case 'padding':
-      return v === 0n ? '0' : 'not zero'
+      return v === 0n ? '0' : t`not zero`
     default:
-      return (bytes[0]! & 0x40) !== 0 ? 'point, x odd' : 'point, x even'
+      return (bytes[0]! & 0x40) !== 0 ? t`point, x odd` : t`point, x even`
   }
 }
 
@@ -34,6 +37,7 @@ function reading(info: CellInfo | null, bytes: Uint8Array): string {
  * unlabelled.
  */
 export function BlobCellView({ blobs, counts }: { blobs: Uint8Array[]; counts: CellCounts | null }) {
+  const { i18n } = useLingui()
   const total = blobs.length * CELLS_PER_BLOB
   const pageCount = Math.max(1, Math.ceil(total / PAGE))
   const [page, setPage] = useState(0)
@@ -50,11 +54,13 @@ export function BlobCellView({ blobs, counts }: { blobs: Uint8Array[]; counts: C
     <div className='flex flex-col gap-3' data-testid='blob-cell-view'>
       {spans.length ? (
         <div className='flex flex-wrap items-center gap-2'>
-          <span className='text-[11px] text-ash'>Jump to</span>
+          <span className='text-[11px] text-ash'>
+            <Trans>Jump to</Trans>
+          </span>
           {spans.map((s) => (
             <Button key={s.section} size='sm' variant='secondary' onClick={() => setPage(Math.floor(s.start / PAGE))}>
               <span className={cn('h-2 w-2 rounded-full', SECTION_STYLE[s.section].swatch)} />
-              {SECTION_STYLE[s.section].label}
+              {i18n._(SECTION_STYLE[s.section].label)}
               <span className='font-mono text-ash tnum'>@{formatNumber(s.start)}</span>
             </Button>
           ))}
@@ -65,16 +71,16 @@ export function BlobCellView({ blobs, counts }: { blobs: Uint8Array[]; counts: C
           <thead>
             <tr className='label-caps text-[10px] text-pewter'>
               <th scope='col' className='w-20 border-b border-charcoal px-2 py-1.5 text-right'>
-                Cell
+                <Trans>Cell</Trans>
               </th>
               <th scope='col' className='w-24 border-b border-charcoal px-2 py-1.5 text-left'>
-                Blob · pos
+                <Trans>Blob · pos</Trans>
               </th>
               <th scope='col' className='border-b border-charcoal px-2 py-1.5 text-left'>
-                Holds
+                <Trans>Holds</Trans>
               </th>
               <th scope='col' className='border-b border-charcoal px-2 py-1.5 text-left'>
-                32 bytes, big-endian
+                <Trans>32 bytes, big-endian</Trans>
               </th>
             </tr>
           </thead>
@@ -90,7 +96,7 @@ export function BlobCellView({ blobs, counts }: { blobs: Uint8Array[]; counts: C
                     {info ? (
                       <span className={cn('h-2 w-2 shrink-0 rounded-full', SECTION_STYLE[info.section].swatch)} />
                     ) : null}
-                    {info?.label ?? 'Cell'}
+                    {info?.label ?? <Trans>Cell</Trans>}
                   </span>
                   <span className='block font-mono text-[11px] text-ash'>{reading(info, bytes)}</span>
                 </td>

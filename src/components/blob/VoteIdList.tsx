@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import { EmptyState, Input, Pagination } from '~kit'
 import { formatVoteId } from '~protocol/blob'
@@ -8,6 +9,7 @@ const PAGE = 60
 
 /** The vote ids a transition inserted, paged, each linking to its lookup. */
 export function VoteIdList({ processId, voteIds }: { processId: string; voteIds: bigint[] }) {
+  const { t } = useLingui()
   const [page, setPage] = useState(0)
   const [filter, setFilter] = useState('')
   const q = filter.trim().toLowerCase()
@@ -21,7 +23,7 @@ export function VoteIdList({ processId, voteIds }: { processId: string; voteIds:
       <Input
         size='sm'
         mono
-        label='Find a vote id in this transition'
+        label={t`Find a vote id in this transition`}
         placeholder='0x8…'
         value={filter}
         onChange={(e) => {
@@ -33,9 +35,9 @@ export function VoteIdList({ processId, voteIds }: { processId: string; voteIds:
       {shown.length === 0 ? (
         <EmptyState
           compact
-          title={ids.length === 0 ? 'No vote ids' : 'No match'}
+          title={ids.length === 0 ? t`No vote ids` : t`No match`}
           description={
-            ids.length === 0 ? 'This batch inserted no vote id.' : 'No vote id of this transition contains that text.'
+            ids.length === 0 ? t`This batch inserted no vote id.` : t`No vote id of this transition contains that text.`
           }
         />
       ) : (

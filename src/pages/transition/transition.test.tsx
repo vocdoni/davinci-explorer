@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactElement } from 'react'
@@ -9,6 +9,7 @@ import { createExplorerData } from '~data/create'
 import { DataProvider } from '~data/DataProvider'
 import { ServiceError, type ExplorerServices } from '~data/services'
 import { demoFixture } from '~fixtures/demo'
+import { activateLocale } from '~i18n/i18n'
 import { TooltipProvider } from '~kit'
 import { formatVoteId } from '~protocol/blob'
 import { patterns, paths } from '~routes/paths'
@@ -47,6 +48,8 @@ const pruned: Partial<ExplorerServices> = {
   },
 }
 
+afterEach(() => activateLocale('en'))
+
 describe('TransitionPage', () => {
   it('explains pruned blobs and still shows every check', async () => {
     const { processId, index } = fixture.featured.multiBlob
@@ -67,9 +70,23 @@ describe('TransitionPage', () => {
     expect(screen.getByTestId('transition-summary')).toHaveTextContent(/vote ids/)
   })
 
-  it('says when there is no such transition', async () => {
-    renderAt(paths.transition(fixture.featured.openProcess, 999), <TransitionPage />, patterns.transition)
+  it('says when there is no such transition, in one sentence', async () => {
+    const pid = fixture.featured.openProcess
+    renderAt(paths.transition(pid, 999), <TransitionPage />, patterns.transition)
     expect(await screen.findByText(/No transition found/)).toBeInTheDocument()
+    expect(screen.getByText(`The registry has no transition #999 of process ${pid}.`)).toBeInTheDocument()
+  })
+
+  it('counts with plurals and formats numbers in the active language', async () => {
+    const { processId, index } = fixture.featured.multiBlob
+    await activateLocale('es')
+    renderAt(paths.transition(processId, index), <TransitionPage />, patterns.transition, pruned)
+    expect(await screen.findByRole('heading', { name: `Transición n.º ${index}` })).toBeInTheDocument()
+    const summary = await screen.findByTestId('transition-summary')
+    // 524,288 blob gas and "4 blobs" in English.
+    await waitFor(() => expect(summary).toHaveTextContent(/524\.288/), { timeout: 5_000 })
+    expect(summary).toHaveTextContent(/· 4 blobs ·/)
+    expect(summary).not.toHaveTextContent(/524,288/)
   })
 })
 

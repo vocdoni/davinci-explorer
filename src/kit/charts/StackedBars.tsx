@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { formatNumber } from '~lib/format'
 import { bandScale, formatCompact, linearScale, niceTicks, stackMax, stackSeries } from './scale'
 import { CHART_COLORS, seriesColor } from './colors'
 import { ChartFrame, type LegendItem } from './ChartFrame'
@@ -45,6 +47,7 @@ export function StackedBars({
   onBarClick,
   className,
 }: StackedBarsProps) {
+  const { t } = useLingui()
   const { tooltip, show, hide } = useChartTooltip()
   const [hovered, setHovered] = useState<number | null>(null)
 
@@ -61,7 +64,7 @@ export function StackedBars({
       legend={legend}
       loading={loading}
       empty={data.length === 0}
-      emptyLabel='No activity in this range'
+      emptyLabel={t`No activity in this range`}
       tooltip={tooltip}
       className={className}
     >
@@ -76,7 +79,7 @@ export function StackedBars({
         const stride = Math.max(1, Math.ceil((data.length * labelPx) / plotW))
 
         return (
-          <svg width={width} height={height} role='img' aria-label='Stacked activity chart'>
+          <svg width={width} height={height} role='img' aria-label={t`Stacked activity chart`}>
             <g transform={`translate(${PAD.left},${PAD.top})`}>
               {ticks.map((tick) => (
                 <g key={tick}>
@@ -190,12 +193,14 @@ function BarTooltip({
               <span className='h-2 w-2 rounded-[2px]' style={{ background: colors[i] }} />
               {s.label}
             </span>
-            <span className='font-mono tnum text-ghost'>{datum.values[s.key] ?? 0}</span>
+            <span className='font-mono tnum text-ghost'>{formatNumber(datum.values[s.key] ?? 0)}</span>
           </div>
         ))}
         <div className='flex items-center justify-between gap-3 border-t border-charcoal pt-0.5 text-ash'>
-          <span>total</span>
-          <span className='font-mono tnum'>{total}</span>
+          <span>
+            <Trans>total</Trans>
+          </span>
+          <span className='font-mono tnum'>{formatNumber(total)}</span>
         </div>
       </div>
     </div>

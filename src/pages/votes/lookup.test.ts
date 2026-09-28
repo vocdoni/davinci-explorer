@@ -1,5 +1,6 @@
+import { i18n } from '@lingui/core'
 import { describe, expect, it } from 'vitest'
-import { statusStep, validateLookup } from './lookup'
+import { STATUS_INFO, STATUS_STEPS, statusStep, validateLookup } from './lookup'
 
 const PID = '0x42fc20654efd78c6887ff0bd1cc50c9ec1dab589b12878d500000000000001'
 
@@ -37,5 +38,18 @@ describe('statusStep', () => {
   it('orders the happy path and flags errors', () => {
     expect(['pending', 'aggregated', 'processed', 'settled'].map((s) => statusStep(s as never))).toEqual([0, 1, 2, 3])
     expect(statusStep('error')).toBe(-1)
+  })
+})
+
+describe('STATUS_INFO', () => {
+  it('names and explains every status, translated where it is read', () => {
+    expect(STATUS_STEPS.map((s) => i18n._(STATUS_INFO[s].label))).toEqual([
+      'Pending',
+      'Aggregated',
+      'Processed',
+      'Settled',
+    ])
+    expect(i18n._(STATUS_INFO.error.label)).toBe('Error')
+    for (const info of Object.values(STATUS_INFO)) expect(i18n._(info.description)).toMatch(/^[A-Z].+\.$/)
   })
 })

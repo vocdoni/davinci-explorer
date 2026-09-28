@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useNetworkStats } from '~data/hooks'
 import type { DeploymentDetails } from '~data/deployment'
 import type { ChainMeta } from '~indexer/types'
@@ -11,6 +12,7 @@ import { Code } from './parts'
 interface Param {
   id: string
   title: string
+  /** How the value is read: code, never translated. */
   source: string
   value: ReactNode
   what: ReactNode
@@ -19,6 +21,7 @@ interface Param {
 }
 
 export function ParametersPanel({ chain, details }: { chain: ChainMeta; details: DeploymentDetails | undefined }) {
+  const { i18n, t } = useLingui()
   const [full, setFull] = useState(false)
   const stats = useNetworkStats()
   const r = chain.registry
@@ -31,9 +34,10 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
     title: PIN_LABELS[id],
     source: PIN_DETAILS[id].source,
     value: hash(r?.[id]),
-    what: PIN_DETAILS[id].what,
-    why: PIN_DETAILS[id].why,
+    what: i18n._(PIN_DETAILS[id].what),
+    why: i18n._(PIN_DETAILS[id].why),
   })
+  const indexed = formatNumber(stats.processes)
 
   const params: Param[] = [
     pin('batchProgramVK'),
@@ -42,39 +46,39 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
     pin('ballotVKHash'),
     {
       id: 'ziskVerifier',
-      title: 'Proof verifier',
+      title: t`Proof verifier`,
       source: 'registry ziskVerifier()',
       value: r ? <Address value={r.ziskVerifier} chars={6} /> : loading,
-      what: 'The ZisK PLONK verifier contract the registry calls. It is fixed at deployment.',
-      why: 'Every transition and every sequencer-key tally is accepted or refused by this contract, so its code has to be the released one (next row).',
+      what: t`The ZisK PLONK verifier contract the registry calls. It is fixed at deployment.`,
+      why: t`Every transition and every sequencer-key tally is accepted or refused by this contract, so its code has to be the released one (next row).`,
     },
     {
       id: 'ziskVerifierCodeHash',
       title: PIN_LABELS.ziskVerifierCodeHash,
       source: PIN_DETAILS.ziskVerifierCodeHash.source,
       value: r ? hash(r.ziskVerifierCodeHash) : loading,
-      what: PIN_DETAILS.ziskVerifierCodeHash.what,
-      why: PIN_DETAILS.ziskVerifierCodeHash.why,
+      what: i18n._(PIN_DETAILS.ziskVerifierCodeHash.what),
+      why: i18n._(PIN_DETAILS.ziskVerifierCodeHash.why),
     },
     {
       id: 'verifierRootC',
-      title: 'Verifier’s own setup root',
+      title: t`Verifier’s own setup root`,
       source: 'verifier getRootCVadcopFinal()',
       value: details ? hash(details.verifierRootC) : loading,
-      what: 'The setup root compiled into the verifier contract.',
-      why: 'A sequencer refuses to start unless the verifier answers with the pinned root, so the registry’s copy and the verifier’s must agree.',
+      what: t`The setup root compiled into the verifier contract.`,
+      why: t`A sequencer refuses to start unless the verifier answers with the pinned root, so the registry’s copy and the verifier’s must agree.`,
     },
     {
       id: 'chainID',
-      title: 'Chain id',
+      title: t`Chain id`,
       source: 'registry chainID()',
       value: r ? <span className='font-mono tnum text-ghost'>{r.chainID}</span> : loading,
-      what: 'The chain the registry was deployed for, a constructor argument.',
-      why: 'It is folded into every process id through the prefix below, and sequencers refuse to start unless it equals the chain’s own id.',
+      what: t`The chain the registry was deployed for, a constructor argument.`,
+      why: t`It is folded into every process id through the prefix below, and sequencers refuse to start unless it equals the chain’s own id.`,
     },
     {
       id: 'pidPrefix',
-      title: 'Process id prefix',
+      title: t`Process id prefix`,
       source: 'registry pidPrefix()',
       value: r ? (
         <span className='font-mono tnum text-ghost'>0x{r.pidPrefix.toString(16).padStart(8, '0')}</span>
@@ -82,56 +86,56 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
         loading
       ),
       what: (
-        <>
+        <Trans>
           The low 4 bytes of <Code>keccak256(chainID ‖ registry)</Code>.
-        </>
+        </Trans>
       ),
       why: (
-        <>
+        <Trans>
           Every process id carries it in bytes 20 to 23, after the organizer address, so an id from another registry or
           chain reverts with <Code>UnknownProcessIdPrefix</Code>.
-        </>
+        </Trans>
       ),
     },
     {
       id: 'processCount',
-      title: 'Processes created',
+      title: t`Processes created`,
       source: 'registry processCount()',
       value: r ? <span className='font-mono tnum text-ghost'>{formatNumber(r.processCount)}</span> : loading,
-      hint: r ? `${formatNumber(stats.processes)} indexed by this explorer` : null,
-      what: 'How many processes this registry has created.',
-      why: 'The explorer’s own index should reach the same number once its scan has caught up.',
+      hint: r ? t`${indexed} indexed by this explorer` : null,
+      what: t`How many processes this registry has created.`,
+      why: t`The explorer’s own index should reach the same number once its scan has caught up.`,
     },
     {
       id: 'dkgAdapter',
-      title: 'DKG adapter',
+      title: t`DKG adapter`,
       source: 'registry dkgAdapter()',
       value: r ? (
         r.dkgAdapter ? (
           <Address value={r.dkgAdapter} chars={6} />
         ) : (
-          <span className='text-[13px] text-ash'>none</span>
+          <span className='text-[13px] text-ash'>{t({ message: 'none', context: 'no address' })}</span>
         )
       ) : (
         loading
       ),
-      what: 'The registry’s link to davinci-dkg, created by its constructor when a DKG manager was given.',
+      what: t`The registry’s link to davinci-dkg, created by its constructor when a DKG manager was given.`,
       why: (
-        <>
+        <Trans>
           Zero means the DKG key modes are disabled and <Code>newProcess</Code> in a DKG mode reverts{' '}
           <Code>DKGDisabled</Code>. Otherwise it is the only address allowed to submit ciphertexts to the committee for
           these processes.
-        </>
+        </Trans>
       ),
     },
   ]
 
   return (
     <Panel
-      title='Pinned values'
-      label='Registry parameters'
-      description='What the registry was deployed with. None of these can change: a new guest or a new ZisK setup needs a new registry.'
-      actions={<Toggle checked={full} onChange={setFull} label='Full values' />}
+      title={t`Pinned values`}
+      label={t`Registry parameters`}
+      description={t`What the registry was deployed with. None of these can change: a new guest or a new ZisK setup needs a new registry.`}
+      actions={<Toggle checked={full} onChange={setFull} label={t`Full values`} />}
     >
       <ul className='-my-3 divide-y divide-charcoal'>
         {params.map((p) => (
@@ -148,11 +152,15 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
             </div>
             <div className='min-w-0 text-[12px] leading-relaxed text-ash'>
               <p>
-                <span className='text-pewter'>What it is. </span>
+                <span className='text-pewter'>
+                  <Trans>What it is.</Trans>
+                </span>{' '}
                 {p.what}
               </p>
               <p className='mt-1'>
-                <span className='text-pewter'>Why it matters. </span>
+                <span className='text-pewter'>
+                  <Trans>Why it matters.</Trans>
+                </span>{' '}
                 {p.why}
               </p>
             </div>

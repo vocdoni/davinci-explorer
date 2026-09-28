@@ -1,9 +1,10 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, useNavigate } from 'react-router'
 import { Button, buttonClasses, Card, Input } from '~kit'
 import { paths } from '~routes/paths'
 
-function RoleCard({ label, title, children }: { label: string; title: string; children: ReactNode }) {
+function RoleCard({ label, title, children }: { label: ReactNode; title: ReactNode; children: ReactNode }) {
   return (
     <Card className='flex h-full flex-col gap-3'>
       <div>
@@ -19,6 +20,7 @@ const ADDRESS = /^0x[0-9a-fA-F]{40}$/
 
 /** Where to start, by who you are. */
 export function RoleCards() {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const [organizer, setOrganizer] = useState('')
   const trimmed = organizer.trim()
@@ -32,56 +34,62 @@ export function RoleCards() {
 
   return (
     <div className='grid gap-4 md:grid-cols-3' data-testid='role-cards'>
-      <RoleCard label="I'm a voter" title='Check my vote'>
+      <RoleCard label={<Trans>I'm a voter</Trans>} title={<Trans>Check my vote</Trans>}>
         <p className='flex-1 text-[13px] leading-relaxed text-ash'>
-          Your voting app gives you a process id and a vote id. With them the explorer finds the batch whose blob lists
-          your vote id and, when a sequencer is configured, checks your tracker proof against a state root the registry
-          holds.
+          <Trans>
+            Your voting app gives you a process id and a vote id. With them the explorer finds the batch whose blob
+            lists your vote id and, when a sequencer is configured, checks your tracker proof against a state root the
+            registry holds.
+          </Trans>
         </p>
         <div>
           <Link to={paths.votes()} className={buttonClasses('primary', 'md')}>
-            Check my vote
+            <Trans>Check my vote</Trans>
           </Link>
         </div>
       </RoleCard>
 
-      <RoleCard label="I'm an organizer" title='My processes'>
+      <RoleCard label={<Trans>I'm an organizer</Trans>} title={<Trans>My processes</Trans>}>
         <p className='text-[13px] leading-relaxed text-ash'>
-          Follow your processes: ballot rules, census, key, every batch settled and the results. A process id starts
-          with its organizer's address.
+          <Trans>
+            Follow your processes: ballot rules, census, key, every batch settled and the results. A process id starts
+            with its organizer's address.
+          </Trans>
         </p>
         <form onSubmit={submit} className='flex flex-1 flex-col justify-end gap-2' role='search'>
           <Input
-            aria-label='Organizer address'
-            placeholder='Organizer address, 0x…'
+            aria-label={t`Organizer address`}
+            placeholder={t`Organizer address, 0x…`}
             mono
             size='sm'
             value={organizer}
             onChange={(e) => setOrganizer(e.target.value)}
-            error={invalid ? 'An address is 0x followed by 40 hex digits.' : undefined}
+            error={invalid ? t`An address is 0x followed by 40 hex digits.` : undefined}
           />
           <div className='flex flex-wrap gap-2'>
             <Button type='submit' variant='ghost' disabled={!trimmed || invalid}>
-              Show my processes
+              <Trans>Show my processes</Trans>
             </Button>
             <Link to={paths.processes()} className={buttonClasses('subtle', 'md')}>
-              All processes
+              <Trans>All processes</Trans>
             </Link>
           </div>
         </form>
       </RoleCard>
 
-      <RoleCard label="I'm an auditor" title='Verify the deployment'>
+      <RoleCard label={<Trans>I'm an auditor</Trans>} title={<Trans>Verify the deployment</Trans>}>
         <p className='flex-1 text-[13px] leading-relaxed text-ash'>
-          Check which programs the registry accepts proofs from, then every state transition (root continuity, census,
-          blobs) and how each result was proven. Each check comes with how to redo it yourself.
+          <Trans>
+            Check which programs the registry accepts proofs from, then every state transition (root continuity, census,
+            blobs) and how each result was proven. Each check comes with how to redo it yourself.
+          </Trans>
         </p>
         <div className='flex flex-wrap gap-2'>
           <Link to={paths.contracts()} className={buttonClasses('ghost', 'md')}>
-            Contracts and pins
+            <Trans>Contracts and pins</Trans>
           </Link>
           <Link to={paths.learn()} className={buttonClasses('subtle', 'md')}>
-            How DAVINCI works
+            <Trans>How DAVINCI works</Trans>
           </Link>
         </div>
       </RoleCard>

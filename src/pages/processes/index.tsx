@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { plural } from '@lingui/core/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { SortingState } from '@tanstack/react-table'
 import { useNavigate, useSearchParams } from 'react-router'
 import { CensusOriginBadge, Explain, KeyModeBadge, ProcessPhaseBadge, Timestamp } from '~components'
@@ -21,110 +23,15 @@ import {
   type AnyColumnDef,
 } from '~kit'
 import { formatNumber } from '~lib/format'
+import { CENSUS_ORIGIN_INFO, KEY_MODE_INFO } from '~protocol/types'
 import { paths, type ProcessListFilter } from '~routes/paths'
 import { CENSUS_OPTIONS, isFiltered, KEY_MODE_OPTIONS, PHASE_OPTIONS, readProcessFilter } from './filters'
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/
 
-const columns: AnyColumnDef<ProcessRow>[] = [
-  {
-    id: 'id',
-    header: 'Process',
-    accessorKey: 'createdBlock',
-    cell: ({ row }) => <ProcessName id={row.original.id} metadataURI={row.original.metadataURI} />,
-    meta: {
-      width: '280px',
-      headerTooltip: 'Process id: organizer address, registry prefix and nonce. Sorts by creation.',
-    },
-  },
-  {
-    id: 'organizer',
-    header: 'Organizer',
-    accessorKey: 'organizer',
-    cell: ({ row }) => (
-      <Address
-        value={row.original.organizer}
-        to={paths.processes({ organizer: row.original.organizer })}
-        explorer={false}
-      />
-    ),
-    meta: { headerTooltip: 'The account that created the process; click to list only its processes.' },
-  },
-  {
-    id: 'phase',
-    header: 'Phase',
-    accessorKey: 'phase',
-    cell: ({ row }) => <ProcessPhaseBadge phase={row.original.phase} size='sm' />,
-  },
-  {
-    id: 'keyMode',
-    header: 'Key',
-    accessorFn: (r) => r.keyMode ?? '',
-    cell: ({ row }) => (row.original.keyMode ? <KeyModeBadge mode={row.original.keyMode} size='sm' /> : '—'),
-    meta: { headerTooltip: 'Who holds the election key and who can decrypt the tally.' },
-  },
-  {
-    id: 'census',
-    header: 'Census',
-    accessorFn: (r) => r.censusOrigin ?? '',
-    cell: ({ row }) =>
-      row.original.censusOrigin ? <CensusOriginBadge origin={row.original.censusOrigin} size='sm' /> : '—',
-    meta: { headerTooltip: 'Where the list of eligible voters comes from.' },
-  },
-  {
-    id: 'voters',
-    header: 'Voters / overwrites',
-    accessorKey: 'votersCount',
-    cell: ({ row }) => {
-      const r = row.original
-      return (
-        <Tooltip
-          content={r.maxVoters != null ? `at most ${formatNumber(r.maxVoters)} voters` : 'max voters not read yet'}
-        >
-          <span>
-            {formatNumber(r.votersCount)}
-            <span className='text-ash'> / {formatNumber(r.overwrittenVotesCount)}</span>
-          </span>
-        </Tooltip>
-      )
-    },
-    meta: {
-      numeric: true,
-      headerTooltip: 'Distinct voters, and votes that replaced an earlier vote of the same voter.',
-    },
-  },
-  {
-    id: 'start',
-    header: 'Start',
-    accessorFn: (r) => r.startTime ?? 0,
-    cell: ({ row }) => <Timestamp value={row.original.startTime} className='text-[12px]' />,
-    meta: { align: 'right' },
-  },
-  {
-    id: 'end',
-    header: 'End',
-    accessorFn: (r) => r.endTime ?? 0,
-    cell: ({ row }) => <Timestamp value={row.original.endTime} className='text-[12px]' />,
-    meta: { align: 'right', headerTooltip: 'Start time plus duration; ending early shortens the duration.' },
-  },
-  {
-    id: 'results',
-    header: 'Results',
-    accessorFn: (r) => (r.hasResults ? 1 : 0),
-    cell: ({ row }) =>
-      row.original.hasResults ? (
-        <Badge tone='accent' size='sm'>
-          yes
-        </Badge>
-      ) : (
-        <span className='text-ash'>—</span>
-      ),
-    meta: { align: 'center', width: '90px' },
-  },
-]
-
 /** Every process on the registry, filtered and searched through the URL query. */
 export function ProcessesPage() {
+  const { i18n, t } = useLingui()
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const { list, filter } = useMemo(() => readProcessFilter(params), [params])
@@ -143,50 +50,168 @@ export function ProcessesPage() {
   useEffect(() => setOrganizer(list.organizer ?? ''), [list.organizer])
   const organizerInvalid = organizer.trim() !== '' && !ADDRESS.test(organizer.trim())
 
+  // Built here, not at module scope: the headers and tooltips are text.
+  const columns = useMemo<AnyColumnDef<ProcessRow>[]>(
+    () => [
+      {
+        id: 'id',
+        header: t`Process`,
+        accessorKey: 'createdBlock',
+        cell: ({ row }) => <ProcessName id={row.original.id} metadataURI={row.original.metadataURI} />,
+        meta: {
+          width: '240px',
+          headerTooltip: t`Process id: organizer address, registry prefix and nonce. Sorts by creation.`,
+        },
+      },
+      {
+        id: 'organizer',
+        header: t`Organizer`,
+        accessorKey: 'organizer',
+        cell: ({ row }) => (
+          <Address
+            value={row.original.organizer}
+            to={paths.processes({ organizer: row.original.organizer })}
+            explorer={false}
+          />
+        ),
+        meta: { headerTooltip: t`The account that created the process; click to list only its processes.` },
+      },
+      {
+        id: 'phase',
+        header: t`Phase`,
+        accessorKey: 'phase',
+        cell: ({ row }) => <ProcessPhaseBadge phase={row.original.phase} size='sm' />,
+      },
+      {
+        id: 'keyMode',
+        header: t`Key`,
+        accessorFn: (r) => r.keyMode ?? '',
+        cell: ({ row }) => (row.original.keyMode ? <KeyModeBadge mode={row.original.keyMode} size='sm' /> : '—'),
+        meta: { headerTooltip: t`Who holds the election key and who can decrypt the tally.` },
+      },
+      {
+        id: 'census',
+        header: t`Census`,
+        accessorFn: (r) => r.censusOrigin ?? '',
+        cell: ({ row }) =>
+          row.original.censusOrigin ? <CensusOriginBadge origin={row.original.censusOrigin} size='sm' /> : '—',
+        meta: { headerTooltip: t`Where the list of eligible voters comes from.` },
+      },
+      {
+        id: 'voters',
+        header: t`Voters / overwrites`,
+        accessorKey: 'votersCount',
+        cell: ({ row }) => {
+          const r = row.original
+          const maxVoters = r.maxVoters
+          return (
+            <Tooltip
+              content={
+                maxVoters != null
+                  ? t`at most ${plural(maxVoters, { one: '# voter', other: '# voters' })}`
+                  : t`max voters not read yet`
+              }
+            >
+              <span>
+                {formatNumber(r.votersCount)}
+                <span className='text-ash'> / {formatNumber(r.overwrittenVotesCount)}</span>
+              </span>
+            </Tooltip>
+          )
+        },
+        meta: {
+          numeric: true,
+          headerWrap: true,
+          headerTooltip: t`Distinct voters, and votes that replaced an earlier vote of the same voter.`,
+        },
+      },
+      {
+        id: 'start',
+        header: t`Start`,
+        accessorFn: (r) => r.startTime ?? 0,
+        cell: ({ row }) => <Timestamp value={row.original.startTime} className='text-[12px]' />,
+        meta: { align: 'right' },
+      },
+      {
+        id: 'end',
+        header: t`End`,
+        accessorFn: (r) => r.endTime ?? 0,
+        cell: ({ row }) => <Timestamp value={row.original.endTime} className='text-[12px]' />,
+        meta: { align: 'right', headerTooltip: t`Start time plus duration; ending early shortens the duration.` },
+      },
+      {
+        id: 'results',
+        header: t`Results`,
+        accessorFn: (r) => (r.hasResults ? 1 : 0),
+        cell: ({ row }) =>
+          row.original.hasResults ? (
+            <Badge tone='accent' size='sm'>
+              <Trans>yes</Trans>
+            </Badge>
+          ) : (
+            <span className='text-ash'>—</span>
+          ),
+        meta: { align: 'center', width: '90px' },
+      },
+    ],
+    [t]
+  )
+  const count = rows.length
+  const total = formatNumber(stats.processes)
+
   return (
     <Stack data-testid='page-processes'>
       <SectionHeader
         size='page'
-        label='Processes'
-        title='Every voting process on the registry'
-        description='Each process fixes its ballot rules, census and encryption key at creation. Sequencers then settle batches of votes on it until it ends and its tally is published.'
+        label={t`Processes`}
+        title={t`Every voting process on the registry`}
+        description={t`Each process fixes its ballot rules, census and encryption key at creation. Sequencers then settle batches of votes on it until it ends and its tally is published.`}
       />
 
       <Card className='flex flex-col gap-4'>
         <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))_minmax(0,2fr)]'>
           <Input
-            label='Search'
-            aria-label='Search processes by id or organizer'
-            placeholder='Process id or organizer, or part of one'
+            label={t`Search`}
+            aria-label={t`Search processes by id or organizer`}
+            placeholder={t`Process id or organizer, or part of one`}
             mono
             iconLeft={<SearchIcon size={14} />}
             value={params.get('q') ?? ''}
             onChange={(e) => apply({ q: e.target.value || undefined })}
           />
           <Select
-            label='Phase'
+            label={t`Phase`}
             value={list.status ?? ''}
             onChange={(e) => apply({ status: e.target.value || undefined })}
-            options={[{ value: '', label: 'Any phase' }, ...PHASE_OPTIONS]}
+            options={[
+              { value: '', label: t`Any phase` },
+              ...PHASE_OPTIONS.map((o) => ({ value: o.value, label: i18n._(o.label) })),
+            ]}
           />
           <Select
-            label='Key mode'
+            label={t`Key mode`}
             value={list.keyMode ?? ''}
             onChange={(e) => apply({ keyMode: e.target.value || undefined })}
-            options={[{ value: '', label: 'Any key mode' }, ...KEY_MODE_OPTIONS]}
+            options={[
+              { value: '', label: t`Any key mode` },
+              ...KEY_MODE_OPTIONS.map((value) => ({ value, label: KEY_MODE_INFO[value].label })),
+            ]}
           />
           <Select
-            label='Census'
+            label={t`Census`}
             value={list.census ?? ''}
             onChange={(e) => apply({ census: e.target.value || undefined })}
-            options={[{ value: '', label: 'Any census' }, ...CENSUS_OPTIONS]}
+            options={[
+              { value: '', label: t`Any census` },
+              ...CENSUS_OPTIONS.map((value) => ({ value, label: CENSUS_ORIGIN_INFO[value].label })),
+            ]}
           />
           <Input
-            label='Organizer'
-            placeholder='0x… (whole address)'
+            label={t`Organizer`}
+            placeholder={t`0x… (whole address)`}
             mono
             value={organizer}
-            error={organizerInvalid ? 'An address is 0x followed by 40 hex digits.' : undefined}
+            error={organizerInvalid ? t`An address is 0x followed by 40 hex digits.` : undefined}
             onChange={(e) => {
               const value = e.target.value
               setOrganizer(value)
@@ -198,20 +223,31 @@ export function ProcessesPage() {
         </div>
         <div className='flex flex-wrap items-center justify-between gap-3 text-[13px] text-ash'>
           <p>
-            <span data-testid='process-count' className='font-medium text-silver'>
-              {formatNumber(rows.length)} process{rows.length === 1 ? '' : 'es'}
-            </span>
-            {filtered
-              ? ` match, of ${formatNumber(stats.processes)} on the registry.`
-              : ' on the registry, newest first.'}
+            {filtered ? (
+              <Trans>
+                <span data-testid='process-count' className='font-medium text-silver'>
+                  <Plural value={count} one='# process' other='# processes' />
+                </span>{' '}
+                <Plural value={count} one='matches' other='match' />, of {total} on the registry.
+              </Trans>
+            ) : (
+              <Trans>
+                <span data-testid='process-count' className='font-medium text-silver'>
+                  <Plural value={count} one='# process' other='# processes' />
+                </span>{' '}
+                on the registry, newest first.
+              </Trans>
+            )}
             <Explain className='ml-1'>
-              Phases combine the on-chain status with the clock: a process stays Ready after its end time until someone
-              ends it or publishes results, which is shown as Voting closed.
+              <Trans>
+                Phases combine the on-chain status with the clock: a process stays Ready after its end time until
+                someone ends it or publishes results, which is shown as Voting closed.
+              </Trans>
             </Explain>
           </p>
           {filtered ? (
             <Button size='sm' variant='subtle' onClick={() => navigate(paths.processes(), { replace: true })}>
-              Clear filters
+              <Trans>Clear filters</Trans>
             </Button>
           ) : null}
         </div>
@@ -231,18 +267,18 @@ export function ProcessesPage() {
           empty={
             filtered ? (
               <EmptyState
-                title='No process matches these filters'
-                description='Widen the phase, key mode or census, or clear the search.'
+                title={t`No process matches these filters`}
+                description={t`Widen the phase, key mode or census, or clear the search.`}
                 action={
                   <Button size='sm' variant='ghost' onClick={() => navigate(paths.processes(), { replace: true })}>
-                    Clear filters
+                    <Trans>Clear filters</Trans>
                   </Button>
                 }
               />
             ) : (
               <EmptyState
-                title='No processes yet'
-                description='When an organizer calls newProcess on the registry, the process appears here with its phase, key mode, census and progress.'
+                title={t`No processes yet`}
+                description={t`When an organizer calls newProcess on the registry, the process appears here with its phase, key mode, census and progress.`}
               />
             )
           }

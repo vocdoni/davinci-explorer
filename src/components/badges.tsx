@@ -1,3 +1,6 @@
+import type { MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import { Badge, Tooltip, type BadgeTone } from '~kit'
 import type { ProcessPhase } from '~indexer/selectors'
 import {
@@ -6,31 +9,40 @@ import {
   PROCESS_STATUS_INFO,
   type CensusOriginName,
   type KeyModeName,
+  type ProcessStatusName,
 } from '~protocol/types'
 
-const PHASE: Record<ProcessPhase, { label: string; tone: BadgeTone; dot?: boolean; description: string }> = {
-  loading: { label: 'Loading', tone: 'neutral', description: 'The process state has not been read yet.' },
-  upcoming: { label: 'Upcoming', tone: 'neutral', description: 'Ready, but the voting window has not opened.' },
-  open: { label: 'Open', tone: 'ok', dot: true, description: PROCESS_STATUS_INFO.ready.description },
-  paused: { label: 'Paused', tone: 'warn', description: PROCESS_STATUS_INFO.paused.description },
+/** A phase's badge; `status` borrows the registry status's explanation. */
+const PHASE: Record<
+  ProcessPhase,
+  { label: MessageDescriptor; tone: BadgeTone; dot?: boolean } & (
+    { description: MessageDescriptor } | { status: ProcessStatusName }
+  )
+> = {
+  loading: { label: msg`Loading`, tone: 'neutral', description: msg`The process state has not been read yet.` },
+  upcoming: { label: msg`Upcoming`, tone: 'neutral', description: msg`Ready, but the voting window has not opened.` },
+  open: { label: msg`Open`, tone: 'ok', dot: true, status: 'ready' },
+  paused: { label: msg`Paused`, tone: 'warn', status: 'paused' },
   closed: {
-    label: 'Voting closed',
+    label: msg`Voting closed`,
     tone: 'warn',
-    description: 'The end time has passed. The registry still says Ready until someone ends it or posts results.',
+    description: msg`The end time has passed. The registry still says Ready until someone ends it or posts results.`,
   },
-  ended: { label: 'Ended', tone: 'neutral', description: PROCESS_STATUS_INFO.ended.description },
-  canceled: { label: 'Canceled', tone: 'danger', description: PROCESS_STATUS_INFO.canceled.description },
-  results: { label: 'Results', tone: 'accent', description: PROCESS_STATUS_INFO.results.description },
+  ended: { label: msg`Ended`, tone: 'neutral', status: 'ended' },
+  canceled: { label: msg`Canceled`, tone: 'danger', status: 'canceled' },
+  results: { label: msg`Results`, tone: 'accent', status: 'results' },
 }
 
 /** A process's phase (on-chain status plus the clock), with its meaning on hover. */
 export function ProcessPhaseBadge({ phase, size }: { phase: ProcessPhase; size?: 'sm' | 'md' }) {
+  const { i18n } = useLingui()
   const p = PHASE[phase]
+  const description = 'status' in p ? PROCESS_STATUS_INFO[p.status].description : i18n._(p.description)
   return (
-    <Tooltip content={p.description}>
+    <Tooltip content={description}>
       <span className='inline-flex'>
         <Badge tone={p.tone} dot={p.dot} size={size}>
-          {p.label}
+          {i18n._(p.label)}
         </Badge>
       </span>
     </Tooltip>

@@ -1,4 +1,4 @@
-// Chart maths. Pure, dependency-free and unit-tested — the SVG components
+// Chart maths. Pure and unit-tested — the SVG components
 // below only turn these numbers into elements, so a wrong axis is a failing
 // test rather than a squint at a screenshot.
 
@@ -111,24 +111,9 @@ export function extent(values: number[]): Range {
   return { min, max }
 }
 
-/** 1234 → "1.2k", 5_400_000 → "5.4M". Used on axes and legends. */
-export function formatCompact(value: number): string {
-  const abs = Math.abs(value)
-  if (abs < 1000) return Number.isInteger(value) ? String(value) : value.toFixed(1)
-  if (abs < 1e6) return `${trimZero(value / 1e3)}k`
-  if (abs < 1e9) return `${trimZero(value / 1e6)}M`
-  return `${trimZero(value / 1e9)}B`
-}
-
-function trimZero(value: number): string {
-  const fixed = value.toFixed(1)
-  return fixed.endsWith('.0') ? fixed.slice(0, -2) : fixed
-}
-
-/** 0.4213 → "42.1%". */
-export function formatPercent(fraction: number, digits = 1): string {
-  return `${(fraction * 100).toFixed(digits)}%`
-}
+// Axis and legend numbers follow the active language; they live with the
+// other formatters.
+export { formatCompact, formatPercent } from '~lib/format'
 
 /** Point on a circle. Angles in degrees, 0° at 12 o'clock, clockwise. */
 export function polarPoint(cx: number, cy: number, radius: number, angleDeg: number): { x: number; y: number } {

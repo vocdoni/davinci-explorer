@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { areaPath, extent, linePath, linearScale } from './scale'
 import { CHART_COLORS } from './colors'
 import { cn } from '~lib/cn'
@@ -29,9 +30,10 @@ export function Sparkline({
   area = true,
   showLast = true,
   zeroBaseline = true,
-  ariaLabel = 'trend',
+  ariaLabel,
   className,
 }: SparklineProps) {
+  const { t } = useLingui()
   if (values.length === 0) return <span className={cn('text-[11px] text-ash', className)}>—</span>
 
   const pad = 2
@@ -44,7 +46,13 @@ export function Sparkline({
   const last = points[points.length - 1] as { x: number; y: number }
 
   return (
-    <svg width={width} height={height} role='img' aria-label={ariaLabel} className={cn('overflow-visible', className)}>
+    <svg
+      width={width}
+      height={height}
+      role='img'
+      aria-label={ariaLabel ?? t`trend`}
+      className={cn('overflow-visible', className)}
+    >
       {area ? <path d={areaPath(points, height - pad)} fill={color} opacity={0.12} /> : null}
       <path
         d={linePath(points)}

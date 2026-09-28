@@ -2,12 +2,14 @@
 // → results, each step done, in progress, still ahead, or skipped (a canceled
 // process never ends normally and never gets results).
 
+import { plural, t } from '@lingui/core/macro'
 import type { ProcessView } from '~data/hooks'
 import type { Hex } from '~indexer/types'
 import { formatNumber } from '~lib/format'
 
 export type StepState = 'done' | 'current' | 'upcoming' | 'skipped'
 
+/** `label` and `detail` are in the active language: build the steps while rendering. */
 export interface LifecycleStep {
   id: 'created' | 'start' | 'transitions' | 'end' | 'results'
   label: string
@@ -17,8 +19,6 @@ export interface LifecycleStep {
   detail: string
   tx: Hex | null
 }
-
-const s = (count: number, one: string, many = `${one}s`) => `${formatNumber(count)} ${count === 1 ? one : many}`
 
 export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'transitions'>, now: number | null) {
   const { process: p, row, transitions } = view
@@ -30,27 +30,29 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
   const ballots = transitions.reduce((sum, t) => sum + t.votes, 0)
   const ended = phase === 'ended' || phase === 'results' || phase === 'closed'
   const endChange = [...p.statusChanges].reverse().find((c) => c.to === 'ended')
+  const block = formatNumber(p.createdBlock)
+  const batches = transitions.length
 
   const steps: LifecycleStep[] = [
     {
       id: 'created',
-      label: 'Created',
+      label: t`Created`,
       state: 'done',
       time: row.createdAt,
-      detail: `Block ${formatNumber(p.createdBlock)}`,
+      detail: t`Block ${block}`,
       tx: p.createdTx,
     },
     {
       id: 'start',
-      label: started ? 'Voting opened' : 'Voting opens',
+      label: started ? t`Voting opened` : t`Voting opens`,
       state: canceled && !started ? 'skipped' : started ? 'done' : 'upcoming',
       time: row.startTime,
-      detail: canceled && !started ? 'Canceled before the start' : started ? 'Start time reached' : 'Start time',
+      detail: canceled && !started ? t`Canceled before the start` : started ? t`Start time reached` : t`Start time`,
       tx: null,
     },
     {
       id: 'transitions',
-      label: 'Transitions',
+      label: t`Transitions`,
       state:
         phase === 'open' || phase === 'paused'
           ? 'current'
@@ -61,29 +63,29 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
               : 'upcoming',
       time: last?.timestamp ?? null,
       detail:
-        transitions.length > 0
-          ? `${s(transitions.length, 'batch', 'batches')}, ${s(ballots, 'ballot')}`
+        batches > 0
+          ? t`${plural(batches, { one: '# batch', other: '# batches' })}, ${plural(ballots, { one: '# ballot', other: '# ballots' })}`
           : phase === 'open'
-            ? 'No batch settled yet'
-            : 'No batch settled',
+            ? t`No batch settled yet`
+            : t`No batch settled`,
       tx: last?.tx ?? null,
     },
     {
       id: 'end',
-      label: canceled ? 'Canceled' : ended ? 'Voting closed' : 'Voting closes',
+      label: canceled ? t`Canceled` : ended ? t`Voting closed` : t`Voting closes`,
       state: canceled ? 'skipped' : ended ? 'done' : 'upcoming',
       time: canceled ? (cancel?.timestamp ?? null) : row.endTime,
       detail: canceled
-        ? 'Canceled by the organizer'
+        ? t`Canceled by the organizer`
         : phase === 'closed'
-          ? 'End time passed; the status still reads Ready'
+          ? t`End time passed; the status still reads Ready`
           : phase === 'paused'
-            ? 'Paused by the organizer'
+            ? t`Paused by the organizer`
             : endChange
-              ? 'Ended'
+              ? t`Ended`
               : ended
-                ? 'End time reached'
-                : 'End time',
+                ? t`End time reached`
+                : t`End time`,
       tx: canceled ? (cancel?.tx ?? null) : (endChange?.tx ?? null),
     },
   ]
@@ -93,29 +95,29 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
     results
       ? {
           id: 'results',
-          label: 'Results',
+          label: t`Results`,
           state: 'done',
           time: results.timestamp,
-          detail: 'Tally on-chain',
+          detail: t`Tally on-chain`,
           tx: results.tx,
         }
       : canceled
-        ? { id: 'results', label: 'Results', state: 'skipped', time: null, detail: 'None: canceled', tx: null }
+        ? { id: 'results', label: t`Results`, state: 'skipped', time: null, detail: t`None: canceled`, tx: null }
         : p.decryptionRequest
           ? {
               id: 'results',
-              label: 'Results',
+              label: t`Results`,
               state: 'current',
               time: p.decryptionRequest.timestamp,
-              detail: 'Decryption requested',
+              detail: t`Decryption requested`,
               tx: p.decryptionRequest.tx,
             }
           : {
               id: 'results',
-              label: 'Results',
+              label: t`Results`,
               state: ended ? 'current' : 'upcoming',
               time: null,
-              detail: ended ? 'Pending' : 'After the end',
+              detail: ended ? t`Pending` : t`After the end`,
               tx: null,
             }
   )

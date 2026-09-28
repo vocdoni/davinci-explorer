@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { useMeasuredWidth } from '~hooks/use-measured-width'
 import { cn } from '~lib/cn'
 import { Skeleton } from '../Skeleton'
@@ -79,12 +80,13 @@ export function ChartFrame({
   legend,
   loading = false,
   empty = false,
-  emptyLabel = 'No data yet',
+  emptyLabel,
   emptyDescription,
   tooltip,
   className,
   children,
 }: ChartFrameProps) {
+  const { t } = useLingui()
   const [ref, width] = useMeasuredWidth<HTMLDivElement>()
   const ready = width != null && width > 0 && !loading
 
@@ -92,7 +94,7 @@ export function ChartFrame({
     <div className={cn('w-full', className)}>
       <div ref={ref} data-chart-root className='relative w-full overflow-hidden' style={{ minHeight: height }}>
         {empty ? (
-          <EmptyState compact title={emptyLabel} description={emptyDescription} />
+          <EmptyState compact title={emptyLabel ?? t`No data yet`} description={emptyDescription} />
         ) : ready ? (
           children(width)
         ) : (

@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { defineConfig, type Plugin, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { lingui } from '@lingui/vite-plugin'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 // Dev only: serve public/config.local.json (gitignored) as /config.json when
@@ -45,7 +46,15 @@ function devProxies(): Record<string, ProxyOptions> {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), tsconfigPaths(), localConfig()],
+  // The Lingui macros compile in Babel; the plugin turns each
+  // src/locales/<locale>/messages.po into a lazily loaded module.
+  plugins: [
+    react({ babel: { plugins: ['@lingui/babel-plugin-lingui-macro'] } }),
+    lingui({ failOnCompileError: true }),
+    tailwindcss(),
+    tsconfigPaths(),
+    localConfig(),
+  ],
   build: {
     outDir: 'dist',
     emptyOutDir: true,

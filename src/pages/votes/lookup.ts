@@ -1,5 +1,9 @@
-// Input checks and status words of the vote lookup. Pure, unit-tested.
+// Input checks and status words of the vote lookup. Pure, unit-tested. The
+// errors come out in the active language; the status table is `msg`
+// descriptors, translated where it is rendered (`i18n._`).
 
+import type { MessageDescriptor } from '@lingui/core'
+import { msg, t } from '@lingui/core/macro'
 import { parseVoteId } from '~protocol/blob'
 import type { Hex } from '~protocol/bytes'
 import { U64_MAX, VOTE_ID_MIN } from '~protocol/limits'
@@ -13,25 +17,25 @@ export interface LookupQuery {
   voteError: string | null
 }
 
-/** Validates the two fields; each error is a sentence for the form. */
+/** Validates the two fields; each error is a sentence for the form, in the active language. */
 export function validateLookup(pidInput: string, voteInput: string): LookupQuery {
   const p = pidInput.trim()
   const v = voteInput.trim()
   let pidError: string | null = null
-  if (!p) pidError = 'Enter the process id.'
-  else if (!isProcessId(p)) pidError = 'A process id is 0x followed by 62 hex digits (31 bytes).'
+  if (!p) pidError = t`Enter the process id.`
+  else if (!isProcessId(p)) pidError = t`A process id is 0x followed by 62 hex digits (31 bytes).`
 
   const voteId = v ? parseVoteId(v) : null
   let voteError: string | null = null
-  if (!v) voteError = 'Enter the vote id.'
+  if (!v) voteError = t`Enter the vote id.`
   else if (voteId == null) {
     const n = /^0x[0-9a-fA-F]{1,16}$/.test(v) || /^\d{1,20}$/.test(v) ? BigInt(v) : null
     voteError =
       n != null && n < VOTE_ID_MIN
-        ? 'Vote ids start at 0x8000000000000000 (2^63).'
+        ? t`Vote ids start at 0x8000000000000000 (2^63).`
         : n != null && n > U64_MAX
-          ? 'A vote id fits in 64 bits.'
-          : 'A vote id is 0x followed by 16 hex digits, or its decimal value.'
+          ? t`A vote id fits in 64 bits.`
+          : t`A vote id is 0x followed by 16 hex digits, or its decimal value.`
   }
   return { pid: pidError ? null : normalizeProcessId(p), voteId, pidError, voteError }
 }
@@ -45,18 +49,25 @@ export function statusStep(status: VoteStatus): number {
 }
 
 /** What each status means (https://github.com/vocdoni/davinci-sequencer#http-api). */
-export const STATUS_INFO: Record<VoteStatus, { label: string; description: string }> = {
+export const STATUS_INFO: Record<VoteStatus, { label: MessageDescriptor; description: MessageDescriptor }> = {
   pending: {
-    label: 'Pending',
-    description:
-      'Queued at the sequencer, waiting for a batch. A batch that loses a settlement race puts its votes back here.',
+    label: msg`Pending`,
+    description: msg`Queued at the sequencer, waiting for a batch. A batch that loses a settlement race puts its votes back here.`,
   },
-  aggregated: { label: 'Aggregated', description: 'In a batch that is being proved.' },
-  processed: { label: 'Processed', description: 'The batch proof is checked; the settlement is on its way.' },
-  settled: { label: 'Settled', description: 'On-chain: the batch carrying the vote settled on the registry.' },
+  aggregated: {
+    label: msg`Aggregated`,
+    description: msg`In a batch that is being proved.`,
+  },
+  processed: {
+    label: msg`Processed`,
+    description: msg`The batch proof is checked; the settlement is on its way.`,
+  },
+  settled: {
+    label: msg`Settled`,
+    description: msg`On-chain: the batch carrying the vote settled on the registry.`,
+  },
   error: {
-    label: 'Error',
-    description:
-      'The vote will not settle: a guest check failed, the process closed, the settlement reverted or the prover refused the batch.',
+    label: msg`Error`,
+    description: msg`The vote will not settle: a guest check failed, the process closed, the settlement reverted or the prover refused the batch.`,
   },
 }

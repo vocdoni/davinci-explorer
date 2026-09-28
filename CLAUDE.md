@@ -24,6 +24,8 @@ pnpm typecheck                   # tsc --noEmit
 pnpm lint                        # tsc --noEmit + eslint
 pnpm format                      # prettier --write; CI runs pnpm format:check
 pnpm test                        # vitest
+pnpm i18n:extract                # update src/locales/*/messages.po from the code
+pnpm i18n:check                  # catalogs extracted and es/ca complete (CI runs it)
 pnpm test:e2e:install            # Chromium for Playwright, once
 pnpm test:e2e                    # Playwright on demo mode: builds, serves vite preview on 4173
 pnpm build                       # -> dist/
@@ -38,7 +40,8 @@ deployment in `public/config.json` over its public RPCs (needs the network, off
 by default).
 
 CI (`.github/workflows/explorer.yml`) runs the renderer test, typecheck, lint,
-format, unit tests, build and Playwright, then the nginx image. Branch pushes
+format, unit tests, the translation check, build and Playwright, then the nginx
+image. Branch pushes
 publish `ghcr.io/vocdoni/davinci-explorer` and `vocdoni/davinci-explorer` under
 the branch name; a `vX.Y.Z` tag also moves `:latest`, prereleases don't.
 `.do/davinci-explorer.yaml` builds the DigitalOcean static site from `main`
@@ -59,6 +62,30 @@ the branch name; a `vX.Y.Z` tag also moves `:latest`, prereleases don't.
 - No page branches on demo mode; `useRuntimeConfig().demo` only explains things.
 - Page roots carry `data-testid="page-<name>"` and the Playwright suite relies on
   them; keep them or update the suite in the same change.
+
+## Translations
+
+English, Spanish and Catalan, with Lingui v5; `docs/translations.md` has the
+patterns and examples, `src/locales/GLOSSARY.md` the words.
+
+- Every string a user can see or hear (text, `aria-label`, `title`,
+  `placeholder`, tooltips, empty and error states) goes through a macro:
+  `<Trans>` in JSX, `` t`…` `` from `useLingui()` for attributes and props,
+  `` msg`…` `` for tables at module scope (render with `i18n._`), `plural`
+  for counts. The English is the id: no hand-made keys, `context` only when
+  the same English means two things.
+- Interpolate named variables, never expressions; one whole sentence per
+  message; a paragraph with links or `<code>` is one `<Trans>`.
+- Numbers, dates and relative times go through `~lib/format`, which follows
+  the active language. Hex, addresses, hashes, register, contract, event and
+  error names, commands and code are never translated.
+- Never read translated text at module scope: the `src/protocol` tables
+  (`*_INFO`, `BATCH_REGISTERS`, fail bits, `PIN_LABELS`) translate on read,
+  so read them while rendering.
+- Run `pnpm i18n:extract` and fill `es` and `ca` in the same change, or
+  `pnpm i18n:check` fails in CI.
+- `tests/e2e/i18n.spec.ts` switches languages; extend it when a page is
+  translated. Unit tests run in English.
 
 ## Where things live
 

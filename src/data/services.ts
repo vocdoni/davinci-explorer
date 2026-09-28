@@ -3,6 +3,8 @@
 // metadata documents. The live implementation talks to the beacon API, the
 // configured sequencers and the chain; the demo one serves the fixture.
 
+import { i18n, type MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
 import type { Address, PublicClient } from 'viem'
 import { dkgAppManagerAbi, dkgManagerAbi } from '~contracts/abis'
 import type { Point } from '~protocol/babyjubjub'
@@ -95,7 +97,20 @@ export interface ExplorerServices {
   fetchJson(url: string, signal?: AbortSignal): Promise<unknown>
 }
 
-export class ServiceError extends Error {}
+/**
+ * A failure the pages show as its message. Give it a `msg` descriptor when
+ * the text is for people: the message then translates on every read, so a
+ * cached error follows a language switch. A plain string (a URL and an HTTP
+ * status, a node's own answer) is shown as it is.
+ */
+export class ServiceError extends Error {
+  constructor(message: string | MessageDescriptor) {
+    super(typeof message === 'string' ? message : (message.message ?? message.id))
+    if (typeof message !== 'string') {
+      Object.defineProperty(this, 'message', { configurable: true, get: () => i18n._(message) })
+    }
+  }
+}
 
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err))
 
@@ -144,14 +159,15 @@ export function createLiveServices(config: RuntimeConfig, client: PublicClient |
           attempts.push({ source: 'sequencer', url: s.upstream, error: errorText(err) })
         }
       }
-      if (!beacon && sequencers.length === 0) throw new ServiceError('No beacon API or sequencer is configured')
-      throw new ServiceError(attempts.map((a) => `${a.source} ${a.url}: ${a.error}`).join('; ') || 'No blob source')
+      if (!beacon && sequencers.length === 0) throw new ServiceError(msg`No beacon API or sequencer is configured`)
+      if (attempts.length === 0) throw new ServiceError(msg`No blob source`)
+      throw new ServiceError(attempts.map((a) => `${a.source} ${a.url}: ${a.error}`).join('; '))
     },
 
     async readDkgApplication(process, registry) {
       const dkg = process.state?.dkg
       if (!dkg || !client) return null
-      if (!registry?.dkgManager || !registry.dkgAppManager) throw new ServiceError('The registry has no DKG adapter')
+      if (!registry?.dkgManager || !registry.dkgAppManager) throw new ServiceError(msg`The registry has no DKG adapter`)
       const manager = registry.dkgManager
       const appManager = registry.dkgAppManager
       const epochId = dkg.epochId
@@ -185,7 +201,7 @@ export function createLiveServices(config: RuntimeConfig, client: PublicClient |
       const ciphertexts: DkgCiphertextView[] = []
       if (dkg.resultsRequested && dkg.count > 0) {
         const zeroSkipped = dkg.zeroSkipped
-        if (zeroSkipped == null) throw new ServiceError('The skipped ballot fields are not known yet')
+        if (zeroSkipped == null) throw new ServiceError(msg`The skipped ballot fields are not known yet`)
         const fields = Array.from({ length: process.state!.ballotMode.numFields }, (_, i) => i).filter(
           (i) => ((zeroSkipped >> i) & 1) === 0
         )

@@ -5,6 +5,7 @@
 // maxValueSum means "up to the voter's census weight". groupSize is only
 // checked to be at most numFields; it describes multi-question layouts.
 
+import { plural, t } from '@lingui/core/macro'
 import type { BallotMode } from '~indexer/types'
 import { formatNumber } from '~lib/format'
 
@@ -19,6 +20,7 @@ export type BallotKind =
   | 'unsatisfiable'
   | 'custom'
 
+/** Every text field is in the active language: build it while rendering. */
 export interface BallotModeDescription {
   kind: BallotKind
   /**
@@ -32,62 +34,88 @@ export interface BallotModeDescription {
   rules: string[]
 }
 
-const n = (v: bigint | number) => formatNumber(v)
-const plural = (count: bigint | number, one: string, many = `${one}s`) => (BigInt(count) === 1n ? one : many)
-
-/** "up to 20 points", or "as many points as their census weight" when maxValueSum is 0. */
-function budget(bm: BallotMode, unit: string): string {
-  return bm.maxValueSum > 0n ? `up to ${n(bm.maxValueSum)} ${unit}` : `as many ${unit} as their census weight`
-}
-
-function costText(e: number): string {
-  if (e === 1) return 'the values'
-  if (e === 2) return 'the squares of the values'
-  return `each value raised to the power ${e}`
+/** The bounds on the sum of value^costExponent, one whole sentence per case. */
+function sumRule(bm: BallotMode): string {
+  const exponent = bm.costExponent
+  const most = formatNumber(bm.maxValueSum)
+  const least = formatNumber(bm.minValueSum)
+  const weight = bm.maxValueSum === 0n
+  const floor = bm.minValueSum > 0n
+  if (exponent === 1) {
+    if (weight) {
+      return floor
+        ? t`The fields add up to at most the voter's census weight (maxValueSum is 0) and at least ${least}.`
+        : t`The fields add up to at most the voter's census weight (maxValueSum is 0).`
+    }
+    return floor
+      ? t`The fields add up to at most ${most} and at least ${least}.`
+      : t`The fields add up to at most ${most}.`
+  }
+  if (exponent === 2) {
+    if (weight) {
+      return floor
+        ? t`The sum of the squares of the values is at most the voter's census weight (maxValueSum is 0) and at least ${least}.`
+        : t`The sum of the squares of the values is at most the voter's census weight (maxValueSum is 0).`
+    }
+    return floor
+      ? t`The sum of the squares of the values is at most ${most} and at least ${least}.`
+      : t`The sum of the squares of the values is at most ${most}.`
+  }
+  if (weight) {
+    return floor
+      ? t`The sum of each value raised to the power ${exponent} is at most the voter's census weight (maxValueSum is 0) and at least ${least}.`
+      : t`The sum of each value raised to the power ${exponent} is at most the voter's census weight (maxValueSum is 0).`
+  }
+  return floor
+    ? t`The sum of each value raised to the power ${exponent} is at most ${most} and at least ${least}.`
+    : t`The sum of each value raised to the power ${exponent} is at most ${most}.`
 }
 
 export function describeBallotMode(bm: BallotMode): BallotModeDescription {
-  const k = bm.numFields
-  const options = `${n(k)} ${plural(k, 'option')}`
+  // `fields` and `options` are the same count; the names tell a translator which word goes with it.
+  const fields = bm.numFields
+  const options = bm.numFields
+  const min = formatNumber(bm.minValue)
+  const max = formatNumber(bm.maxValue)
+  const most = formatNumber(bm.maxValueSum)
+  const least = formatNumber(bm.minValueSum)
   const binary = bm.minValue === 0n && bm.maxValue === 1n
   const e = bm.costExponent
   const rules: string[] = []
 
   rules.push(
-    `The ballot has ${n(k)} ${plural(k, 'field')}, usually one per option; each holds a number between ${n(bm.minValue)} and ${n(bm.maxValue)}.`
+    t`The ballot has ${plural(fields, { one: '# field', other: '# fields' })}, usually one per option; each holds a number between ${min} and ${max}.`
   )
-  if (bm.uniqueValues) rules.push('No two fields may carry the same value.')
-  const sumOf = e === 1 ? 'The fields' : `The sum of ${costText(e)}`
-  const upper =
-    bm.maxValueSum > 0n ? `at most ${n(bm.maxValueSum)}` : "at most the voter's census weight (maxValueSum is 0)"
-  const lower = bm.minValueSum > 0n ? ` and at least ${n(bm.minValueSum)}` : ''
-  rules.push(e === 1 ? `${sumOf} add up to ${upper}${lower}.` : `${sumOf} is ${upper}${lower}.`)
+  if (bm.uniqueValues) rules.push(t`No two fields may carry the same value.`)
+  rules.push(sumRule(bm))
   if (bm.groupSize > 1) {
+    const size = formatNumber(bm.groupSize)
     rules.push(
-      `Fields come in groups of ${n(bm.groupSize)} (a multi-question layout); the ballot proof only checks the group size does not exceed the field count.`
+      t`Fields come in groups of ${size} (a multi-question layout); the ballot proof only checks the group size does not exceed the field count.`
     )
   }
   rules.push(
-    "The tally adds each field over every voter's latest ballot: an option's result is the sum of the values voters gave it."
+    t`The tally adds each field over every voter's latest ballot: an option's result is the sum of the values voters gave it.`
   )
 
   // Unique values need at least as many distinct values as fields.
   const distinct = bm.maxValue - bm.minValue + 1n
-  if (bm.uniqueValues && distinct < BigInt(k)) {
+  if (bm.uniqueValues && distinct < BigInt(fields)) {
+    const allowed = Number(distinct)
     return {
       kind: 'unsatisfiable',
-      label: 'Cannot be satisfied',
-      summary: `No ballot can meet these rules: the ${n(k)} fields must all differ, but only ${n(distinct)} ${plural(distinct, 'value is', 'values are')} allowed.`,
+      label: t`Cannot be satisfied`,
+      summary: t`No ballot can meet these rules: the ${plural(fields, { one: '# field', other: '# fields' })} must all differ, but only ${plural(allowed, { one: '# value is', other: '# values are' })} allowed.`,
       rules,
     }
   }
 
   // Common patterns first; anything else is described by its rules.
-  if (bm.uniqueValues && k > 1) {
+  if (bm.uniqueValues && fields > 1) {
     return {
       kind: 'ranking',
-      label: 'Ranking',
-      summary: `Each voter ranks ${options}, giving each a different value from ${n(bm.minValue)} to ${n(bm.maxValue)}.`,
+      label: t`Ranking`,
+      summary: t`Each voter ranks ${plural(options, { one: '# option', other: '# options' })}, giving each a different value from ${min} to ${max}.`,
       rules,
     }
   }
@@ -95,73 +123,85 @@ export function describeBallotMode(bm: BallotMode): BallotModeDescription {
   if (
     e >= 1 &&
     bm.maxValue > 1n &&
-    k > 1 &&
+    fields > 1 &&
     bm.maxValueSum > 0n &&
-    BigInt(k) * bm.maxValue ** BigInt(e) <= bm.maxValueSum
+    BigInt(fields) * bm.maxValue ** BigInt(e) <= bm.maxValueSum
   ) {
     return {
       kind: 'rating',
-      label: 'Rating',
-      summary: `Each voter rates each of ${options} from ${n(bm.minValue)} to ${n(bm.maxValue)}.`,
+      label: t`Rating`,
+      summary: t`Each voter rates each of ${plural(options, { one: '# option', other: '# options' })} from ${min} to ${max}.`,
       rules,
     }
   }
   if (e >= 2 && bm.maxValue > 1n) {
+    const exponent = e
+    const cost = e === 2 ? 'v²' : `v^${e}`
     return {
       kind: 'quadratic',
-      label: e === 2 ? 'Quadratic voting' : `Cost exponent ${e}`,
-      summary: `Each voter spends ${budget(bm, 'credits')} across ${options}; putting v votes on one option costs v${e === 2 ? '²' : `^${e}`} credits, at most ${n(bm.maxValue)} votes per option.`,
+      label: e === 2 ? t`Quadratic voting` : t`Cost exponent ${exponent}`,
+      summary:
+        bm.maxValueSum > 0n
+          ? t`Each voter spends up to ${most} credits across ${plural(options, { one: '# option', other: '# options' })}; putting v votes on one option costs ${cost} credits, at most ${max} votes per option.`
+          : t`Each voter spends as many credits as their census weight across ${plural(options, { one: '# option', other: '# options' })}; putting v votes on one option costs ${cost} credits, at most ${max} votes per option.`,
       rules,
     }
   }
-  if (binary && k > 1 && e >= 1) {
-    const atLeast = bm.minValueSum > 0n ? `at least ${n(bm.minValueSum)} and ` : ''
+  if (binary && fields > 1 && e >= 1) {
     if (bm.maxValueSum === 1n) {
       return {
         kind: 'single-choice',
-        label: 'Single choice',
+        label: t`Single choice`,
         summary:
           bm.minValueSum > 0n
-            ? `Each voter picks exactly one of ${options}.`
-            : `Each voter picks one of ${options}, or none (a blank ballot).`,
+            ? t`Each voter picks exactly one of ${plural(options, { one: '# option', other: '# options' })}.`
+            : t`Each voter picks one of ${plural(options, { one: '# option', other: '# options' })}, or none (a blank ballot).`,
         rules,
       }
     }
-    if (bm.maxValueSum > 1n && bm.maxValueSum < BigInt(k)) {
+    if (bm.maxValueSum > 1n && bm.maxValueSum < BigInt(fields)) {
       return {
         kind: 'multiple-choice',
-        label: 'Multiple choice',
-        summary: `Each voter picks ${atLeast}up to ${n(bm.maxValueSum)} of ${options}.`,
+        label: t`Multiple choice`,
+        summary:
+          bm.minValueSum > 0n
+            ? t`Each voter picks at least ${least} and up to ${most} of ${plural(options, { one: '# option', other: '# options' })}.`
+            : t`Each voter picks up to ${most} of ${plural(options, { one: '# option', other: '# options' })}.`,
         rules,
       }
     }
     return {
       kind: 'approval',
-      label: 'Approval',
+      label: t`Approval`,
       summary:
         bm.maxValueSum === 0n
-          ? `Each voter approves ${atLeast}up to W of ${options}, W being their census weight.`
+          ? bm.minValueSum > 0n
+            ? t`Each voter approves at least ${least} and up to W of ${plural(options, { one: '# option', other: '# options' })}, W being their census weight.`
+            : t`Each voter approves up to W of ${plural(options, { one: '# option', other: '# options' })}, W being their census weight.`
           : bm.minValueSum > 0n
-            ? `Each voter approves at least ${n(bm.minValueSum)} of ${options}.`
-            : `Each voter approves any number of ${options}.`,
+            ? t`Each voter approves at least ${least} of ${plural(options, { one: '# option', other: '# options' })}.`
+            : t`Each voter approves any number of ${plural(options, { one: '# option', other: '# options' })}.`,
       rules,
     }
   }
-  if (e === 1 && bm.maxValue > 1n && k > 1) {
+  if (e === 1 && bm.maxValue > 1n && fields > 1) {
     return {
       kind: 'points',
-      label: 'Points',
-      summary: `Each voter distributes ${budget(bm, 'points')} among ${options}, at most ${n(bm.maxValue)} per option.`,
+      label: t`Points`,
+      summary:
+        bm.maxValueSum > 0n
+          ? t`Each voter distributes up to ${most} points among ${plural(options, { one: '# option', other: '# options' })}, at most ${max} per option.`
+          : t`Each voter distributes as many points as their census weight among ${plural(options, { one: '# option', other: '# options' })}, at most ${max} per option.`,
       rules,
     }
   }
   return {
     kind: 'custom',
-    label: k === 1 ? 'Single field' : 'Custom',
+    label: fields === 1 ? t`Single field` : t`Custom`,
     summary:
-      k === 1
-        ? `Each voter enters one value between ${n(bm.minValue)} and ${n(bm.maxValue)}.`
-        : `Each voter fills ${n(k)} fields with values between ${n(bm.minValue)} and ${n(bm.maxValue)}.`,
+      fields === 1
+        ? t`Each voter enters one value between ${min} and ${max}.`
+        : t`Each voter fills ${plural(fields, { one: '# field', other: '# fields' })} with values between ${min} and ${max}.`,
     rules,
   }
 }

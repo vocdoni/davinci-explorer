@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useRuntimeConfig } from '~config/config-context'
 import { ExternalIcon, Tooltip } from '~kit'
 import { cn } from '~lib/cn'
@@ -6,11 +7,12 @@ import { explorerCodeUrl } from '~lib/explorer'
 
 /** "Source" link to a contract's verified code on the block explorer. */
 export function SourceLink({ address, className }: { address: string; className?: string }) {
+  const { t } = useLingui()
   const { blockExplorerUrl } = useRuntimeConfig()
   const href = explorerCodeUrl(blockExplorerUrl, address)
   if (!href) return null
   return (
-    <Tooltip content='Verified source code on the block explorer'>
+    <Tooltip content={t`Verified source code on the block explorer`}>
       <a
         href={href}
         target='_blank'
@@ -20,7 +22,7 @@ export function SourceLink({ address, className }: { address: string; className?
           className
         )}
       >
-        Source
+        <Trans>Source</Trans>
         <ExternalIcon size={12} />
       </a>
     </Tooltip>

@@ -1,3 +1,6 @@
+import type { MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import { Timestamp, TxLink } from '~components'
 import { useChainNow, type ProcessView } from '~data/hooks'
 import { Card } from '~kit'
@@ -11,25 +14,26 @@ const DOT: Record<StepState, string> = {
   skipped: 'bg-transparent border-charcoal',
 }
 
-const STATE_LABEL: Record<StepState, string> = {
-  done: 'done',
-  current: 'in progress',
-  upcoming: 'not yet',
-  skipped: 'skipped',
+const STATE_LABEL: Record<StepState, MessageDescriptor> = {
+  done: msg`done`,
+  current: msg`in progress`,
+  upcoming: msg`not yet`,
+  skipped: msg`skipped`,
 }
 
 /** created → start → transitions → end → results, as a strip (a list on a phone). */
 export function Lifecycle({ view }: { view: ProcessView }) {
+  const { i18n, t } = useLingui()
   const now = useChainNow()
   const steps = processLifecycle(view, now)
   return (
     <Card data-testid='process-lifecycle' className='px-5 py-4'>
-      <ol className='grid gap-4 sm:grid-cols-5 sm:gap-2' aria-label='Process lifecycle'>
+      <ol className='grid gap-4 sm:grid-cols-5 sm:gap-2' aria-label={t`Process lifecycle`}>
         {steps.map((step, i) => (
           <li key={step.id} className='relative flex items-start gap-3 sm:flex-col sm:gap-2'>
             <div className='relative mt-1 flex items-center sm:mt-0 sm:w-full'>
               <span
-                aria-label={STATE_LABEL[step.state]}
+                aria-label={i18n._(STATE_LABEL[step.state])}
                 role='img'
                 className={cn('z-10 h-3 w-3 shrink-0 rounded-full border-2', DOT[step.state])}
               />

@@ -14,6 +14,8 @@ declare module '@tanstack/react-table' {
     width?: string
     /** Tooltip on the header cell — room for the protocol detail. */
     headerTooltip?: string
+    /** Let a long header break onto two lines rather than widen the column (translations run longer). */
+    headerWrap?: boolean
     /** Plain-text projection of the cell, for a future CSV export. */
     exportValue?: (value: TValue, row: TData) => string
   }

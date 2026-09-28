@@ -7,6 +7,7 @@
 //   pack(acc_c1_0) pack(acc_c2_0) ...              the new accumulator
 //   zero cells to the end of the last blob
 
+import { t } from '@lingui/core/macro'
 import type { TransitionData } from '~protocol/blob'
 import { toHex, type Hex } from '~protocol/bytes'
 import { BYTES_PER_CELL, CELLS_PER_BLOB } from '~protocol/limits'
@@ -36,6 +37,7 @@ export interface CellInfo {
   item: number | null
   /** Ballot field, for point cells. */
   field: number | null
+  /** What the cell holds, in the active language. */
   label: string
 }
 
@@ -57,19 +59,26 @@ export function sectionStarts(c: CellCounts) {
   return { voteIds: 0, updates, accumulator, used }
 }
 
-/** Describes cell `index` of a transition with these counts. */
+/** Describes cell `index` of a transition with these counts; call it while rendering (the label is translated). */
 export function describeCell(c: CellCounts, index: number): CellInfo {
   const s = sectionStarts(c)
   const base = { index, blob: Math.floor(index / CELLS_PER_BLOB), offset: index % CELLS_PER_BLOB }
   if (index === 0) {
-    return { ...base, kind: 'vote-id-count', section: 'vote-ids', item: null, field: null, label: 'Vote id count' }
+    return { ...base, kind: 'vote-id-count', section: 'vote-ids', item: null, field: null, label: t`Vote id count` }
   }
   if (index < s.updates) {
     const k = index - 1
-    return { ...base, kind: 'vote-id', section: 'vote-ids', item: k, field: null, label: `Vote id #${k}` }
+    return { ...base, kind: 'vote-id', section: 'vote-ids', item: k, field: null, label: t`Vote id #${k}` }
   }
   if (index === s.updates) {
-    return { ...base, kind: 'update-count', section: 'updates', item: null, field: null, label: 'Slot update count' }
+    return {
+      ...base,
+      kind: 'update-count',
+      section: 'updates',
+      item: null,
+      field: null,
+      label: t`Slot update count`,
+    }
   }
   if (index < s.accumulator) {
     const stride = 1 + 2 * c.numFields
@@ -77,7 +86,7 @@ export function describeCell(c: CellCounts, index: number): CellInfo {
     const item = Math.floor(rel / stride)
     const pos = rel % stride
     if (pos === 0) {
-      return { ...base, kind: 'slot-key', section: 'updates', item, field: null, label: `Update #${item}: slot key` }
+      return { ...base, kind: 'slot-key', section: 'updates', item, field: null, label: t`Update #${item}: slot key` }
     }
     const field = Math.floor((pos - 1) / 2)
     const half = (pos - 1) % 2 === 0 ? 'c1' : 'c2'
@@ -87,7 +96,7 @@ export function describeCell(c: CellCounts, index: number): CellInfo {
       section: 'updates',
       item,
       field,
-      label: `Update #${item}: field ${field} ${half}`,
+      label: t`Update #${item}: field ${field} ${half}`,
     }
   }
   if (index < s.used) {
@@ -100,10 +109,10 @@ export function describeCell(c: CellCounts, index: number): CellInfo {
       section: 'accumulator',
       item: null,
       field,
-      label: `Accumulator field ${field} ${half}`,
+      label: t`Accumulator field ${field} ${half}`,
     }
   }
-  return { ...base, kind: 'padding', section: 'padding', item: null, field: null, label: 'Padding (zero)' }
+  return { ...base, kind: 'padding', section: 'padding', item: null, field: null, label: t`Padding (zero)` }
 }
 
 export interface SectionSpan {

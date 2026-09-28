@@ -1,3 +1,5 @@
+import { plural } from '@lingui/core/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import { CheckMark, Timestamp, TxLink } from '~components'
 import { Disclosure } from '~components/code'
@@ -8,23 +10,20 @@ import { formatNumber } from '~lib/format'
 import { paths } from '~routes/paths'
 
 /** Where the blob that lists the vote came from, and what ties it to the transaction. */
-function blobOrigin(data: DecodedTransitionBlobs): { text: string; warn: boolean } {
-  if (data.source === 'sequencer' || data.blobs.some((b) => b.binding === 'sequencer')) {
-    return {
-      text: `The blob came from ${data.sourceUrl}, from a sequencer's archive, not checked against the transaction's blob hashes.`,
-      warn: true,
-    }
-  }
-  if (data.blobs.some((b) => b.binding === 'beacon-filter')) {
-    return {
-      text: `The blob came from the beacon API ${data.sourceUrl}, which selected it by the transaction's versioned hash.`,
-      warn: false,
-    }
-  }
-  return {
-    text: `The blob came from the beacon API ${data.sourceUrl}; its KZG commitment hashes to the transaction's versioned hash.`,
-    warn: false,
-  }
+function BlobOrigin({ data }: { data: DecodedTransitionBlobs }) {
+  const { t } = useLingui()
+  const url = data.sourceUrl
+  const sequencer = data.source === 'sequencer' || data.blobs.some((b) => b.binding === 'sequencer')
+  const text = sequencer
+    ? t`The blob came from ${url}, from a sequencer's archive, not checked against the transaction's blob hashes.`
+    : data.blobs.some((b) => b.binding === 'beacon-filter')
+      ? t`The blob came from the beacon API ${url}, which selected it by the transaction's versioned hash.`
+      : t`The blob came from the beacon API ${url}; its KZG commitment hashes to the transaction's versioned hash.`
+  return (
+    <p className={`text-xs break-words ${sequencer ? 'text-amber' : 'text-ash'}`} data-testid='vote-inclusion-source'>
+      {text}
+    </p>
+  )
 }
 
 /**
@@ -43,27 +42,32 @@ export function Inclusion({
   /** Transitions whose settlement transaction the indexer has read. */
   txsKnown: number
 }) {
+  const { t } = useLingui()
   const found = inclusion.transitionIndex != null ? transitions[inclusion.transitionIndex] : undefined
   // The search already fetched these blobs; this reads them back from the cache.
   const blobs = useTransitionBlobs(pid, found?.index, { enabled: found != null })
-  const origin = found && blobs.data ? blobOrigin(blobs.data) : null
+  const known = formatNumber(txsKnown)
+  const settled = formatNumber(transitions.length)
+  const searched = inclusion.total
+  const unread = inclusion.errors.length
 
   return (
     <Panel
-      label='On-chain'
-      title='Inclusion'
-      description="Every settled batch lists the vote ids it inserted in its blob. The explorer reads the process's blobs, newest first, until it finds this one."
+      label={t`On-chain`}
+      title={t`Inclusion`}
+      description={t`Every settled batch lists the vote ids it inserted in its blob. The explorer reads the process's blobs, newest first, until it finds this one.`}
     >
       <div className='flex flex-col gap-3' data-testid='vote-inclusion'>
         {transitions.length === 0 ? (
-          <Callout title='No batch has settled for this process yet'>
-            A vote shows up here once the batch carrying it settles on the registry.
+          <Callout title={t`No batch has settled for this process yet`}>
+            <Trans>A vote shows up here once the batch carrying it settles on the registry.</Trans>
           </Callout>
         ) : inclusion.state === 'idle' ? (
           <div className='flex flex-col gap-2'>
             <p className='text-[13px] text-ash'>
-              Waiting for the indexer to read the settlement transactions ({formatNumber(txsKnown)} of{' '}
-              {formatNumber(transitions.length)}).
+              <Trans>
+                Waiting for the indexer to read the settlement transactions ({known} of {settled}).
+              </Trans>
             </p>
             <SkeletonText lines={2} />
           </div>
@@ -71,35 +75,21 @@ export function Inclusion({
           <ProgressBar
             value={inclusion.checked}
             total={inclusion.total}
-            label='Reading blobs, newest transition first'
+            label={t`Reading blobs, newest transition first`}
             tone='neutral'
           />
         ) : inclusion.state === 'found' && found ? (
           <>
             <p className='flex items-start gap-2 text-[13px] text-silver'>
               <CheckMark state='pass' className='mt-0.5' />
-              <span>
-                Listed in the blob of{' '}
-                <Link to={paths.transition(pid, found.index)} className='text-emerald hover:underline'>
-                  transition #{found.index}
-                </Link>
-                . That batch inserted the vote id into the state tree, the zkVM proof covers the insertion and the
-                registry settled it.
-              </span>
+              <FoundIn pid={pid} index={found.index} />
             </p>
-            {origin ? (
-              <p
-                className={`text-xs break-words ${origin.warn ? 'text-amber' : 'text-ash'}`}
-                data-testid='vote-inclusion-source'
-              >
-                {origin.text}
-              </p>
-            ) : null}
+            {blobs.data ? <BlobOrigin data={blobs.data} /> : null}
             <KeyValue
               columns={2}
               items={[
                 {
-                  label: 'Block',
+                  label: t`Block`,
                   value: (
                     <span className='inline-flex items-center gap-2'>
                       <BlockCell block={found.block} />
@@ -107,33 +97,46 @@ export function Inclusion({
                     </span>
                   ),
                 },
-                { label: 'Transaction', value: found.tx ? <TxLink hash={found.tx} chars={8} /> : '—' },
-                { label: 'Root after', value: <Hash value={found.rootAfter} chars={8} /> },
-                {
-                  label: 'Batch',
-                  value: `${formatNumber(found.votes)} ballots · ${formatNumber(found.nBlobs)} blob${found.nBlobs === 1 ? '' : 's'}`,
-                },
+                { label: t`Transaction`, value: found.tx ? <TxLink hash={found.tx} chars={8} /> : '—' },
+                { label: t`Root after`, value: <Hash value={found.rootAfter} chars={8} /> },
+                { label: t`Batch`, value: <BatchSize votes={found.votes} nBlobs={found.nBlobs} /> },
               ]}
             />
           </>
         ) : inclusion.state === 'not-found' ? (
-          <Callout tone='warn' title={`Not in any of the ${formatNumber(inclusion.total)} settled transitions`}>
-            The vote may still be waiting at a sequencer, or it belongs to another process, or the id has a typo.
-            {inclusion.errors.length > 0
-              ? ` ${inclusion.errors.length} transition${inclusion.errors.length === 1 ? "'s blobs" : "s' blobs"} could not be read, so it may be in one of those.`
-              : null}
+          <Callout
+            tone='warn'
+            title={t`Not in any of the ${plural(searched, {
+              one: '# settled transition',
+              other: '# settled transitions',
+            })}`}
+          >
+            <Trans>
+              The vote may still be waiting at a sequencer, or it belongs to another process, or the id has a typo.
+            </Trans>
+            {unread > 0 ? (
+              <>
+                {' '}
+                <Plural
+                  value={unread}
+                  one='The blobs of # transition could not be read, so it may be in that one.'
+                  other='The blobs of # transitions could not be read, so it may be in one of those.'
+                />
+              </>
+            ) : null}
           </Callout>
         ) : (
-          <Callout tone='danger' title='The blobs could not be read'>
-            None of this process's blobs could be fetched. Beacon nodes prune blobs after about 15 days on Gnosis Chain
-            (16384 epochs of 80 s) and about 18 on Ethereum mainnet; without a sequencer that archived them the vote ids
-            are no longer available here. The tracker proof, when a sequencer serves one, does not need the blobs.
+          <Callout tone='danger' title={t`The blobs could not be read`}>
+            <Trans>
+              None of this process's blobs could be fetched. Beacon nodes prune blobs after about 15 days on Gnosis
+              Chain (16384 epochs of 80 s) and about 18 on Ethereum mainnet; without a sequencer that archived them the
+              vote ids are no longer available here. The tracker proof, when a sequencer serves one, does not need the
+              blobs.
+            </Trans>
           </Callout>
         )}
-        {inclusion.errors.length > 0 ? (
-          <Disclosure
-            summary={`${inclusion.errors.length} transition${inclusion.errors.length === 1 ? '' : 's'} not read`}
-          >
+        {unread > 0 ? (
+          <Disclosure summary={t`${plural(unread, { one: '# transition not read', other: '# transitions not read' })}`}>
             <ul className='flex flex-col gap-1 font-mono text-[11px] break-all text-ash'>
               {inclusion.errors.map((e, i) => (
                 <li key={i}>{e}</li>
@@ -143,5 +146,28 @@ export function Inclusion({
         ) : null}
       </div>
     </Panel>
+  )
+}
+
+function FoundIn({ pid, index }: { pid: string; index: number }) {
+  return (
+    <span>
+      <Trans>
+        Listed in the blob of{' '}
+        <Link to={paths.transition(pid, index)} className='text-emerald hover:underline'>
+          transition #{index}
+        </Link>
+        . That batch inserted the vote id into the state tree, the zkVM proof covers the insertion and the registry
+        settled it.
+      </Trans>
+    </span>
+  )
+}
+
+function BatchSize({ votes, nBlobs }: { votes: number; nBlobs: number }) {
+  return (
+    <Trans>
+      <Plural value={votes} one='# ballot' other='# ballots' /> · <Plural value={nBlobs} one='# blob' other='# blobs' />
+    </Trans>
   )
 }

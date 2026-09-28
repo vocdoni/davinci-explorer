@@ -1,4 +1,7 @@
 import { useEffect, useMemo } from 'react'
+import type { MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, useLocation } from 'react-router'
 import { HashLink } from '~components/HashLink'
 import { useRuntimeConfig } from '~config/config-context'
@@ -13,16 +16,17 @@ import { ReleasePanel } from './ReleasePanel'
 import { VerifyPanel } from './VerifyPanel'
 import { contractRows, publicRpc, releaseVerdict, wiringChecks } from './model'
 
-const SECTIONS = [
-  { id: 'addresses', label: 'Addresses' },
-  { id: 'parameters', label: 'Pinned values' },
-  { id: 'release', label: 'Release check' },
-  { id: 'verify', label: 'Verify it yourself' },
-  { id: 'dkg', label: 'DKG committee' },
-] as const
+const SECTIONS: Array<{ id: string; label: MessageDescriptor }> = [
+  { id: 'addresses', label: msg`Addresses` },
+  { id: 'parameters', label: msg`Pinned values` },
+  { id: 'release', label: msg`Release check` },
+  { id: 'verify', label: msg`Verify it yourself` },
+  { id: 'dkg', label: msg`DKG committee` },
+]
 
 /** The auditor's page: what the deployment is, what it is pinned to, and how to check both. */
 export function ContractsPage() {
+  const { i18n, t } = useLingui()
   const config = useRuntimeConfig()
   const chain = useChain()
   const match = useReleaseCheck()
@@ -33,6 +37,7 @@ export function ContractsPage() {
   const checks = useMemo(() => wiringChecks(chain, details.data, config.chainId), [chain, details.data, config.chainId])
   const verdict = releaseVerdict(match)
   const ready = chain.registry != null
+  const released = match.release?.label
 
   // Deep links (#verify, #dkg) land after the lazy page and its data have rendered.
   useEffect(() => {
@@ -44,40 +49,43 @@ export function ContractsPage() {
     <Stack data-testid='page-contracts'>
       <SectionHeader
         size='page'
-        label='Contracts'
-        title='Contracts and parameters'
-        description='What this deployment is made of and what it is pinned to: the contract addresses, the verification keys every proof is checked against, and the commands to check both without trusting this page.'
+        label={t`Contracts`}
+        title={t`Contracts and parameters`}
+        description={t`What this deployment is made of and what it is pinned to: the contract addresses, the verification keys every proof is checked against, and the commands to check both without trusting this page.`}
       />
 
       <Callout
         tone={verdict.tone}
         title={
-          match.release
-            ? `Pinned to ${match.release.label}`
+          released
+            ? t`Pinned to ${released}`
             : verdict.tone === 'danger'
-              ? 'The pins differ from the known releases'
-              : 'Checking the pins'
+              ? t`The pins differ from the known releases`
+              : t`Checking the pins`
         }
         actions={
           <HashLink id='release' className='text-[12px] whitespace-nowrap text-pewter hover:text-emerald'>
-            Details
+            <Trans>Details</Trans>
           </HashLink>
         }
       >
-        <span data-testid='release-summary'>{verdict.text}</span>{' '}
-        {match.release
-          ? 'Every transition and every sequencer-key tally on this registry is verified against the released guests, the released ZisK setup and the released verifier code.'
-          : null}
+        <span data-testid='release-summary'>{i18n._(verdict.text)}</span>{' '}
+        {match.release ? (
+          <Trans>
+            Every transition and every sequencer-key tally on this registry is verified against the released guests, the
+            released ZisK setup and the released verifier code.
+          </Trans>
+        ) : null}
       </Callout>
 
-      <nav aria-label='On this page' className='flex flex-wrap gap-x-4 gap-y-1 text-[12px]'>
+      <nav aria-label={t`On this page`} className='flex flex-wrap gap-x-4 gap-y-1 text-[12px]'>
         {SECTIONS.map((s) => (
           <HashLink key={s.id} id={s.id} className='text-pewter transition-colors hover:text-emerald'>
-            {s.label}
+            {i18n._(s.label)}
           </HashLink>
         ))}
         <Link to={paths.learn('verify-auditor')} className='text-pewter transition-colors hover:text-emerald'>
-          The auditor’s guide
+          <Trans>The auditor’s guide</Trans>
         </Link>
       </nav>
 

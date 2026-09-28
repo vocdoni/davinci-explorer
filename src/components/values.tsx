@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react'
+import type { MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import { useRuntimeConfig } from '~config/config-context'
 import { nativeSymbol } from '~data/client'
@@ -7,7 +10,7 @@ import { CheckIcon, CloseIcon, CopyButton, ExternalIcon, Hash, InfoIcon, Tooltip
 import type { CheckState } from '~indexer/selectors'
 import { cn } from '~lib/cn'
 import { explorerTxUrl } from '~lib/explorer'
-import { formatTimestamp, formatWei, shortHash, timeAgo } from '~lib/format'
+import { formatNumber, formatTimestamp, formatWei, shortHash, timeAgo } from '~lib/format'
 import { paths } from '~routes/paths'
 
 /** A process id, shortened, linking to its page. */
@@ -20,6 +23,7 @@ export function ProcessIdLink({ id, chars = 8, className }: { id: string; chars?
  * transition or process) plus the block-explorer link.
  */
 export function TxLink({ hash, chars = 6, className }: { hash: string; chars?: number; className?: string }) {
+  const { t } = useLingui()
   const { blockExplorerUrl } = useRuntimeConfig()
   const external = explorerTxUrl(blockExplorerUrl, hash)
   return (
@@ -29,13 +33,13 @@ export function TxLink({ hash, chars = 6, className }: { hash: string; chars?: n
           {shortHash(hash, chars, 4)}
         </Link>
       </Tooltip>
-      <CopyButton value={hash} label='Copy transaction hash' />
+      <CopyButton value={hash} label={t`Copy transaction hash`} />
       {external ? (
         <a
           href={external}
           target='_blank'
           rel='noreferrer noopener'
-          aria-label='View transaction on the block explorer'
+          aria-label={t`View transaction on the block explorer`}
           className='inline-flex shrink-0 items-center rounded-sm p-1 text-ash transition-colors hover:bg-onyx hover:text-ghost'
         >
           <ExternalIcon size={13} />
@@ -45,7 +49,7 @@ export function TxLink({ hash, chars = 6, className }: { hash: string; chars?: n
   )
 }
 
-/** Unix time as UTC, with "5 min ago" relative to the chain head. */
+/** Unix time as UTC, with "5 min. ago" relative to the chain head, both in the active language. */
 export function Timestamp({
   value,
   relative = true,
@@ -79,7 +83,7 @@ export function NativeAmount({
   const { chainId } = useRuntimeConfig()
   if (wei == null) return <span className={cn('text-ash', className)}>—</span>
   return (
-    <Tooltip content={`${wei.toString()} wei`}>
+    <Tooltip content={`${formatNumber(wei)} wei`}>
       <span className={cn('font-mono tnum whitespace-nowrap', className)}>
         {formatWei(wei, digits)} <span className='text-ash'>{nativeSymbol(chainId)}</span>
       </span>
@@ -87,19 +91,20 @@ export function NativeAmount({
   )
 }
 
-const CHECK_STYLE: Record<CheckState, { cls: string; label: string }> = {
-  pass: { cls: 'text-emerald border-emerald/30 bg-emerald/10', label: 'passed' },
-  fail: { cls: 'text-red border-red/30 bg-red/10', label: 'failed' },
-  unknown: { cls: 'text-ash border-charcoal bg-transparent', label: 'not checked yet' },
+const CHECK_STYLE: Record<CheckState, { cls: string; label: MessageDescriptor }> = {
+  pass: { cls: 'text-emerald border-emerald/30 bg-emerald/10', label: msg`passed` },
+  fail: { cls: 'text-red border-red/30 bg-red/10', label: msg`failed` },
+  unknown: { cls: 'text-ash border-charcoal bg-transparent', label: msg`not checked yet` },
 }
 
 /** ✓ / ✗ / … for a verification check. */
 export function CheckMark({ state, className }: { state: CheckState; className?: string }) {
+  const { i18n } = useLingui()
   const s = CHECK_STYLE[state]
   return (
     <span
       role='img'
-      aria-label={s.label}
+      aria-label={i18n._(s.label)}
       className={cn(
         'inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border',
         s.cls,
@@ -119,11 +124,12 @@ export function CheckMark({ state, className }: { state: CheckState; className?:
 
 /** An inline "what is this" affordance: an info glyph with the explanation on hover and focus. */
 export function Explain({ children, className }: { children: ReactNode; className?: string }) {
+  const { t } = useLingui()
   return (
     <Tooltip content={children}>
       <button
         type='button'
-        aria-label='What is this?'
+        aria-label={t`What is this?`}
         className={cn(
           'inline-flex shrink-0 items-center rounded-sm p-0.5 align-middle text-ash hover:text-ghost',
           className

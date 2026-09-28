@@ -10,3 +10,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+/** A Lingui catalog, compiled by @lingui/vite-plugin. */
+declare module '*.po' {
+  import type { Messages } from '@lingui/core'
+  export const messages: Messages
+}

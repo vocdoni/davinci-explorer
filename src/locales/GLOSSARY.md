@@ -1,0 +1,117 @@
+# Translation glossary
+
+The words the explorer uses in Spanish (Spain, neutral) and Catalan (central,
+IEC). Every translation follows this table; change a term here first, then
+in both catalogs. Terms missing from the table: add them when you first
+translate them.
+
+## Style
+
+- Address the reader as `tú` / `tu`, like the English `you`.
+- Sentence case in titles, labels and buttons, as in English.
+- Buttons, links and labels that name an action: infinitive in Spanish
+  (`Copiar`, `Buscar procesos`), imperative in Catalan (`Copia`, `Cerca
+  processos`), as each language's interfaces do. Instructions inside running
+  text use the imperative in both (`Escribe un id…`, `Escriu un id…`).
+- Quotes: «…» in both languages.
+- `#3` in English becomes `n.º 3` (es) and `núm. 3` (ca) for a count in prose.
+- Numbers, dates and relative times are formatted by the code for the
+  active language: never type a separator or a date format into a
+  translation.
+- Never translate: hex values, addresses, hashes, register names
+  (`overall_ok`, `fail_mask`, `occupied_before`, `votersCount`), fail-bit
+  names, contract, function and event names (`ProcessRegistry`,
+  `newProcess`, `CensusUpdated`), environment variables (`RPC_URL`),
+  commands and code, product names (DAVINCI, DAVINCI explorer,
+  davinci-zkvm, davinci-dkg, ZisK, PLONK, Groth16, EIP-4844, KZG, lean-IMT),
+  and `c1` / `c2`.
+
+## Terms
+
+| English | Spanish | Catalan | Note |
+|---|---|---|---|
+| process | proceso | procés | A voting process on the registry. `votación` / `votació` where it reads better ("voting process" → `proceso de votación`). Masculine: `abierto`, `finalizado`. |
+| voting window | periodo de votación | període de votació | |
+| ballot | papeleta | papereta | |
+| ballot rules | reglas de la papeleta | regles de la papereta | |
+| vote | voto | vot | |
+| vote id | id de voto | id de vot | Keep `id`, lowercase. |
+| voter | votante | votant | |
+| new voter | votante nuevo | votant nou | |
+| overwrite | sobrescritura | sobreescriptura | A later vote of the same voter replacing the earlier one. Verb: `sobrescribir` / `sobreescriure`. |
+| silent refresh | actualización silenciosa | actualització silenciosa | |
+| census | censo | cens | |
+| census root | raíz del censo | arrel del cens | |
+| census origin | origen del censo | origen del cens | |
+| Merkle tree | árbol de Merkle | arbre de Merkle | |
+| credential service provider (CSP) | proveedor de credenciales | proveïdor de credencials | Keep `CSP`. |
+| organizer | organizador | organitzador | |
+| sequencer | secuenciador | seqüenciador | |
+| batch | lote | lot | A batch of votes a sequencer proves and settles. |
+| transition, state transition | transición, transición de estado | transició, transició d'estat | |
+| state root | raíz de estado | arrel d'estat | |
+| genesis root | raíz inicial | arrel inicial | |
+| root continuity | continuidad de la raíz | continuïtat de l'arrel | |
+| slot (ballot slot) | casilla | casella | Where a voter's ballot lives in the state tree. |
+| leaf | hoja | fulla | |
+| settle, settlement | liquidar, liquidación | liquidar, liquidació | |
+| tally | recuento | recompte | Only the tally; counts of votes are `cifras` / `xifres`. |
+| results | resultados | resultats | |
+| encryption key | clave de cifrado | clau de xifratge | |
+| election key | clave de la votación | clau de la votació | The process's encryption key. |
+| key mode | modo de clave | mode de clau | |
+| DKG, automatic / organizer-locked | DKG, automática / DKG, con organizador | DKG, automàtica / DKG, amb organitzador | Short: they are badges. |
+| committee | comité | comitè | |
+| threshold | umbral | llindar | A number: "a threshold of them" is `un número de miembros igual al umbral` / `un nombre de membres igual al llindar`. |
+| epoch | época | època | |
+| share (of a key) | parte | part | |
+| decrypt, decryption | descifrar, descifrado | desxifrar, desxifratge | |
+| ciphertext | texto cifrado | text xifrat | |
+| re-encryption | recifrado | rexifratge | |
+| accumulator | acumulador | acumulador | |
+| proof | prueba | prova | |
+| prove, proven | demostrar, demostrado | demostrar, demostrat | |
+| zero-knowledge | conocimiento cero | coneixement zero | |
+| tracker proof | prueba de seguimiento | prova de seguiment | |
+| verifier | verificador | verificador | |
+| verification key, VK | clave de verificación, VK | clau de verificació, VK | |
+| program vk | vk del programa | vk del programa | |
+| guest (zkVM guest) | programa (del zkVM) | programa (del zkVM) | Never `invitado`. |
+| publics, public values | valores públicos, registros públicos | valors públics, registres públics | |
+| register (guest output) | registro | registre | Qualify it when it could be read as the registry. |
+| fail mask, fail bit | máscara de fallos, bit de fallo | màscara d'errors, bit d'error | |
+| commitment (KZG) | compromiso | compromís | |
+| evaluation | evaluación | avaluació | |
+| blob | blob | blob | Unchanged; plural `blobs`. |
+| cell (blob cell) | celda | cel·la | |
+| padding | relleno | farciment | |
+| field (ballot field) | campo | camp | |
+| point (curve point) | punto | punt | |
+| identity (point) | identidad | identitat | |
+| registry | registro | registre | The `ProcessRegistry` contract. |
+| deployment | despliegue | desplegament | |
+| release (davinci-zkvm) | versión | versió | |
+| release pins, pin | valores fijados, fijar | valors fixats, fixar | The values a registry fixes. |
+| chain, on-chain | cadena, en la cadena | cadena, a la cadena | |
+| block, head block | bloque, último bloque | bloc, últim bloc | |
+| chain id | id de cadena | id de cadena | |
+| transaction | transacción | transacció | |
+| fee | comisión | comissió | |
+| address | dirección | adreça | |
+| block explorer | explorador de bloques | explorador de blocs | |
+| explorer (this app) | explorador | explorador | The product name `DAVINCI explorer` stays. |
+| index, indexing | indexar, indexando | indexar, indexant | |
+| event | evento | esdeveniment | |
+| demo network | red de demostración | xarxa de demostració | |
+| phase | fase | fase | |
+| upcoming | programado | programat | Process phase. |
+| open | abierto | obert | |
+| paused | en pausa | en pausa | |
+| voting closed | votación cerrada | votació tancada | |
+| ended | finalizado | finalitzat | |
+| canceled | cancelado | cancel·lat | |
+| ready (registry status) | listo | a punt | The on-chain `READY` status. |
+| check (noun) | comprobación | comprovació | `passed` / `failed`: `superada` / `fallida`. |
+| checked or proven against | frente a | comparat amb, respecte a | Never `contra` in Catalan: it means opposition. |
+| overview | resumen | resum | |
+| learn | aprende | aprèn | Navigation item. |

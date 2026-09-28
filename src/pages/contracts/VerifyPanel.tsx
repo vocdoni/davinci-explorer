@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { CodeBlock } from '~components/CodeBlock'
 import type { ChainMeta } from '~indexer/types'
 import { Panel } from '~kit'
@@ -9,7 +10,10 @@ import { Code, Segmented, SubHeading } from './parts'
 type PinSource = 'chain' | 'release'
 
 export function VerifyPanel({ chain, rpc, match }: { chain: ChainMeta; rpc: string; match: ReleaseMatch }) {
+  const { t } = useLingui()
   const release = match.closest
+  const releaseLabel = release?.label
+  const releaseZisk = release?.zisk
   const [source, setSource] = useState<PinSource>('chain')
   const r = chain.registry
   const pins =
@@ -32,92 +36,126 @@ export function VerifyPanel({ chain, rpc, match }: { chain: ChainMeta; rpc: stri
 
   return (
     <Panel
-      title='Verify it yourself'
-      label='Without trusting this page'
-      description='Everything above is read in your browser from the RPC the explorer is configured with. These commands run the same checks from a terminal, against a build of the source.'
+      title={t`Verify it yourself`}
+      label={t`Without trusting this page`}
+      description={t`Everything above is read in your browser from the RPC the explorer is configured with. These commands run the same checks from a terminal, against a build of the source.`}
     >
       <section aria-labelledby='verify-script' data-testid='verify-script'>
         <div className='flex flex-wrap items-center justify-between gap-3'>
           <SubHeading>
-            <span id='verify-script'>Compare the deployment with a build</span>
+            <span id='verify-script'>
+              <Trans>Compare the deployment with a build</Trans>
+            </span>
           </SubHeading>
           <Segmented<PinSource>
-            label='Pins in the command'
+            label={t`Pins in the command`}
             value={source}
             onChange={setSource}
             options={[
-              { value: 'chain', label: 'Pins from the chain' },
-              ...(release ? [{ value: 'release' as const, label: `Pins of ${release.label}` }] : []),
+              { value: 'chain', label: t`Pins from the chain` },
+              ...(release ? [{ value: 'release' as const, label: t`Pins of ${releaseLabel}` }] : []),
             ]}
           />
         </div>
         <p className='mt-2 text-[13px] leading-relaxed text-ash'>
-          davinci-contracts ships <Code>script/verify_deployment.py</Code>. It needs Python 3, Foundry’s{' '}
-          <Code>cast</Code> and a <Code>forge build</Code> with the repository’s compiler settings, since it reads{' '}
-          <Code>out/</Code>. Pass <Code>--cast</Code> when cast is not at <Code>~/.foundry/bin/cast</Code>.
+          <Trans>
+            davinci-contracts ships <Code>script/verify_deployment.py</Code>. It needs Python 3, Foundry’s{' '}
+            <Code>cast</Code> and a <Code>forge build</Code> with the repository’s compiler settings, since it reads{' '}
+            <Code>out/</Code>. Pass <Code>--cast</Code> when cast is not at <Code>~/.foundry/bin/cast</Code>.
+          </Trans>
         </p>
-        <CodeBlock code={setup} label='Copy the commands' className='mt-3' />
+        <CodeBlock code={setup} label={t`Copy the commands`} className='mt-3' />
         <p className='mt-2 text-[12px] leading-relaxed text-ash'>
-          {source === 'chain'
-            ? 'With the pins the registry holds, the pin checks pass by construction and the run is about the code: it proves the contracts at these addresses are the ones in the repository. Switch to the release pins to also check that the registry holds the released keys.'
-            : `With the pins of ${release?.label}, the run also checks that the registry holds exactly the released keys.`}
+          {source === 'chain' ? (
+            <Trans>
+              With the pins the registry holds, the pin checks pass by construction and the run is about the code: it
+              proves the contracts at these addresses are the ones in the repository. Switch to the release pins to also
+              check that the registry holds the released keys.
+            </Trans>
+          ) : (
+            <Trans>
+              With the pins of {releaseLabel}, the run also checks that the registry holds exactly the released keys.
+            </Trans>
+          )}
         </p>
-        <p className='mt-4 text-[13px] text-silver'>It checks that:</p>
+        <p className='mt-4 text-[13px] text-silver'>
+          <Trans>It checks that:</Trans>
+        </p>
         <ul className='mt-1.5 list-disc space-y-1 pl-5 text-[13px] leading-relaxed text-ash'>
           <li>
-            the runtime code of <Code>ProcessRegistry</Code> and <Code>ZiskVerifier</Code> matches the local build, with
-            immutables masked;
+            <Trans>
+              the runtime code of <Code>ProcessRegistry</Code> and <Code>ZiskVerifier</Code> matches the local build,
+              with immutables masked;
+            </Trans>
           </li>
           <li>
-            the registry’s <Code>batchProgramVK</Code>, <Code>resultsProgramVK</Code>, <Code>rootCVadcopFinal</Code> and{' '}
-            <Code>ballotVKHash</Code> equal the given pins, and so does the verifier’s{' '}
-            <Code>getRootCVadcopFinal()</Code>;
+            <Trans>
+              the registry’s <Code>batchProgramVK</Code>, <Code>resultsProgramVK</Code>, <Code>rootCVadcopFinal</Code>{' '}
+              and <Code>ballotVKHash</Code> equal the given pins, and so does the verifier’s{' '}
+              <Code>getRootCVadcopFinal()</Code>;
+            </Trans>
           </li>
           <li>
-            the registry’s <Code>chainID</Code> equals the RPC’s chain id, and <Code>--chain-id</Code> when given;
+            <Trans>
+              the registry’s <Code>chainID</Code> equals the RPC’s chain id, and <Code>--chain-id</Code> when given;
+            </Trans>
           </li>
           <li>
-            when <Code>dkgAdapter()</Code> is set, the adapter’s code matches the local build and{' '}
-            <Code>adapter.registry()</Code> is the registry.
+            <Trans>
+              when <Code>dkgAdapter()</Code> is set, the adapter’s code matches the local build and{' '}
+              <Code>adapter.registry()</Code> is the registry.
+            </Trans>
           </li>
         </ul>
         <p className='mt-2 text-[12px] text-ash'>
-          Each check prints OK or FAIL, and the exit status is 1 if any fails.
+          <Trans>
+            Each check prints <Code>OK</Code> or <Code>FAIL</Code>, and the exit status is 1 if any fails.
+          </Trans>
         </p>
       </section>
 
       <section className='mt-8' aria-labelledby='verify-cast'>
         <SubHeading>
-          <span id='verify-cast'>Read the values one by one</span>
+          <span id='verify-cast'>
+            <Trans>Read the values one by one</Trans>
+          </span>
         </SubHeading>
         <p className='mt-2 text-[13px] leading-relaxed text-ash'>
-          The same reads this page makes, with <Code>cast</Code>. The last line hashes the verifier’s runtime code and
-          should print the verifier code hash shown under Pinned values.
+          <Trans>
+            The same reads this page makes, with <Code>cast</Code>. The last line hashes the verifier’s runtime code and
+            should print the verifier code hash shown under Pinned values.
+          </Trans>
         </p>
         <CodeBlock
           code={castCommands(rpc, chain.registryAddress, r?.ziskVerifier ?? null)}
-          label='Copy the cast commands'
+          label={t`Copy the cast commands`}
           className='mt-3'
         />
       </section>
 
       <section className='mt-8' aria-labelledby='verify-source'>
         <SubHeading>
-          <span id='verify-source'>Rebuild the pins from source</span>
+          <span id='verify-source'>
+            <Trans>Rebuild the pins from source</Trans>
+          </span>
         </SubHeading>
         <dl className='mt-3 flex flex-col gap-4 text-[13px] leading-relaxed'>
           <div>
-            <dt className='font-medium text-silver'>The two program keys</dt>
+            <dt className='font-medium text-silver'>
+              <Trans>The two program keys</Trans>
+            </dt>
             <dd className='mt-1 text-ash'>
-              In davinci-zkvm, <Code>scripts/build-guests.sh</Code> builds the guest programs. Source paths are
-              remapped, so any checkout builds the same bytes, and CI rebuilds the committed ELFs the same way to check
-              them. <Code>cargo-zisk setup -e &lt;elf&gt; -k &lt;proving-key&gt;</Code> then prints{' '}
-              <Code>Root hash: [w0, w1, w2, w3]</Code> for each ELF when <Code>ZISK_CACHE_DIR</Code> is empty (a warm
-              cache skips the print); the pin is those four 64-bit words as big-endian bytes, concatenated. This needs
-              the ZisK toolchain and its STARK proving key.
+              <Trans>
+                In davinci-zkvm, <Code>scripts/build-guests.sh</Code> builds the guest programs. Source paths are
+                remapped, so any checkout builds the same bytes, and CI rebuilds the committed ELFs the same way to
+                check them. <Code>cargo-zisk setup -e &lt;elf&gt; -k &lt;proving-key&gt;</Code> then prints{' '}
+                <Code>Root hash: [w0, w1, w2, w3]</Code> for each ELF when <Code>ZISK_CACHE_DIR</Code> is empty (a warm
+                cache skips the print); the pin is those four 64-bit words as big-endian bytes, concatenated. This needs
+                the ZisK toolchain and its STARK proving key.
+              </Trans>
               <CodeBlock
                 className='mt-2'
-                label='Copy the build commands'
+                label={t`Copy the build commands`}
                 code={[
                   'git clone https://github.com/vocdoni/davinci-zkvm.git && cd davinci-zkvm',
                   'scripts/build-guests.sh',
@@ -128,41 +166,62 @@ export function VerifyPanel({ chain, rpc, match }: { chain: ChainMeta; rpc: stri
             </dd>
           </div>
           <div>
-            <dt className='font-medium text-silver'>The setup root</dt>
+            <dt className='font-medium text-silver'>
+              <Trans>The setup root</Trans>
+            </dt>
             <dd className='mt-1 text-ash'>
-              <Code>rootCVadcopFinal</Code> belongs to the ZisK snark setup
-              {release ? ` (ZisK ${release.zisk} for ${release.label})` : ''}, not to the guests. The verifier contract
-              returns it from <Code>getRootCVadcopFinal()</Code>, and every PLONK job of a davinci-zkvm prover reports
-              it as <Code>root_c_vadcop_final</Code>.
+              {release ? (
+                <Trans>
+                  <Code>rootCVadcopFinal</Code> belongs to the ZisK snark setup (ZisK {releaseZisk} for {releaseLabel}
+                  ), not to the guests. The verifier contract returns it from <Code>getRootCVadcopFinal()</Code>, and
+                  every PLONK job of a davinci-zkvm prover reports it as <Code>root_c_vadcop_final</Code>.
+                </Trans>
+              ) : (
+                <Trans>
+                  <Code>rootCVadcopFinal</Code> belongs to the ZisK snark setup, not to the guests. The verifier
+                  contract returns it from <Code>getRootCVadcopFinal()</Code>, and every PLONK job of a davinci-zkvm
+                  prover reports it as <Code>root_c_vadcop_final</Code>.
+                </Trans>
+              )}
             </dd>
           </div>
           <div>
-            <dt className='font-medium text-silver'>The verifier code hash</dt>
+            <dt className='font-medium text-silver'>
+              <Trans>The verifier code hash</Trans>
+            </dt>
             <dd className='mt-1 text-ash'>
-              After <Code>forge build</Code> in davinci-contracts, hash the verifier’s <Code>deployedBytecode</Code>. It
-              has no immutables, so the hash equals the one of the deployed code.
+              <Trans>
+                After <Code>forge build</Code> in davinci-contracts, hash the verifier’s <Code>deployedBytecode</Code>.
+                It has no immutables, so the hash equals the one of the deployed code.
+              </Trans>
               <CodeBlock
                 className='mt-2'
-                label='Copy the hash command'
+                label={t`Copy the hash command`}
                 code='cast keccak $(jq -r .deployedBytecode.object out/ZiskVerifier.sol/ZiskVerifier.json)'
               />
             </dd>
           </div>
           <div>
-            <dt className='font-medium text-silver'>The ballot key hash</dt>
+            <dt className='font-medium text-silver'>
+              <Trans>The ballot key hash</Trans>
+            </dt>
             <dd className='mt-1 text-ash'>
-              <Code>ballotVKHash</Code> is the sha256 of the ballot proof verification key’s wire bytes,{' '}
-              <Code>davinci.BallotVKLeaf</Code> in the davinci-zkvm Go SDK. The key the sequencer accepts is the one its
-              SDK embeds, <Code>rust-sdk/assets/ballot_proof_vkey.json</Code>, davinci-circom’s current key.
+              <Trans>
+                <Code>ballotVKHash</Code> is the sha256 of the ballot proof verification key’s wire bytes,{' '}
+                <Code>davinci.BallotVKLeaf</Code> in the davinci-zkvm Go SDK. The key the sequencer accepts is the one
+                its SDK embeds, <Code>rust-sdk/assets/ballot_proof_vkey.json</Code>, davinci-circom’s current key.
+              </Trans>
             </dd>
           </div>
         </dl>
       </section>
 
       <p className='mt-8 border-t border-charcoal pt-4 text-[12px] leading-relaxed text-ash'>
-        Three checks refuse a mismatch outside this page: a sequencer’s boot check (it reads the same pins and the
-        verifier code hash, and will not start on any difference), <Code>davinci_client::verify_registry</Code> for
-        clients, and the script above.
+        <Trans>
+          Three checks refuse a mismatch outside this page: a sequencer’s boot check (it reads the same pins and the
+          verifier code hash, and will not start on any difference), <Code>davinci_client::verify_registry</Code> for
+          clients, and the script above.
+        </Trans>
       </p>
     </Panel>
   )

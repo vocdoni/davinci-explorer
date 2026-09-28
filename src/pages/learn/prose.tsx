@@ -2,22 +2,25 @@
 // code, links into the explorer and the "see it" pointers.
 
 import { Fragment, type ReactNode } from 'react'
+import { Trans } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import { HashLink } from '~components/HashLink'
 import { ChevronRightIcon, ExternalIcon } from '~kit'
 import { cn } from '~lib/cn'
 import { paths } from '~routes/paths'
-import { anchorId } from './topics'
 
 const LINK =
   'text-silver underline decoration-charcoal underline-offset-3 transition-colors hover:text-emerald hover:decoration-emerald'
 
-export function Section({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
-  const anchor = id ?? anchorId(title)
+/**
+ * A section of a topic. `id` is its anchor (`/learn/census#ballot-slots`): English,
+ * the same in every language, and stable, since other pages and links point at it.
+ */
+export function Section({ id, title, children }: { id: string; title: ReactNode; children: ReactNode }) {
   return (
-    <section id={anchor} className='mt-10 scroll-mt-20 first:mt-0'>
+    <section id={id} className='mt-10 scroll-mt-20 first:mt-0'>
       <h2 className='mb-3 text-[18px] font-semibold tracking-tight text-ghost'>
-        <HashLink id={anchor} className='hover:text-emerald'>
+        <HashLink id={id} className='hover:text-emerald'>
           {title}
         </HashLink>
       </h2>
@@ -88,7 +91,9 @@ export function SeeIt({ to, children, hint }: { to: string; children: ReactNode;
       className='group my-4 flex items-center justify-between gap-4 rounded-md border border-charcoal bg-onyx/40 px-4 py-3 transition-colors hover:border-emerald/50'
     >
       <span className='min-w-0'>
-        <span className='label-caps block text-[11px] text-emerald'>See it in the explorer</span>
+        <span className='label-caps block text-[11px] text-emerald'>
+          <Trans>See it in the explorer</Trans>
+        </span>
         <span className='mt-1 block text-[13px] text-silver'>{children}</span>
         {hint ? <span className='mt-0.5 block text-[12px] text-ash'>{hint}</span> : null}
       </span>
@@ -102,7 +107,7 @@ export function Steps({ children }: { children: ReactNode }) {
   return <ol className='my-4 flex flex-col gap-5'>{children}</ol>
 }
 
-export function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+export function Step({ n, title, children }: { n: number; title: ReactNode; children: ReactNode }) {
   return (
     <li className='flex gap-4'>
       <span

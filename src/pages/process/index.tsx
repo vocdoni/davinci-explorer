@@ -1,3 +1,5 @@
+import { plural } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useNavigate, useParams } from 'react-router'
 import { CensusOriginBadge, KeyModeBadge, MissingEntity, ProcessPhaseBadge } from '~components'
 import { useProcess } from '~data/hooks'
@@ -17,6 +19,7 @@ import { VotesTab } from './tabs/VotesTab'
 // Header (phase, lifecycle, counters) plus one tab per aspect; the active tab
 // is the last path segment (/processes/:pid/:tab), so every tab is linkable.
 export function ProcessPage() {
+  const { t } = useLingui()
   const { pid, tab } = useParams()
   const navigate = useNavigate()
   const view = useProcess(pid)
@@ -26,22 +29,29 @@ export function ProcessPage() {
   if (!pid || !view) return <MissingEntity what='process' id={pid} />
   const { process, row, transitions } = view
   const title = metadataTitle(metadata.data)
-  const blobs = transitions.reduce((n, t) => n + t.nBlobs, 0)
+  const blobs = transitions.reduce((n, tr) => n + tr.nBlobs, 0)
+  const ballots = transitions.reduce((n, tr) => n + tr.votes, 0)
+  const short = shortHash(process.id, 8, 6)
+  const maxVoters = row.maxVoters != null ? formatNumber(row.maxVoters) : null
 
   return (
     <Stack data-testid='page-process'>
       <SectionHeader
         size='page'
-        label='Process'
-        title={title ?? `Process ${shortHash(process.id, 8, 6)}`}
+        label={t`Process`}
+        title={title ?? t`Process ${short}`}
         description={
           <span className='flex flex-col gap-1'>
             <span className='inline-flex min-w-0 flex-wrap items-center gap-x-2'>
-              <span className='text-ash'>id</span>
+              <span className='text-ash'>
+                <Trans>id</Trans>
+              </span>
               <Hash value={process.id} chars={14} />
             </span>
             <span className='inline-flex min-w-0 flex-wrap items-center gap-x-2'>
-              <span className='text-ash'>organizer</span>
+              <span className='text-ash'>
+                <Trans>organizer</Trans>
+              </span>
               <Address value={process.organizer} to={paths.processes({ organizer: process.organizer })} />
             </span>
           </span>
@@ -59,41 +69,41 @@ export function ProcessPage() {
 
       <StatRow>
         <StatCell
-          label='Voters'
+          label={t`Voters`}
           value={formatNumber(row.votersCount)}
           mono
-          hint={row.maxVoters != null ? `of at most ${formatNumber(row.maxVoters)}` : undefined}
+          hint={maxVoters != null ? t`of at most ${maxVoters}` : undefined}
         />
         <StatCell
-          label='Overwrites'
+          label={t`Overwrites`}
           value={formatNumber(row.overwrittenVotesCount)}
           mono
-          hint='votes that replaced an earlier one'
+          hint={t`votes that replaced an earlier one`}
         />
         <StatCell
-          label='Transitions'
+          label={t`Transitions`}
           value={formatNumber(transitions.length)}
           mono
-          hint={`${formatNumber(transitions.reduce((n, t) => n + t.votes, 0))} ballots settled`}
+          hint={t`${plural(ballots, { one: '# ballot settled', other: '# ballots settled' })}`}
         />
-        <StatCell label='Blobs' value={formatNumber(blobs)} mono hint='EIP-4844 data blobs published' />
+        <StatCell label={t`Blobs`} value={formatNumber(blobs)} mono hint={t`EIP-4844 data blobs published`} />
       </StatRow>
 
       <Tabs
         value={active}
         onValueChange={(value) => navigate(paths.process(process.id, value as ProcessTab))}
         items={[
-          { value: 'overview', label: 'Overview', content: <OverviewTab view={view} /> },
-          { value: 'key', label: 'Encryption key', content: <KeyTab view={view} /> },
+          { value: 'overview', label: t`Overview`, content: <OverviewTab view={view} /> },
+          { value: 'key', label: t`Encryption key`, content: <KeyTab view={view} /> },
           {
             value: 'transitions',
-            label: 'Transitions',
-            meta: transitions.length,
+            label: t`Transitions`,
+            meta: formatNumber(transitions.length),
             content: <TransitionsTab view={view} />,
           },
-          { value: 'votes', label: 'Votes', content: <VotesTab view={view} /> },
-          { value: 'results', label: 'Results', content: <ResultsTab view={view} /> },
-          { value: 'raw', label: 'Raw', content: <RawTab view={view} /> },
+          { value: 'votes', label: t`Votes`, content: <VotesTab view={view} /> },
+          { value: 'results', label: t`Results`, content: <ResultsTab view={view} /> },
+          { value: 'raw', label: t`Raw`, content: <RawTab view={view} /> },
         ]}
       />
     </Stack>

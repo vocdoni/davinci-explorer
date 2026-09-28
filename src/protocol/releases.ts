@@ -3,6 +3,8 @@
 // these so a page can say which release it runs. Add a row per release; the
 // newest first.
 
+import { msg } from '@lingui/core/macro'
+import { withText } from '~i18n/text'
 import type { Hex } from './bytes'
 
 export interface KnownRelease {
@@ -53,13 +55,17 @@ export const PIN_NAMES: PinName[] = [
   'ballotVKHash',
 ]
 
-export const PIN_LABELS: Record<PinName, string> = {
-  batchProgramVK: 'Vote-batch program vk',
-  resultsProgramVK: 'Results program vk',
-  rootCVadcopFinal: 'ZisK setup root (rootCVadcopFinal)',
-  ziskVerifierCodeHash: 'Verifier code hash',
-  ballotVKHash: 'Ballot VK hash',
-}
+/** Each pin's name for people, in the active language (it translates on read). */
+export const PIN_LABELS: Readonly<Record<PinName, string>> = withText(
+  {},
+  {
+    batchProgramVK: msg`Vote-batch program vk`,
+    resultsProgramVK: msg`Results program vk`,
+    rootCVadcopFinal: msg`ZisK setup root (rootCVadcopFinal)`,
+    ziskVerifierCodeHash: msg`Verifier code hash`,
+    ballotVKHash: msg`Ballot VK hash`,
+  }
+)
 
 export type DeploymentPins = Partial<Record<PinName, Hex | null>>
 

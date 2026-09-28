@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Navigate, useParams, useSearchParams } from 'react-router'
 import { ProcessIdLink } from '~components'
 import { useServices } from '~data/context'
@@ -6,6 +7,7 @@ import { useIndexer, useStore, useTransitions } from '~data/hooks'
 import { useTrackerProof, useVoteInclusion, useVoteStatus, type VoteInclusion } from '~data/queries'
 import { processKey, txKey } from '~indexer/types'
 import { Callout, Card, SectionHeader, SkeletonText, Stack } from '~kit'
+import { formatNumber } from '~lib/format'
 import { formatVoteId } from '~protocol/blob'
 import { paths } from '~routes/paths'
 import { VoteExplainers } from './Explainers'
@@ -21,6 +23,7 @@ import { TrackerProof } from './TrackerProof'
  * on-chain root, and what all of that does and does not say.
  */
 export function VotesPage() {
+  const { t } = useLingui()
   const params = useParams()
   const [search] = useSearchParams()
   const pidInput = params.pid ?? search.get('pid') ?? ''
@@ -38,18 +41,18 @@ export function VotesPage() {
     <Stack data-testid='page-votes'>
       <SectionHeader
         size='page'
-        label='Votes'
-        title='Check a vote'
-        description='Enter the process and the vote id your voting app gave you: see where the vote stands, which settled batch carries it on-chain and what that proves.'
+        label={t`Votes`}
+        title={t`Check a vote`}
+        description={t`Enter the process and the vote id your voting app gave you: see where the vote stands, which settled batch carries it on-chain and what that proves.`}
       />
       <LookupForm key={`${pidInput}|${voteInput}`} initialPid={pidInput} initialVote={voteInput} />
       {!onRoute && query.voteId != null && !query.pid ? (
-        <Callout title='Which process?'>
-          Vote ids are unique within a process, so the lookup needs the process id too. Pick it above.
+        <Callout title={t`Which process?`}>
+          <Trans>Vote ids are unique within a process, so the lookup needs the process id too. Pick it above.</Trans>
         </Callout>
       ) : null}
       {onRoute && !active ? (
-        <Callout tone='warn' title='This lookup address is not valid'>
+        <Callout tone='warn' title={t`This lookup address is not valid`}>
           {[query.pidError, query.voteError].filter(Boolean).join(' ')}
         </Callout>
       ) : null}
@@ -59,22 +62,29 @@ export function VotesPage() {
   )
 }
 
-function inclusionWords(i: VoteInclusion): string {
-  switch (i.state) {
-    case 'found':
-      return `found in transition #${i.transitionIndex}`
-    case 'searching':
-      return `searching, ${i.checked} of ${i.total} transitions read`
+function InclusionWords({ inclusion }: { inclusion: VoteInclusion }) {
+  const { t } = useLingui()
+  switch (inclusion.state) {
+    case 'found': {
+      const index = inclusion.transitionIndex
+      return t`inclusion: found in transition #${index}`
+    }
+    case 'searching': {
+      const checked = formatNumber(inclusion.checked)
+      const total = formatNumber(inclusion.total)
+      return t`inclusion: searching, ${checked} of ${total} transitions read`
+    }
     case 'not-found':
-      return 'not in any settled transition'
+      return t`inclusion: not in any settled transition`
     case 'error':
-      return 'blobs unavailable'
+      return t`inclusion: blobs unavailable`
     case 'idle':
-      return 'waiting for the indexer'
+      return t`inclusion: waiting for the indexer`
   }
 }
 
 function Lookup({ pid, voteId }: { pid: string; voteId: bigint }) {
+  const { t } = useLingui()
   const store = useStore()
   const { status } = useIndexer()
   const services = useServices()
@@ -91,21 +101,27 @@ function Lookup({ pid, voteId }: { pid: string; voteId: bigint }) {
   if (!process) {
     if (status.phase === 'idle' || status.phase === 'loading' || status.scanning) return <SkeletonText lines={4} />
     return (
-      <Callout tone='warn' title='The registry has no such process'>
-        No process {pid} was created on this registry. Check the id, or the network the explorer points at.
+      <Callout tone='warn' title={t`The registry has no such process`}>
+        <Trans>
+          No process {pid} was created on this registry. Check the id, or the network the explorer points at.
+        </Trans>
       </Callout>
     )
   }
 
-  const answered = statuses.filter((s) => s.status.data).length
+  const answered = formatNumber(statuses.filter((s) => s.status.data).length)
+  const asked = formatNumber(statuses.length)
+  const vote = formatVoteId(voteId)
   return (
     <div className='flex flex-col gap-6'>
       <Card>
         <p className='text-[13px] text-silver' data-testid='vote-summary'>
-          Vote <span className='font-mono text-ghost'>{formatVoteId(voteId)}</span> in process{' '}
-          <ProcessIdLink id={process.id} chars={8} /> ·{' '}
-          {statuses.length ? `${answered}/${statuses.length} sequencers answered` : 'no sequencer configured'} ·
-          inclusion: {inclusionWords(inclusion)}
+          <Trans>
+            Vote <span className='font-mono text-ghost'>{vote}</span> in process{' '}
+            <ProcessIdLink id={process.id} chars={8} />
+          </Trans>{' '}
+          · {statuses.length ? t`${answered}/${asked} sequencers answered` : t`no sequencer configured`} ·{' '}
+          <InclusionWords inclusion={inclusion} />
         </p>
       </Card>
       <Inclusion pid={process.id} inclusion={inclusion} transitions={transitions} txsKnown={txsKnown} />

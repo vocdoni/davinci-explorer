@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { Input, SearchIcon } from '~kit'
 import { cn } from '~lib/cn'
 import { useSearch } from './search-context'
@@ -8,6 +9,7 @@ import { useSearch } from './search-context'
  * knows first, then by shape (see `search.ts`), and says why when it can't.
  */
 export function GlobalSearch({ className, id }: { className?: string; id?: string }) {
+  const { t } = useLingui()
   const { query, setQuery, submit, error } = useSearch()
   const [focused, setFocused] = useState(false)
 
@@ -28,8 +30,8 @@ export function GlobalSearch({ className, id }: { className?: string; id?: strin
         mono
         spellCheck={false}
         autoComplete='off'
-        aria-label='Search processes, votes, transactions, addresses and blocks'
-        placeholder='Process id, vote id, tx, address, block…'
+        aria-label={t`Search processes, votes, transactions, addresses and blocks`}
+        placeholder={t`Process id, vote id, tx, address, block…`}
         iconLeft={<SearchIcon size={14} />}
       />
       {error && focused ? (

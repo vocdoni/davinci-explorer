@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import { useRuntimeConfig } from '~config/config-context'
 import { checksum } from '~lib/address'
@@ -28,6 +29,7 @@ export interface AddressProps {
  * truncated address is never a dead end.
  */
 export function Address({ value, chars = 4, full = false, copy = true, explorer = true, to, className }: AddressProps) {
+  const { t } = useLingui()
   const config = useRuntimeConfig()
   const checksummed = checksum(value)
   const text = full ? checksummed : shortHash(checksummed, chars, chars)
@@ -50,8 +52,8 @@ export function Address({ value, chars = 4, full = false, copy = true, explorer 
           </span>
         )}
       </Tooltip>
-      {copy ? <CopyButton value={checksummed} label='Copy address' /> : null}
-      {href ? <ExplorerLink href={href} label='View address on the block explorer' /> : null}
+      {copy ? <CopyButton value={checksummed} label={t`Copy address`} /> : null}
+      {href ? <ExplorerLink href={href} label={t`View address on the block explorer`} /> : null}
     </span>
   )
 }
@@ -68,6 +70,7 @@ export interface HashProps {
 
 /** Any 0x value that isn't an address: process ids, roots, digests, points. */
 export function Hash({ value, chars = 6, full = false, copy = true, href, className }: HashProps) {
+  const { t } = useLingui()
   const text = full ? value : shortHash(value, chars, 4)
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1 font-mono text-[12px]', className)}>
@@ -87,7 +90,7 @@ export function Hash({ value, chars = 6, full = false, copy = true, href, classN
           </span>
         )}
       </Tooltip>
-      {copy ? <CopyButton value={value} label='Copy value' /> : null}
+      {copy ? <CopyButton value={value} label={t`Copy value`} /> : null}
     </span>
   )
 }
@@ -101,6 +104,7 @@ export interface TxCellProps {
 
 /** Transaction hash → block explorer. */
 export function TxCell({ hash, chars = 6, copy = false, className }: TxCellProps) {
+  const { t } = useLingui()
   const config = useRuntimeConfig()
   const href = explorerTxUrl(config.blockExplorerUrl, hash)
   return (
@@ -119,14 +123,14 @@ export function TxCell({ hash, chars = 6, copy = false, className }: TxCellProps
           <span className='truncate text-silver'>{shortHash(hash, chars, 4)}</span>
         )}
       </Tooltip>
-      {copy ? <CopyButton value={hash} label='Copy transaction hash' /> : null}
+      {copy ? <CopyButton value={hash} label={t`Copy transaction hash`} /> : null}
     </span>
   )
 }
 
 export interface BlockCellProps {
   block: bigint | number | null | undefined
-  /** Appended after the number, e.g. "· 3 min ago". */
+  /** Appended after the number, e.g. "· 3 min. ago". */
   suffix?: string
   className?: string
 }

@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { demoFixture } from '~fixtures/demo'
+import { activateLocale } from '~i18n/i18n'
+import { formatNumber } from '~lib/format'
 import { processRow, transitionRows } from '~indexer/selectors'
 import type { BallotMode } from '~indexer/types'
 import { B8, isOnCurve } from '~protocol/babyjubjub'
@@ -8,9 +10,12 @@ import { describeBallotMode } from './ballot-mode'
 import { BJJ_K, BJJ_K_INV, reducedToCircom } from '~protocol/babyjubjub'
 import { dkgApplicationUrl, dkgEpochUrl } from './dkg-links'
 import { toJson } from './json'
-import { browsableUri, localized, metadataChoices, metadataTitle } from './metadata'
+import { browsableUri, localized, metadataChoices, metadataDescription, metadataTitle } from './metadata'
 import { tallyRows } from './tally'
 import { processLifecycle } from './timeline'
+
+// Tests read English; one that switches language switches back.
+afterEach(() => activateLocale('en'))
 
 const mode = (over: Partial<BallotMode>): BallotMode => ({
   uniqueValues: false,
@@ -78,6 +83,50 @@ describe('describeBallotMode', () => {
     )
     expect(d.rules[d.rules.length - 1]).toContain('sum of the values voters gave it')
   })
+
+  it('states the sum bounds as one sentence per case', () => {
+    const sum = (over: Partial<BallotMode>) => describeBallotMode(mode(over)).rules[1]
+    expect(sum({ maxValueSum: 3n })).toBe('The fields add up to at most 3.')
+    expect(sum({ maxValueSum: 3n, minValueSum: 1n })).toBe('The fields add up to at most 3 and at least 1.')
+    expect(sum({ maxValueSum: 0n })).toBe("The fields add up to at most the voter's census weight (maxValueSum is 0).")
+    expect(sum({ maxValueSum: 0n, minValueSum: 2n })).toBe(
+      "The fields add up to at most the voter's census weight (maxValueSum is 0) and at least 2."
+    )
+    expect(sum({ costExponent: 2, maxValue: 10n, maxValueSum: 100n, minValueSum: 4n })).toBe(
+      'The sum of the squares of the values is at most 100 and at least 4.'
+    )
+    expect(sum({ costExponent: 3, maxValue: 10n, maxValueSum: 0n })).toBe(
+      "The sum of each value raised to the power 3 is at most the voter's census weight (maxValueSum is 0)."
+    )
+  })
+
+  it('names the quadratic cost and counts in whole sentences', () => {
+    const cubic = describeBallotMode(mode({ costExponent: 3, maxValue: 10n, maxValueSum: 50n }))
+    expect(cubic.label).toBe('Cost exponent 3')
+    expect(cubic.summary).toBe(
+      'Each voter spends up to 50 credits across 4 options; putting v votes on one option costs v^3 credits, at most 10 votes per option.'
+    )
+    expect(describeBallotMode(mode({ numFields: 1, maxValue: 1n })).summary).toBe(
+      'Each voter enters one value between 0 and 1.'
+    )
+    expect(describeBallotMode(mode({ numFields: 1, maxValue: 5n, maxValueSum: 5n })).rules[0]).toBe(
+      'The ballot has 1 field, usually one per option; each holds a number between 0 and 5.'
+    )
+    expect(describeBallotMode(mode({ maxValueSum: 0n, minValueSum: 1n })).summary).toBe(
+      'Each voter approves at least 1 and up to W of 4 options, W being their census weight.'
+    )
+  })
+
+  it('formats its numbers in the active language', async () => {
+    const points = mode({ maxValue: 20_000n, maxValueSum: 50_000n })
+    expect(describeBallotMode(points).summary).toBe(
+      'Each voter distributes up to 50,000 points among 4 options, at most 20,000 per option.'
+    )
+    await activateLocale('es')
+    const summary = describeBallotMode(points).summary
+    expect(summary).toContain('50.000')
+    expect(summary).toContain('20.000')
+  })
 })
 
 describe('metadata', () => {
@@ -101,6 +150,47 @@ describe('metadata', () => {
     expect(metadataChoices(doc, 2)).toEqual(['A', 'B'])
     expect(metadataChoices(doc, 3)).toBeNull()
     expect(metadataChoices('nope', 2)).toBeNull()
+  })
+
+  it('prefers the language asked for, then default, then the first with text', () => {
+    const text = { default: 'Vote', es: 'Voto', ca: 'Vot' }
+    expect(localized(text, 'es')).toBe('Voto')
+    expect(localized(text, 'ca')).toBe('Vot')
+    expect(localized(text, 'en')).toBe('Vote')
+    expect(localized({ default: 'Vote', en: 'Ballot' }, 'en')).toBe('Ballot')
+    expect(localized({ es: '  ', default: ' Vote ' }, 'es')).toBe('Vote')
+    expect(localized({ fr: '', ca: 'Vot', es: 'Voto' }, 'en')).toBe('Vot')
+    expect(localized({ es: 3, default: null }, 'es')).toBeNull()
+    expect(localized('  plain  ', 'es')).toBe('plain')
+  })
+
+  it('follows the active language', async () => {
+    const multi = {
+      title: { default: 'Board election', es: 'Elección de la junta', ca: 'Elecció de la junta' },
+      description: { default: 'Pick one.', ca: 'Trieu-ne una.' },
+      questions: [{ choices: [{ title: { default: 'Yes', ca: 'Sí' } }, { title: 'No' }] }],
+    }
+    expect(metadataTitle(multi)).toBe('Board election')
+    await activateLocale('ca')
+    expect(metadataTitle(multi)).toBe('Elecció de la junta')
+    expect(metadataDescription(multi)).toBe('Trieu-ne una.')
+    expect(metadataChoices(multi, 2)).toEqual(['Sí', 'No'])
+    await activateLocale('es')
+    expect(metadataTitle(multi)).toBe('Elección de la junta')
+    expect(metadataDescription(multi)).toBe('Pick one.')
+  })
+
+  it('reads the demo documents in each language', async () => {
+    const f = demoFixture()
+    const process = f.store.processes[f.featured.openProcess]!
+    const doc = f.metadata.get(process.state!.metadataURI)
+    const en = metadataTitle(doc)
+    expect(en).toBeTruthy()
+    await activateLocale('ca')
+    const ca = metadataTitle(doc)
+    await activateLocale('es')
+    const es = metadataTitle(doc)
+    expect(new Set([en, ca, es]).size).toBe(3)
   })
 
   it('links only what a browser opens', () => {
@@ -170,6 +260,14 @@ describe('processLifecycle', () => {
   it('a tally waiting for the reveal shows the decryption request', () => {
     const steps = lifecycle(f.featured.awaitingReveal)
     expect(steps[4]).toMatchObject({ state: 'current', detail: 'Decryption requested' })
+  })
+
+  it('counts batches and ballots in one phrase', () => {
+    const steps = lifecycle(f.featured.openProcess)
+    const transitions = transitionRows(f.store, f.featured.openProcess)
+    const ballots = transitions.reduce((n, t) => n + t.votes, 0)
+    expect(steps[2]!.detail).toBe(`${transitions.length} batches, ${formatNumber(ballots)} ballots`)
+    expect(steps[0]!.detail).toMatch(/^Block [\d,]+$/)
   })
 
   it('a canceled process skips the end and the results', () => {

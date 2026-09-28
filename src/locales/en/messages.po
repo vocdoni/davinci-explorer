@@ -1,0 +1,1802 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-09-28 21:15+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: src/app/ChainPill.tsx
+msgid "The RPC is on chain {actual}, not {expected}"
+msgstr "The RPC is on chain {actual}, not {expected}"
+
+#: src/app/ChainPill.tsx
+#: src/app/StatusBanners.tsx
+msgid "The RPC is not answering"
+msgstr "The RPC is not answering"
+
+#: src/app/ChainPill.tsx
+msgid "Indexing: {progress}"
+msgstr "Indexing: {progress}"
+
+#: src/app/ChainPill.tsx
+msgid "Indexed to block {lastBlock} ({behind} behind the head)"
+msgstr "Indexed to block {lastBlock} ({behind} behind the head)"
+
+#: src/app/ChainPill.tsx
+msgid "Indexed to block {lastBlock}"
+msgstr "Indexed to block {lastBlock}"
+
+#: src/app/ChainPill.tsx
+msgid "Chain id {chainId}"
+msgstr "Chain id {chainId}"
+
+#: src/app/ChainPill.tsx
+msgid "demo"
+msgstr "demo"
+
+#: src/app/Footer.tsx
+msgid "registry"
+msgstr "registry"
+
+#: src/app/Footer.tsx
+msgid "read-only, straight from the chain"
+msgstr "read-only, straight from the chain"
+
+#: src/app/Footer.tsx
+msgid "Footer"
+msgstr "Footer"
+
+#: src/app/Footer.tsx
+msgid "How it works"
+msgstr "How it works"
+
+#: src/app/Footer.tsx
+#: src/pages/overview/NetworkCard.tsx
+#: src/pages/overview/RoleCards.tsx
+msgid "Verify the deployment"
+msgstr "Verify the deployment"
+
+#: src/app/Footer.tsx
+msgid "Source"
+msgstr "Source"
+
+#: src/app/Footer.tsx
+#: src/pages/kit/index.tsx
+msgid "Design kit"
+msgstr "Design kit"
+
+#: src/app/GlobalSearch.tsx
+msgid "Search processes, votes, transactions, addresses and blocks"
+msgstr "Search processes, votes, transactions, addresses and blocks"
+
+#: src/app/GlobalSearch.tsx
+msgid "Process id, vote id, tx, address, block…"
+msgstr "Process id, vote id, tx, address, block…"
+
+#: src/app/LanguageSelect.tsx
+msgid "Language"
+msgstr "Language"
+
+#: src/app/Shell.tsx
+msgid "Skip to content"
+msgstr "Skip to content"
+
+#: src/app/StatusBanners.tsx
+msgid "The last poll failed."
+msgstr "The last poll failed."
+
+#: src/app/StatusBanners.tsx
+msgid "Wrong network"
+msgstr "Wrong network"
+
+#: src/app/StatusBanners.tsx
+msgid "The RPC endpoint reports chain id <0>{actual}</0>, but this explorer is configured for <1>{expected}</1> ({networkName}). Nothing is indexed until <2>RPC_URL</2> and <3>CHAIN_ID</3> agree."
+msgstr "The RPC endpoint reports chain id <0>{actual}</0>, but this explorer is configured for <1>{expected}</1> ({networkName}). Nothing is indexed until <2>RPC_URL</2> and <3>CHAIN_ID</3> agree."
+
+#: src/app/StatusBanners.tsx
+#: src/config/config-context.ts
+msgid "Demo network"
+msgstr "Demo network"
+
+#: src/app/StatusBanners.tsx
+msgid "Everything on these pages is synthetic: a deterministic network generated in your browser, with no chain behind it. Links to the block explorer lead nowhere. Remove <0>?demo=1</0> (or open <1>?demo=0</1>) to see the configured deployment."
+msgstr "Everything on these pages is synthetic: a deterministic network generated in your browser, with no chain behind it. Links to the block explorer lead nowhere. Remove <0>?demo=1</0> (or open <1>?demo=0</1>) to see the configured deployment."
+
+#: src/app/StatusBanners.tsx
+msgid "Indexing the registry"
+msgstr "Indexing the registry"
+
+#: src/app/StatusBanners.tsx
+msgid "Reading every ProcessRegistry event from block {fromBlock}. Pages fill in as blocks arrive; the result is cached in this browser."
+msgstr "Reading every ProcessRegistry event from block {fromBlock}. Pages fill in as blocks arrive; the result is cached in this browser."
+
+#: src/app/StatusBanners.tsx
+msgid "block {lastBlock} of {headBlock}"
+msgstr "block {lastBlock} of {headBlock}"
+
+#: src/app/StatusBanners.tsx
+msgid "Retry"
+msgstr "Retry"
+
+#: src/app/StatusBanners.tsx
+msgid "{reason} The explorer keeps retrying."
+msgstr "{reason} The explorer keeps retrying."
+
+#: src/app/ThemeToggle.tsx
+msgid "System theme"
+msgstr "System theme"
+
+#: src/app/ThemeToggle.tsx
+msgid "Light theme"
+msgstr "Light theme"
+
+#: src/app/ThemeToggle.tsx
+msgid "Dark theme"
+msgstr "Dark theme"
+
+#: src/app/ThemeToggle.tsx
+msgid "Theme"
+msgstr "Theme"
+
+#: src/app/TopBar.tsx
+msgid "DAVINCI explorer home"
+msgstr "DAVINCI explorer home"
+
+#: src/app/TopBar.tsx
+#: src/app/TopBar.tsx
+#: src/pages/kit/index.tsx
+msgid "Primary"
+msgstr "Primary"
+
+#: src/app/TopBar.tsx
+msgid "Close menu"
+msgstr "Close menu"
+
+#: src/app/TopBar.tsx
+msgid "Open menu"
+msgstr "Open menu"
+
+#: src/app/search.ts
+msgid "Type a process id, vote id, transaction, address or block"
+msgstr "Type a process id, vote id, transaction, address or block"
+
+#: src/app/search.ts
+#: src/indexer/selectors.ts
+#: src/indexer/selectors.ts
+msgid "Process {pid}"
+msgstr "Process {pid}"
+
+#: src/app/search.ts
+msgid "Transaction {query}"
+msgstr "Transaction {query}"
+
+#: src/app/search.ts
+msgid "Processes organized by {query}"
+msgstr "Processes organized by {query}"
+
+#: src/app/search.ts
+msgid "Vote {query}"
+msgstr "Vote {query}"
+
+#: src/app/search.ts
+msgid "DKG epoch"
+msgstr "DKG epoch"
+
+#: src/app/search.ts
+msgid "Looks like a DKG epoch id, but no DKG explorer is configured"
+msgstr "Looks like a DKG epoch id, but no DKG explorer is configured"
+
+#: src/app/search.ts
+msgid "Block {query}"
+msgstr "Block {query}"
+
+#: src/app/search.ts
+msgid "Looks like a block number, but no block explorer is configured"
+msgstr "Looks like a block number, but no block explorer is configured"
+
+#: src/app/search.ts
+msgid "No process, vote, transaction or address matches “{query}”"
+msgstr "No process, vote, transaction or address matches “{query}”"
+
+#: src/components/CodeBlock.tsx
+msgid "Copy command"
+msgstr "Copy command"
+
+#: src/components/badges.tsx
+#: src/pages/kit/index.tsx
+#: src/pages/kit/index.tsx
+msgid "Loading"
+msgstr "Loading"
+
+#: src/components/badges.tsx
+msgid "The process state has not been read yet."
+msgstr "The process state has not been read yet."
+
+#: src/components/badges.tsx
+#: src/pages/processes/filters.ts
+msgid "Upcoming"
+msgstr "Upcoming"
+
+#: src/components/badges.tsx
+msgid "Ready, but the voting window has not opened."
+msgstr "Ready, but the voting window has not opened."
+
+#: src/components/badges.tsx
+#: src/pages/kit/index.tsx
+#: src/pages/processes/filters.ts
+msgid "Open"
+msgstr "Open"
+
+#: src/components/badges.tsx
+#: src/pages/processes/filters.ts
+#: src/protocol/types.ts
+msgid "Paused"
+msgstr "Paused"
+
+#: src/components/badges.tsx
+#: src/pages/processes/filters.ts
+msgid "Voting closed"
+msgstr "Voting closed"
+
+#: src/components/badges.tsx
+msgid "The end time has passed. The registry still says Ready until someone ends it or posts results."
+msgstr "The end time has passed. The registry still says Ready until someone ends it or posts results."
+
+#: src/components/badges.tsx
+#: src/pages/processes/filters.ts
+#: src/protocol/types.ts
+msgid "Ended"
+msgstr "Ended"
+
+#: src/components/badges.tsx
+#: src/pages/processes/filters.ts
+#: src/protocol/types.ts
+msgid "Canceled"
+msgstr "Canceled"
+
+#: src/components/badges.tsx
+#: src/indexer/selectors.ts
+#: src/pages/kit/index.tsx
+#: src/pages/processes/filters.ts
+#: src/pages/processes/index.tsx
+#: src/protocol/types.ts
+msgid "Results"
+msgstr "Results"
+
+#: src/components/blob/BlobCellView.tsx
+msgid "not zero"
+msgstr "not zero"
+
+#: src/components/blob/BlobCellView.tsx
+msgid "point, x odd"
+msgstr "point, x odd"
+
+#: src/components/blob/BlobCellView.tsx
+msgid "point, x even"
+msgstr "point, x even"
+
+#: src/components/blob/BlobCellView.tsx
+msgid "Jump to"
+msgstr "Jump to"
+
+#: src/components/blob/BlobCellView.tsx
+#: src/components/blob/BlobCellView.tsx
+msgid "Cell"
+msgstr "Cell"
+
+#: src/components/blob/BlobCellView.tsx
+msgid "Blob · pos"
+msgstr "Blob · pos"
+
+#: src/components/blob/BlobCellView.tsx
+msgid "Holds"
+msgstr "Holds"
+
+#: src/components/blob/BlobCellView.tsx
+msgid "32 bytes, big-endian"
+msgstr "32 bytes, big-endian"
+
+#: src/components/blob/BlobLayoutBar.tsx
+msgid "blob {b}"
+msgstr "blob {b}"
+
+#: src/components/blob/BlobLayoutBar.tsx
+msgid "Blob {b}, cells: {sections}"
+msgstr "Blob {b}, cells: {sections}"
+
+#: src/components/blob/BlobLayoutBar.tsx
+msgid "Cells:"
+msgstr "Cells:"
+
+#: src/components/blob/PointValue.tsx
+msgid "identity (0, 1)"
+msgstr "identity (0, 1)"
+
+#: src/components/blob/PointValue.tsx
+msgid "Field"
+msgstr "Field"
+
+#: src/components/blob/SlotUpdateList.tsx
+msgid "No slot updates"
+msgstr "No slot updates"
+
+#: src/components/blob/SlotUpdateList.tsx
+msgid "This batch wrote no ballot slot."
+msgstr "This batch wrote no ballot slot."
+
+#: src/components/blob/SlotUpdateList.tsx
+msgid "slot {slot}"
+msgstr "slot {slot}"
+
+#: src/components/blob/SlotUpdateList.tsx
+msgid "{ciphertexts, plural, one {# ciphertext} other {# ciphertexts}}"
+msgstr "{ciphertexts, plural, one {# ciphertext} other {# ciphertexts}}"
+
+#: src/components/blob/SlotUpdateList.tsx
+msgid "Hide ciphertexts"
+msgstr "Hide ciphertexts"
+
+#: src/components/blob/SlotUpdateList.tsx
+msgid "Show ciphertexts"
+msgstr "Show ciphertexts"
+
+#: src/components/blob/SlotUpdateList.tsx
+msgid "Could not unpack: {error}"
+msgstr "Could not unpack: {error}"
+
+#: src/components/blob/VoteIdList.tsx
+msgid "Find a vote id in this transition"
+msgstr "Find a vote id in this transition"
+
+#: src/components/blob/VoteIdList.tsx
+msgid "No vote ids"
+msgstr "No vote ids"
+
+#: src/components/blob/VoteIdList.tsx
+msgid "No match"
+msgstr "No match"
+
+#: src/components/blob/VoteIdList.tsx
+msgid "This batch inserted no vote id."
+msgstr "This batch inserted no vote id."
+
+#: src/components/blob/VoteIdList.tsx
+msgid "No vote id of this transition contains that text."
+msgstr "No vote id of this transition contains that text."
+
+#: src/components/blob/cells.ts
+msgid "Vote id count"
+msgstr "Vote id count"
+
+#: src/components/blob/cells.ts
+msgid "Vote id #{k}"
+msgstr "Vote id #{k}"
+
+#: src/components/blob/cells.ts
+msgid "Slot update count"
+msgstr "Slot update count"
+
+#: src/components/blob/cells.ts
+msgid "Update #{item}: slot key"
+msgstr "Update #{item}: slot key"
+
+#: src/components/blob/cells.ts
+msgid "Update #{item}: field {field} {half}"
+msgstr "Update #{item}: field {field} {half}"
+
+#: src/components/blob/cells.ts
+msgid "Accumulator field {field} {half}"
+msgstr "Accumulator field {field} {half}"
+
+#: src/components/blob/cells.ts
+msgid "Padding (zero)"
+msgstr "Padding (zero)"
+
+#: src/components/blob/sections.ts
+msgid "Vote ids"
+msgstr "Vote ids"
+
+#: src/components/blob/sections.ts
+msgid "Slot updates"
+msgstr "Slot updates"
+
+#: src/components/blob/sections.ts
+msgid "Accumulator"
+msgstr "Accumulator"
+
+#: src/components/blob/sections.ts
+msgid "Zero padding"
+msgstr "Zero padding"
+
+#: src/components/code.tsx
+#: src/kit/CopyButton.tsx
+msgid "Copy"
+msgstr "Copy"
+
+#: src/components/states.tsx
+msgid "No transition found"
+msgstr "No transition found"
+
+#: src/components/states.tsx
+msgid "The registry has no transition {id}."
+msgstr "The registry has no transition {id}."
+
+#: src/components/states.tsx
+msgid "The registry has no such transition."
+msgstr "The registry has no such transition."
+
+#: src/components/states.tsx
+msgid "No process found"
+msgstr "No process found"
+
+#: src/components/states.tsx
+msgid "The registry has no process {id}."
+msgstr "The registry has no process {id}."
+
+#: src/components/states.tsx
+msgid "The registry has no such process."
+msgstr "The registry has no such process."
+
+#: src/components/values.tsx
+#: src/kit/Address.tsx
+msgid "Copy transaction hash"
+msgstr "Copy transaction hash"
+
+#: src/components/values.tsx
+msgid "View transaction on the block explorer"
+msgstr "View transaction on the block explorer"
+
+#: src/components/values.tsx
+msgid "passed"
+msgstr "passed"
+
+#: src/components/values.tsx
+msgid "failed"
+msgstr "failed"
+
+#: src/components/values.tsx
+msgid "not checked yet"
+msgstr "not checked yet"
+
+#: src/components/values.tsx
+msgid "What is this?"
+msgstr "What is this?"
+
+#: src/config/ConfigProvider.tsx
+msgid "Config error"
+msgstr "Config error"
+
+#: src/config/ConfigProvider.tsx
+msgid "The explorer could not read its configuration"
+msgstr "The explorer could not read its configuration"
+
+#: src/config/ConfigProvider.tsx
+msgid "<0>/config.json</0> is missing or malformed. The Docker image renders it from <1>CHAIN_ID</1>, <2>RPC_URL</2>, <3>REGISTRY_ADDRESS</3> and the other variables in the README. Append <4>?demo=1</4> to browse the synthetic demo network instead."
+msgstr "<0>/config.json</0> is missing or malformed. The Docker image renders it from <1>CHAIN_ID</1>, <2>RPC_URL</2>, <3>REGISTRY_ADDRESS</3> and the other variables in the README. Append <4>?demo=1</4> to browse the synthetic demo network instead."
+
+#: src/config/ConfigProvider.tsx
+msgid "Loading configuration"
+msgstr "Loading configuration"
+
+#: src/data/deployment.ts
+msgid "The RPC answered none of the contract reads"
+msgstr "The RPC answered none of the contract reads"
+
+#: src/data/queries.ts
+msgid "#{i}: the settlement transaction could not be read from the RPC"
+msgstr "#{i}: the settlement transaction could not be read from the RPC"
+
+#: src/data/services.ts
+msgid "No beacon API or sequencer is configured"
+msgstr "No beacon API or sequencer is configured"
+
+#: src/data/services.ts
+msgid "No blob source"
+msgstr "No blob source"
+
+#: src/data/services.ts
+msgid "The registry has no DKG adapter"
+msgstr "The registry has no DKG adapter"
+
+#: src/data/services.ts
+msgid "The skipped ballot fields are not known yet"
+msgstr "The skipped ballot fields are not known yet"
+
+#: src/indexer/selectors.ts
+msgid "The zkVM guest accepted the batch"
+msgstr "The zkVM guest accepted the batch"
+
+#: src/indexer/selectors.ts
+msgid "ok = {ok}, fail mask = {failMask}"
+msgstr "ok = {ok}, fail mask = {failMask}"
+
+#: src/indexer/selectors.ts
+msgid "Waiting for the calldata"
+msgstr "Waiting for the calldata"
+
+#: src/indexer/selectors.ts
+msgid "Starts from the previous root"
+msgstr "Starts from the previous root"
+
+#: src/indexer/selectors.ts
+msgid "transition #{previousIndex} ended at this root"
+msgstr "transition #{previousIndex} ended at this root"
+
+#: src/indexer/selectors.ts
+msgid "the genesis root of the process"
+msgstr "the genesis root of the process"
+
+#: src/indexer/selectors.ts
+msgid "The proven root is the new root"
+msgstr "The proven root is the new root"
+
+#: src/indexer/selectors.ts
+msgid "publics register 10..17 against the event"
+msgstr "publics register 10..17 against the event"
+
+#: src/indexer/selectors.ts
+msgid "Proven against the process census"
+msgstr "Proven against the process census"
+
+#: src/indexer/selectors.ts
+msgid "On-chain census: the registry asked the census contract whether it held this root"
+msgstr "On-chain census: the registry asked the census contract whether it held this root"
+
+#: src/indexer/selectors.ts
+msgid "publics register 20..27 against the census root"
+msgstr "publics register 20..27 against the census root"
+
+#: src/indexer/selectors.ts
+msgid "Slots written before the batch match the registry"
+msgstr "Slots written before the batch match the registry"
+
+#: src/indexer/selectors.ts
+msgid "occupied_before = {occupiedBefore}, registry votersCount = {occupiedExpected}"
+msgstr "occupied_before = {occupiedBefore}, registry votersCount = {occupiedExpected}"
+
+#: src/indexer/selectors.ts
+msgid "Vote counts match the event"
+msgstr "Vote counts match the event"
+
+#: src/indexer/selectors.ts
+msgid "{newVoters, plural, one {# new voter} other {# new voters}}, {overwrites, plural, one {# overwrite} other {# overwrites}}"
+msgstr "{newVoters, plural, one {# new voter} other {# new voters}}, {overwrites, plural, one {# overwrite} other {# overwrites}}"
+
+#: src/indexer/selectors.ts
+msgid "One blob per published chunk"
+msgstr "One blob per published chunk"
+
+#: src/indexer/selectors.ts
+msgid "{nBlobs, plural, one {# blob} other {# blobs}}"
+msgstr "{nBlobs, plural, one {# blob} other {# blobs}}"
+
+#: src/indexer/selectors.ts
+msgid "Each commitment is the blob the transaction carries"
+msgstr "Each commitment is the blob the transaction carries"
+
+#: src/indexer/selectors.ts
+msgid "versioned hash = 0x01 ‖ sha256(commitment)[1..]"
+msgstr "versioned hash = 0x01 ‖ sha256(commitment)[1..]"
+
+#: src/indexer/selectors.ts
+msgid "The proof commits to these blobs"
+msgstr "The proof commits to these blobs"
+
+#: src/indexer/selectors.ts
+msgid "sha256(commitment ‖ evaluation …) against publics register 28..35"
+msgstr "sha256(commitment ‖ evaluation …) against publics register 28..35"
+
+#: src/indexer/selectors.ts
+msgid "Process created"
+msgstr "Process created"
+
+#: src/indexer/selectors.ts
+msgid "Transition #{index}: {votes, plural, one {# vote} other {# votes}} in {nBlobs, plural, one {# blob} other {# blobs}}"
+msgstr "Transition #{index}: {votes, plural, one {# vote} other {# votes}} in {nBlobs, plural, one {# blob} other {# blobs}}"
+
+#: src/indexer/selectors.ts
+msgid "Transition #{index} in {nBlobs, plural, one {# blob} other {# blobs}}"
+msgstr "Transition #{index} in {nBlobs, plural, one {# blob} other {# blobs}}"
+
+#: src/indexer/selectors.ts
+msgid "Results published"
+msgstr "Results published"
+
+#: src/indexer/selectors.ts
+msgid "Status {from} → {to}"
+msgstr "Status {from} → {to}"
+
+#: src/indexer/selectors.ts
+msgid "Tally sent to the DKG committee ({count, plural, one {# ciphertext} other {# ciphertexts}})"
+msgstr "Tally sent to the DKG committee ({count, plural, one {# ciphertext} other {# ciphertexts}})"
+
+#: src/indexer/selectors.ts
+msgid "Census root replaced"
+msgstr "Census root replaced"
+
+#: src/indexer/selectors.ts
+msgid "Duration changed"
+msgstr "Duration changed"
+
+#: src/indexer/selectors.ts
+msgid "Max voters set to {maxVoters}"
+msgstr "Max voters set to {maxVoters}"
+
+#: src/indexer/selectors.ts
+#: src/pages/kit/index.tsx
+msgid "Transition #{index}"
+msgstr "Transition #{index}"
+
+#: src/indexer/selectors.ts
+msgid "Process creation"
+msgstr "Process creation"
+
+#: src/indexer/selectors.ts
+msgid "Contract"
+msgstr "Contract"
+
+#: src/indexer/selectors.ts
+msgid "Organizer of {owned, plural, one {# process} other {# processes}}"
+msgstr "Organizer of {owned, plural, one {# process} other {# processes}}"
+
+#: src/indexer/selectors.ts
+msgid "Vote id"
+msgstr "Vote id"
+
+#: src/indexer/selectors.ts
+msgid "Transition #{index} in block {block}"
+msgstr "Transition #{index} in block {block}"
+
+#: src/kit/Address.tsx
+msgid "Copy address"
+msgstr "Copy address"
+
+#: src/kit/Address.tsx
+msgid "View address on the block explorer"
+msgstr "View address on the block explorer"
+
+#: src/kit/Address.tsx
+msgid "Copy value"
+msgstr "Copy value"
+
+#: src/kit/CopyButton.tsx
+msgid "Copied"
+msgstr "Copied"
+
+#: src/kit/Dialog.tsx
+msgid "Close"
+msgstr "Close"
+
+#: src/kit/Pagination.tsx
+msgid "{first}–{last} of {all}"
+msgstr "{first}–{last} of {all}"
+
+#: src/kit/Pagination.tsx
+msgid "page {current} / {pages}"
+msgstr "page {current} / {pages}"
+
+#: src/kit/Pagination.tsx
+msgid "Previous page"
+msgstr "Previous page"
+
+#: src/kit/Pagination.tsx
+msgid "Next page"
+msgstr "Next page"
+
+#: src/kit/ProgressBar.tsx
+msgid "threshold {threshold}"
+msgstr "threshold {threshold}"
+
+#: src/kit/Table.tsx
+#: src/pages/kit/index.tsx
+msgid "Nothing here yet"
+msgstr "Nothing here yet"
+
+#: src/kit/Table.tsx
+msgid "No rows matched this view."
+msgstr "No rows matched this view."
+
+#: src/kit/charts/ChartFrame.tsx
+msgid "No data yet"
+msgstr "No data yet"
+
+#: src/kit/charts/Donut.tsx
+msgid "Nothing to break down"
+msgstr "Nothing to break down"
+
+#: src/kit/charts/Donut.tsx
+msgid "Distribution"
+msgstr "Distribution"
+
+#: src/kit/charts/Sparkline.tsx
+msgid "trend"
+msgstr "trend"
+
+#: src/kit/charts/StackedBars.tsx
+msgid "No activity in this range"
+msgstr "No activity in this range"
+
+#: src/kit/charts/StackedBars.tsx
+msgid "Stacked activity chart"
+msgstr "Stacked activity chart"
+
+#: src/kit/charts/StackedBars.tsx
+msgid "total"
+msgstr "total"
+
+#: src/pages/error/index.tsx
+msgid "Unknown error"
+msgstr "Unknown error"
+
+#: src/pages/error/index.tsx
+msgid "Error"
+msgstr "Error"
+
+#: src/pages/error/index.tsx
+msgid "Something broke while rendering this page"
+msgstr "Something broke while rendering this page"
+
+#: src/pages/kit/index.tsx
+msgid "Block"
+msgstr "Block"
+
+#: src/pages/kit/index.tsx
+#: src/routes/paths.ts
+msgid "Votes"
+msgstr "Votes"
+
+#: src/pages/kit/index.tsx
+#: src/pages/kit/index.tsx
+msgid "Blobs"
+msgstr "Blobs"
+
+#: src/pages/kit/index.tsx
+msgid "Primitives and charts"
+msgstr "Primitives and charts"
+
+#: src/pages/kit/index.tsx
+msgid "Everything the pages are built from, in the dark theme."
+msgstr "Everything the pages are built from, in the dark theme."
+
+#: src/pages/kit/index.tsx
+msgid "Everything the pages are built from, in the light theme."
+msgstr "Everything the pages are built from, in the light theme."
+
+#: src/pages/kit/index.tsx
+msgid "Buttons and badges"
+msgstr "Buttons and badges"
+
+#: src/pages/kit/index.tsx
+msgid "Ghost"
+msgstr "Ghost"
+
+#: src/pages/kit/index.tsx
+msgid "Secondary"
+msgstr "Secondary"
+
+#: src/pages/kit/index.tsx
+msgid "Subtle"
+msgstr "Subtle"
+
+#: src/pages/kit/index.tsx
+msgid "Danger"
+msgstr "Danger"
+
+#: src/pages/kit/index.tsx
+msgid "live"
+msgstr "live"
+
+#: src/pages/kit/index.tsx
+msgid "accent"
+msgstr "accent"
+
+#: src/pages/kit/index.tsx
+msgid "warning"
+msgstr "warning"
+
+#: src/pages/kit/index.tsx
+msgid "danger"
+msgstr "danger"
+
+#: src/pages/kit/index.tsx
+msgid "neutral"
+msgstr "neutral"
+
+#: src/pages/kit/index.tsx
+msgid "Every value can carry a plain-words explanation."
+msgstr "Every value can carry a plain-words explanation."
+
+#: src/pages/kit/index.tsx
+#: src/pages/overview/ProcessesPanel.tsx
+#: src/pages/overview/index.tsx
+#: src/pages/processes/index.tsx
+#: src/routes/paths.ts
+msgid "Processes"
+msgstr "Processes"
+
+#: src/pages/kit/index.tsx
+msgid "3 open"
+msgstr "3 open"
+
+#: src/pages/kit/index.tsx
+msgid "Ballots"
+msgstr "Ballots"
+
+#: src/pages/kit/index.tsx
+msgid "Record"
+msgstr "Record"
+
+#: src/pages/kit/index.tsx
+msgid "The raw-record view on every detail page."
+msgstr "The raw-record view on every detail page."
+
+#: src/pages/kit/index.tsx
+#: src/pages/overview/NetworkCard.tsx
+msgid "Registry"
+msgstr "Registry"
+
+#: src/pages/kit/index.tsx
+#: src/pages/processes/index.tsx
+msgid "Process"
+msgstr "Process"
+
+#: src/pages/kit/index.tsx
+msgid "Transaction"
+msgstr "Transaction"
+
+#: src/pages/kit/index.tsx
+msgid "Fee"
+msgstr "Fee"
+
+#: src/pages/kit/index.tsx
+msgid "Voters"
+msgstr "Voters"
+
+#: src/pages/kit/index.tsx
+msgid "distinct slots written"
+msgstr "distinct slots written"
+
+#: src/pages/kit/index.tsx
+msgid "Info"
+msgstr "Info"
+
+#: src/pages/kit/index.tsx
+msgid "A neutral note with an explanation."
+msgstr "A neutral note with an explanation."
+
+#: src/pages/kit/index.tsx
+msgid "Verified"
+msgstr "Verified"
+
+#: src/pages/kit/index.tsx
+msgid "Every pin matches a known release."
+msgstr "Every pin matches a known release."
+
+#: src/pages/kit/index.tsx
+msgid "Warning"
+msgstr "Warning"
+
+#: src/pages/kit/index.tsx
+msgid "The beacon pruned this blob; trying the sequencer."
+msgstr "The beacon pruned this blob; trying the sequencer."
+
+#: src/pages/kit/index.tsx
+msgid "Mismatch"
+msgstr "Mismatch"
+
+#: src/pages/kit/index.tsx
+msgid "The RPC reports another chain."
+msgstr "The RPC reports another chain."
+
+#: src/pages/kit/index.tsx
+msgid "Charts"
+msgstr "Charts"
+
+#: src/pages/kit/index.tsx
+msgid "Colours follow the theme through CSS variables."
+msgstr "Colours follow the theme through CSS variables."
+
+#: src/pages/kit/index.tsx
+msgid "votes"
+msgstr "votes"
+
+#: src/pages/kit/index.tsx
+#: src/pages/overview/VotesPerDayPanel.tsx
+msgid "overwrites"
+msgstr "overwrites"
+
+#: src/pages/kit/index.tsx
+#: src/pages/overview/ProcessesPanel.tsx
+msgctxt "process phase"
+msgid "open"
+msgstr "open"
+
+#: src/pages/kit/index.tsx
+#: src/pages/overview/ProcessesPanel.tsx
+msgctxt "process phase"
+msgid "results"
+msgstr "results"
+
+#: src/pages/kit/index.tsx
+#: src/pages/overview/ProcessesPanel.tsx
+msgctxt "process phase"
+msgid "ended"
+msgstr "ended"
+
+#: src/pages/kit/index.tsx
+#: src/pages/overview/ProcessesPanel.tsx
+msgid "processes"
+msgstr "processes"
+
+#: src/pages/kit/index.tsx
+msgid "300 rows, virtualised."
+msgstr "300 rows, virtualised."
+
+#: src/pages/kit/index.tsx
+msgid "Inputs, progress, timeline, tabs"
+msgstr "Inputs, progress, timeline, tabs"
+
+#: src/pages/kit/index.tsx
+msgid "Process id"
+msgstr "Process id"
+
+#: src/pages/kit/index.tsx
+msgid "Status"
+msgstr "Status"
+
+#: src/pages/kit/index.tsx
+msgid "All"
+msgstr "All"
+
+#: src/pages/kit/index.tsx
+msgid "Only mine"
+msgstr "Only mine"
+
+#: src/pages/kit/index.tsx
+msgid "Toggle"
+msgstr "Toggle"
+
+#: src/pages/kit/index.tsx
+msgid "voters"
+msgstr "voters"
+
+#: src/pages/kit/index.tsx
+msgid "Created"
+msgstr "Created"
+
+#: src/pages/kit/index.tsx
+#: src/pages/overview/index.tsx
+#: src/routes/paths.ts
+msgid "Overview"
+msgstr "Overview"
+
+#: src/pages/kit/index.tsx
+msgid "Tab one."
+msgstr "Tab one."
+
+#: src/pages/kit/index.tsx
+#: src/pages/overview/index.tsx
+msgid "Transitions"
+msgstr "Transitions"
+
+#: src/pages/kit/index.tsx
+msgid "Tab two."
+msgstr "Tab two."
+
+#: src/pages/kit/index.tsx
+msgid "Open dialog"
+msgstr "Open dialog"
+
+#: src/pages/kit/index.tsx
+msgid "Dialog"
+msgstr "Dialog"
+
+#: src/pages/kit/index.tsx
+msgid "A modal panel."
+msgstr "A modal panel."
+
+#: src/pages/kit/index.tsx
+msgid "Content."
+msgstr "Content."
+
+#: src/pages/kit/index.tsx
+msgid "Empty state"
+msgstr "Empty state"
+
+#: src/pages/kit/index.tsx
+msgid "What a panel shows when the chain has nothing to show."
+msgstr "What a panel shows when the chain has nothing to show."
+
+#: src/pages/not-found/index.tsx
+msgid "No such page"
+msgstr "No such page"
+
+#: src/pages/not-found/index.tsx
+msgid "Nothing is routed at {pathname}."
+msgstr "Nothing is routed at {pathname}."
+
+#: src/pages/not-found/index.tsx
+msgid "Try the overview"
+msgstr "Try the overview"
+
+#: src/pages/not-found/index.tsx
+msgid "Or search for a process id, vote id, transaction, address or block in the bar above."
+msgstr "Or search for a process id, vote id, transaction, address or block in the bar above."
+
+#: src/pages/not-found/index.tsx
+msgid "Go to the overview"
+msgstr "Go to the overview"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgctxt "activity kind"
+msgid "created"
+msgstr "created"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgctxt "activity kind"
+msgid "transition"
+msgstr "transition"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgctxt "activity kind"
+msgid "results"
+msgstr "results"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgctxt "activity kind"
+msgid "status"
+msgstr "status"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgctxt "activity kind"
+msgid "decryption"
+msgstr "decryption"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgctxt "activity kind"
+msgid "census"
+msgstr "census"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgctxt "activity kind"
+msgid "duration"
+msgstr "duration"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgctxt "activity kind"
+msgid "limit"
+msgstr "limit"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgid "Recent activity"
+msgstr "Recent activity"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgid "Registry events"
+msgstr "Registry events"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgid "Every process creation, settled batch, status change and result, newest first."
+msgstr "Every process creation, settled batch, status change and result, newest first."
+
+#: src/pages/overview/ActivityPanel.tsx
+msgid "No activity yet"
+msgstr "No activity yet"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgid "Process creations, the batches sequencers settle, status changes and results will be listed here as the registry emits them."
+msgstr "Process creations, the batches sequencers settle, status changes and results will be listed here as the registry emits them."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Identifies the vote-batch zkVM program. The registry verifies every state transition against it, so a proof of any other program fails."
+msgstr "Identifies the vote-batch zkVM program. The registry verifies every state transition against it, so a proof of any other program fails."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Identifies the results zkVM program that proves a sequencer-key tally."
+msgstr "Identifies the results zkVM program that proves a sequencer-key tally."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Root of the ZisK proving setup both proofs are wrapped under."
+msgstr "Root of the ZisK proving setup both proofs are wrapped under."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "keccak256 of the PLONK verifier contract code the registry calls."
+msgstr "keccak256 of the PLONK verifier contract code the registry calls."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Hash of the verification key of the voter ballot proofs. It becomes state leaf 0x07 at creation, and the batch program checks the key it uses against it."
+msgstr "Hash of the verification key of the voter ballot proofs. It becomes state leaf 0x07 at creation, and the batch program checks the key it uses against it."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Network"
+msgstr "Network"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Deployment"
+msgstr "Deployment"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Where this explorer reads from, and whether the deployment runs a known release."
+msgstr "Where this explorer reads from, and whether the deployment runs a known release."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Chain"
+msgstr "Chain"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "· id {chainId}"
+msgstr "· id {chainId}"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Head block"
+msgstr "Head block"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "events indexed to block {indexedTo}"
+msgstr "events indexed to block {indexedTo}"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "The ProcessRegistry contract: it stores every process and settles every state transition and result after verifying its proof."
+msgstr "The ProcessRegistry contract: it stores every process and settles every state transition and result after verifying its proof."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Verifier"
+msgstr "Verifier"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "The ZisK PLONK verifier the registry calls for every batch and results proof."
+msgstr "The ZisK PLONK verifier the registry calls for every batch and results proof."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "DKG adapter"
+msgstr "DKG adapter"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "The registry's link to the davinci-dkg committee contracts. Without it the two DKG key modes are disabled."
+msgstr "The registry's link to the davinci-dkg committee contracts. Without it the two DKG key modes are disabled."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "none: DKG key modes disabled"
+msgstr "none: DKG key modes disabled"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Release pins"
+msgstr "Release pins"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "The registry fixes what its proofs must come from: two program keys, the ZisK setup root, the ballot proof key and the verifier code. The explorer compares each with the davinci-zkvm releases it knows. A full match means this registry accepts proofs from that release's programs only."
+msgstr "The registry fixes what its proofs must come from: two program keys, the ZisK setup root, the ballot proof key and the verifier code. The explorer compares each with the davinci-zkvm releases it knows. A full match means this registry accepts proofs from that release's programs only."
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "matches {matched}"
+msgstr "matches {matched}"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "reading…"
+msgstr "reading…"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "no known release"
+msgstr "no known release"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Release pin checks"
+msgstr "Release pin checks"
+
+#: src/pages/overview/NetworkCard.tsx
+msgid "Compared with {closest}, the closest known release. A mismatch is either a newer release this explorer does not list yet or a deployment of other programs; check it on the contracts page."
+msgstr "Compared with {closest}, the closest known release. A mismatch is either a newer release this explorer does not list yet or a deployment of other programs; check it on the contracts page."
+
+#: src/pages/overview/ProcessesPanel.tsx
+msgctxt "process phase"
+msgid "upcoming"
+msgstr "upcoming"
+
+#: src/pages/overview/ProcessesPanel.tsx
+msgctxt "process phase"
+msgid "paused"
+msgstr "paused"
+
+#: src/pages/overview/ProcessesPanel.tsx
+msgctxt "process phase"
+msgid "voting closed"
+msgstr "voting closed"
+
+#: src/pages/overview/ProcessesPanel.tsx
+msgctxt "process phase"
+msgid "canceled"
+msgstr "canceled"
+
+#: src/pages/overview/ProcessesPanel.tsx
+msgid "By phase, key and census"
+msgstr "By phase, key and census"
+
+#: src/pages/overview/ProcessesPanel.tsx
+#: src/pages/overview/RoleCards.tsx
+msgid "All processes"
+msgstr "All processes"
+
+#: src/pages/overview/ProcessesPanel.tsx
+#: src/pages/processes/index.tsx
+msgid "No processes yet"
+msgstr "No processes yet"
+
+#: src/pages/overview/ProcessesPanel.tsx
+msgid "Each process an organizer creates will be counted here by phase, key mode and census."
+msgstr "Each process an organizer creates will be counted here by phase, key mode and census."
+
+#: src/pages/overview/ProcessesPanel.tsx
+#: src/pages/processes/index.tsx
+msgid "Key mode"
+msgstr "Key mode"
+
+#: src/pages/overview/ProcessesPanel.tsx
+#: src/pages/processes/index.tsx
+#: src/pages/processes/index.tsx
+msgid "Census"
+msgstr "Census"
+
+#: src/pages/overview/RoleCards.tsx
+msgid "I'm a voter"
+msgstr "I'm a voter"
+
+#: src/pages/overview/RoleCards.tsx
+#: src/pages/overview/RoleCards.tsx
+msgid "Check my vote"
+msgstr "Check my vote"
+
+#: src/pages/overview/RoleCards.tsx
+msgid "Your voting app gives you a process id and a vote id. With them the explorer finds the batch whose blob lists your vote id and, when a sequencer is configured, checks your tracker proof against a state root the registry holds."
+msgstr "Your voting app gives you a process id and a vote id. With them the explorer finds the batch whose blob lists your vote id and, when a sequencer is configured, checks your tracker proof against a state root the registry holds."
+
+#: src/pages/overview/RoleCards.tsx
+msgid "I'm an organizer"
+msgstr "I'm an organizer"
+
+#: src/pages/overview/RoleCards.tsx
+msgid "My processes"
+msgstr "My processes"
+
+#: src/pages/overview/RoleCards.tsx
+msgid "Follow your processes: ballot rules, census, key, every batch settled and the results. A process id starts with its organizer's address."
+msgstr "Follow your processes: ballot rules, census, key, every batch settled and the results. A process id starts with its organizer's address."
+
+#: src/pages/overview/RoleCards.tsx
+msgid "Organizer address"
+msgstr "Organizer address"
+
+#: src/pages/overview/RoleCards.tsx
+msgid "Organizer address, 0x…"
+msgstr "Organizer address, 0x…"
+
+#: src/pages/overview/RoleCards.tsx
+#: src/pages/processes/index.tsx
+msgid "An address is 0x followed by 40 hex digits."
+msgstr "An address is 0x followed by 40 hex digits."
+
+#: src/pages/overview/RoleCards.tsx
+msgid "Show my processes"
+msgstr "Show my processes"
+
+#: src/pages/overview/RoleCards.tsx
+msgid "I'm an auditor"
+msgstr "I'm an auditor"
+
+#: src/pages/overview/RoleCards.tsx
+msgid "Check which programs the registry accepts proofs from, then every state transition (root continuity, census, blobs) and how each result was proven. Each check comes with how to redo it yourself."
+msgstr "Check which programs the registry accepts proofs from, then every state transition (root continuity, census, blobs) and how each result was proven. Each check comes with how to redo it yourself."
+
+#: src/pages/overview/RoleCards.tsx
+msgid "Contracts and pins"
+msgstr "Contracts and pins"
+
+#: src/pages/overview/RoleCards.tsx
+msgid "How DAVINCI works"
+msgstr "How DAVINCI works"
+
+#: src/pages/overview/VotesPerDayPanel.tsx
+msgid "{transitions, plural, one {# transition} other {# transitions}}"
+msgstr "{transitions, plural, one {# transition} other {# transitions}}"
+
+#: src/pages/overview/VotesPerDayPanel.tsx
+msgid "Ballots settled per day"
+msgstr "Ballots settled per day"
+
+#: src/pages/overview/VotesPerDayPanel.tsx
+msgid "Last {DAYS} days, UTC"
+msgstr "Last {DAYS} days, UTC"
+
+#: src/pages/overview/VotesPerDayPanel.tsx
+msgid "A ballot is a new voter or an overwrite of an earlier vote. The silent refreshes each batch adds are not votes and are not counted."
+msgstr "A ballot is a new voter or an overwrite of an earlier vote. The silent refreshes each batch adds are not votes and are not counted."
+
+#: src/pages/overview/VotesPerDayPanel.tsx
+msgid "{total} in total"
+msgstr "{total} in total"
+
+#: src/pages/overview/VotesPerDayPanel.tsx
+msgid "No ballots settled in the last {DAYS} days"
+msgstr "No ballots settled in the last {DAYS} days"
+
+#: src/pages/overview/VotesPerDayPanel.tsx
+msgid "Each batch a sequencer settles adds its votes to the day it landed on."
+msgstr "Each batch a sequencer settles adds its votes to the day it landed on."
+
+#: src/pages/overview/VotesPerDayPanel.tsx
+msgid "new voters"
+msgstr "new voters"
+
+#: src/pages/overview/index.tsx
+msgid "What this DAVINCI deployment is doing, and how to check it yourself. Everything here is read from the chain by your browser."
+msgstr "What this DAVINCI deployment is doing, and how to check it yourself. Everything here is read from the chain by your browser."
+
+#: src/pages/overview/index.tsx
+msgid "Browse processes"
+msgstr "Browse processes"
+
+#: src/pages/overview/index.tsx
+msgid "No processes on this registry yet"
+msgstr "No processes on this registry yet"
+
+#: src/pages/overview/index.tsx
+msgid "The registry is deployed and the explorer is watching it. When an organizer creates a process it shows up here with its ballot rules, census and key. Each batch a sequencer settles then appears as a state transition with its blobs, and the tally appears once the process ends. Meanwhile you can already check the deployment itself."
+msgstr "The registry is deployed and the explorer is watching it. When an organizer creates a process it shows up here with its ballot rules, census and key. Each batch a sequencer settles then appears as a state transition with its blobs, and the tally appears once the process ends. Meanwhile you can already check the deployment itself."
+
+#: src/pages/overview/index.tsx
+msgid "{open, plural, one {# open} other {# open}} · {withResults} with results"
+msgstr "{open, plural, one {# open} other {# open}} · {withResults} with results"
+
+#: src/pages/overview/index.tsx
+msgid "Ballots settled"
+msgstr "Ballots settled"
+
+#: src/pages/overview/index.tsx
+msgid "{voters, plural, one {# voter} other {# voters}} · {overwrites, plural, one {# overwrite} other {# overwrites}}"
+msgstr "{voters, plural, one {# voter} other {# voters}} · {overwrites, plural, one {# overwrite} other {# overwrites}}"
+
+#: src/pages/overview/index.tsx
+msgid "Votes in settled batches. A voter counts once however often they vote again; each later vote is an overwrite that replaces the previous one."
+msgstr "Votes in settled batches. A voter counts once however often they vote again; each later vote is an overwrite that replaces the previous one."
+
+#: src/pages/overview/index.tsx
+msgid "{blobs, plural, one {# blob published} other {# blobs published}}"
+msgstr "{blobs, plural, one {# blob published} other {# blobs published}}"
+
+#: src/pages/overview/index.tsx
+msgid "A transition is one batch of votes a sequencer proved and settled on the registry. Its data travels in EIP-4844 blobs, so anyone can rebuild the state."
+msgstr "A transition is one batch of votes a sequencer proved and settled on the registry. Its data travels in EIP-4844 blobs, so anyone can rebuild the state."
+
+#: src/pages/overview/index.tsx
+msgid "Last activity"
+msgstr "Last activity"
+
+#: src/pages/overview/index.tsx
+msgid "block {lastBlock}"
+msgstr "block {lastBlock}"
+
+#: src/pages/overview/index.tsx
+msgid "no registry events yet"
+msgstr "no registry events yet"
+
+#: src/pages/processes/filters.ts
+msgid "Ready (any time)"
+msgstr "Ready (any time)"
+
+#: src/pages/processes/index.tsx
+msgid "Process id: organizer address, registry prefix and nonce. Sorts by creation."
+msgstr "Process id: organizer address, registry prefix and nonce. Sorts by creation."
+
+#: src/pages/processes/index.tsx
+#: src/pages/processes/index.tsx
+msgid "Organizer"
+msgstr "Organizer"
+
+#: src/pages/processes/index.tsx
+msgid "The account that created the process; click to list only its processes."
+msgstr "The account that created the process; click to list only its processes."
+
+#: src/pages/processes/index.tsx
+#: src/pages/processes/index.tsx
+msgid "Phase"
+msgstr "Phase"
+
+#: src/pages/processes/index.tsx
+msgid "Key"
+msgstr "Key"
+
+#: src/pages/processes/index.tsx
+msgid "Who holds the election key and who can decrypt the tally."
+msgstr "Who holds the election key and who can decrypt the tally."
+
+#: src/pages/processes/index.tsx
+msgid "Where the list of eligible voters comes from."
+msgstr "Where the list of eligible voters comes from."
+
+#: src/pages/processes/index.tsx
+msgid "Voters / overwrites"
+msgstr "Voters / overwrites"
+
+#: src/pages/processes/index.tsx
+msgid "at most {maxVoters, plural, one {# voter} other {# voters}}"
+msgstr "at most {maxVoters, plural, one {# voter} other {# voters}}"
+
+#: src/pages/processes/index.tsx
+msgid "max voters not read yet"
+msgstr "max voters not read yet"
+
+#: src/pages/processes/index.tsx
+msgid "Distinct voters, and votes that replaced an earlier vote of the same voter."
+msgstr "Distinct voters, and votes that replaced an earlier vote of the same voter."
+
+#: src/pages/processes/index.tsx
+msgid "Start"
+msgstr "Start"
+
+#: src/pages/processes/index.tsx
+msgid "End"
+msgstr "End"
+
+#: src/pages/processes/index.tsx
+msgid "Start time plus duration; ending early shortens the duration."
+msgstr "Start time plus duration; ending early shortens the duration."
+
+#: src/pages/processes/index.tsx
+msgid "yes"
+msgstr "yes"
+
+#: src/pages/processes/index.tsx
+msgid "Every voting process on the registry"
+msgstr "Every voting process on the registry"
+
+#: src/pages/processes/index.tsx
+msgid "Each process fixes its ballot rules, census and encryption key at creation. Sequencers then settle batches of votes on it until it ends and its tally is published."
+msgstr "Each process fixes its ballot rules, census and encryption key at creation. Sequencers then settle batches of votes on it until it ends and its tally is published."
+
+#: src/pages/processes/index.tsx
+msgid "Search"
+msgstr "Search"
+
+#: src/pages/processes/index.tsx
+msgid "Search processes by id or organizer"
+msgstr "Search processes by id or organizer"
+
+#: src/pages/processes/index.tsx
+msgid "Process id or organizer, or part of one"
+msgstr "Process id or organizer, or part of one"
+
+#: src/pages/processes/index.tsx
+msgid "Any phase"
+msgstr "Any phase"
+
+#: src/pages/processes/index.tsx
+msgid "Any key mode"
+msgstr "Any key mode"
+
+#: src/pages/processes/index.tsx
+msgid "Any census"
+msgstr "Any census"
+
+#: src/pages/processes/index.tsx
+msgid "0x… (whole address)"
+msgstr "0x… (whole address)"
+
+#: src/pages/processes/index.tsx
+msgid "<0>{count, plural, one {# process} other {# processes}}</0> {count, plural, one {matches} other {match}}, of {total} on the registry."
+msgstr "<0>{count, plural, one {# process} other {# processes}}</0> {count, plural, one {matches} other {match}}, of {total} on the registry."
+
+#: src/pages/processes/index.tsx
+msgid "<0>{count, plural, one {# process} other {# processes}}</0> on the registry, newest first."
+msgstr "<0>{count, plural, one {# process} other {# processes}}</0> on the registry, newest first."
+
+#: src/pages/processes/index.tsx
+msgid "Phases combine the on-chain status with the clock: a process stays Ready after its end time until someone ends it or publishes results, which is shown as Voting closed."
+msgstr "Phases combine the on-chain status with the clock: a process stays Ready after its end time until someone ends it or publishes results, which is shown as Voting closed."
+
+#: src/pages/processes/index.tsx
+#: src/pages/processes/index.tsx
+msgid "Clear filters"
+msgstr "Clear filters"
+
+#: src/pages/processes/index.tsx
+msgid "No process matches these filters"
+msgstr "No process matches these filters"
+
+#: src/pages/processes/index.tsx
+msgid "Widen the phase, key mode or census, or clear the search."
+msgstr "Widen the phase, key mode or census, or clear the search."
+
+#: src/pages/processes/index.tsx
+msgid "When an organizer calls newProcess on the registry, the process appears here with its phase, key mode, census and progress."
+msgstr "When an organizer calls newProcess on the registry, the process appears here with its phase, key mode, census and progress."
+
+#: src/protocol/publics.ts
+msgid "A ballot proof or VK point is off the curve or the identity"
+msgstr "A ballot proof or VK point is off the curve or the identity"
+
+#: src/protocol/publics.ts
+msgid "The batched Groth16 pairing check failed"
+msgstr "The batched Groth16 pairing check failed"
+
+#: src/protocol/publics.ts
+msgid "A vote signature is missing or does not recover to the voter"
+msgstr "A vote signature is missing or does not recover to the voter"
+
+#: src/protocol/publics.ts
+msgid "The vote-id insertion chain is invalid"
+msgstr "The vote-id insertion chain is invalid"
+
+#: src/protocol/publics.ts
+msgid "The ballot insertion or update chain is invalid"
+msgstr "The ballot insertion or update chain is invalid"
+
+#: src/protocol/publics.ts
+msgid "The results transition is invalid or not an update of key 0x04"
+msgstr "The results transition is invalid or not an update of key 0x04"
+
+#: src/protocol/publics.ts
+msgid "A process config read proof is invalid or missing"
+msgstr "A process config read proof is invalid or missing"
+
+#: src/protocol/publics.ts
+msgid "Vote-id namespace, upper limbs or proof binding mismatch"
+msgstr "Vote-id namespace, upper limbs or proof binding mismatch"
+
+#: src/protocol/publics.ts
+msgid "Ballot slot namespace, slot binding or a duplicate slot in the batch"
+msgstr "Ballot slot namespace, slot binding or a duplicate slot in the batch"
+
+#: src/protocol/publics.ts
+msgid "A census proof is invalid or the census roots differ"
+msgstr "A census proof is invalid or the census roots differ"
+
+#: src/protocol/publics.ts
+msgid "Election key invalid, re-encryption mismatch or padded slot not identity"
+msgstr "Election key invalid, re-encryption mismatch or padded slot not identity"
+
+#: src/protocol/publics.ts
+msgid "Blob count is zero or not ceil(T / 4096) for the T cells of the data"
+msgstr "Blob count is zero or not ceil(T / 4096) for the T cells of the data"
+
+#: src/protocol/publics.ts
+msgid "A required input block is absent or empty"
+msgstr "A required input block is absent or empty"
+
+#: src/protocol/publics.ts
+msgid "The results accumulator does not match the ballots"
+msgstr "The results accumulator does not match the ballots"
+
+#: src/protocol/publics.ts
+msgid "A ballot leaf hash or ballot count mismatch"
+msgstr "A ballot leaf hash or ballot count mismatch"
+
+#: src/protocol/publics.ts
+msgid "Cross-block binding mismatch"
+msgstr "Cross-block binding mismatch"
+
+#: src/protocol/publics.ts
+msgid "A CSP census entry is malformed, duplicated or does not recover"
+msgstr "A CSP census entry is malformed, duplicated or does not recover"
+
+#: src/protocol/publics.ts
+msgid "The silent-refresh chain breaks a rule"
+msgstr "The silent-refresh chain breaks a rule"
+
+#: src/protocol/publics.ts
+msgid "The prover input could not be parsed"
+msgstr "The prover input could not be parsed"
+
+#: src/protocol/publics.ts
+msgid "The input frame could not be parsed"
+msgstr "The input frame could not be parsed"
+
+#: src/protocol/publics.ts
+msgid "The encryption key is invalid"
+msgstr "The encryption key is invalid"
+
+#: src/protocol/publics.ts
+msgid "The key leaf 0x03 is not under the state root"
+msgstr "The key leaf 0x03 is not under the state root"
+
+#: src/protocol/publics.ts
+msgid "The accumulator leaf 0x04 is not under the state root"
+msgstr "The accumulator leaf 0x04 is not under the state root"
+
+#: src/protocol/publics.ts
+msgid "A Chaum–Pedersen decryption proof failed"
+msgstr "A Chaum–Pedersen decryption proof failed"
+
+#: src/protocol/publics.ts
+msgid "A coordinate or scalar is out of range"
+msgstr "A coordinate or scalar is out of range"
+
+#: src/protocol/publics.ts
+msgid "1 when every check in the guest passed. The registry refuses anything else."
+msgstr "1 when every check in the guest passed. The registry refuses anything else."
+
+#: src/protocol/publics.ts
+msgid "One bit per failed check; zero on a valid batch."
+msgstr "One bit per failed check; zero on a valid batch."
+
+#: src/protocol/publics.ts
+msgid "State root the batch starts from. Must equal the process root on-chain (root continuity)."
+msgstr "State root the batch starts from. Must equal the process root on-chain (root continuity)."
+
+#: src/protocol/publics.ts
+msgid "State root after the batch; becomes the new process root."
+msgstr "State root after the batch; becomes the new process root."
+
+#: src/protocol/publics.ts
+msgid "Votes in the batch, overwrites included."
+msgstr "Votes in the batch, overwrites included."
+
+#: src/protocol/publics.ts
+msgid "Votes that replaced an earlier vote of the same voter."
+msgstr "Votes that replaced an earlier vote of the same voter."
+
+#: src/protocol/publics.ts
+msgid "Census root every ballot proved membership against (CSP: the signer address). Checked against the process census."
+msgstr "Census root every ballot proved membership against (CSP: the signer address). Checked against the process census."
+
+#: src/protocol/publics.ts
+msgid "sha256 over the (commitment, evaluation) pair of every blob; binds the published data to the proof."
+msgstr "sha256 over the (commitment, evaluation) pair of every blob; binds the published data to the proof."
+
+#: src/protocol/publics.ts
+msgid "Number of EIP-4844 blobs carrying the transition data."
+msgstr "Number of EIP-4844 blobs carrying the transition data."
+
+#: src/protocol/publics.ts
+msgid "Always zero."
+msgstr "Always zero."
+
+#: src/protocol/publics.ts
+msgid "The batched Groth16 check of the ballot proofs passed."
+msgstr "The batched Groth16 check of the ballot proofs passed."
+
+#: src/protocol/publics.ts
+msgid "Every vote signature verified."
+msgstr "Every vote signature verified."
+
+#: src/protocol/publics.ts
+msgid "Distinct ballot slots written before the batch. Must equal votersCount on-chain; it sizes the silent refreshes."
+msgstr "Distinct ballot slots written before the batch. Must equal votersCount on-chain; it sizes the silent refreshes."
+
+#: src/protocol/publics.ts
+msgid "Ballot proofs in the batch (equals the votes when ok)."
+msgstr "Ballot proofs in the batch (equals the votes when ok)."
+
+#: src/protocol/publics.ts
+msgid "Public inputs per ballot proof."
+msgstr "Public inputs per ballot proof."
+
+#: src/protocol/publics.ts
+msgid "floor(log2(nproofs)), echoed unchecked."
+msgstr "floor(log2(nproofs)), echoed unchecked."
+
+#: src/protocol/releases.ts
+msgid "Vote-batch program vk"
+msgstr "Vote-batch program vk"
+
+#: src/protocol/releases.ts
+msgid "Results program vk"
+msgstr "Results program vk"
+
+#: src/protocol/releases.ts
+msgid "ZisK setup root (rootCVadcopFinal)"
+msgstr "ZisK setup root (rootCVadcopFinal)"
+
+#: src/protocol/releases.ts
+msgid "Verifier code hash"
+msgstr "Verifier code hash"
+
+#: src/protocol/releases.ts
+msgid "Ballot VK hash"
+msgstr "Ballot VK hash"
+
+#: src/protocol/types.ts
+msgid "Ready"
+msgstr "Ready"
+
+#: src/protocol/types.ts
+msgid "Open: sequencers accept votes and settle batches until the end time."
+msgstr "Open: sequencers accept votes and settle batches until the end time."
+
+#: src/protocol/types.ts
+msgid "Paused by the organizer. Votes may queue at a sequencer but no batch settles until it resumes."
+msgstr "Paused by the organizer. Votes may queue at a sequencer but no batch settles until it resumes."
+
+#: src/protocol/types.ts
+msgid "Closed to votes. The final state root is fixed; the results are pending."
+msgstr "Closed to votes. The final state root is fixed; the results are pending."
+
+#: src/protocol/types.ts
+msgid "Canceled by the organizer. No results will be published."
+msgstr "Canceled by the organizer. No results will be published."
+
+#: src/protocol/types.ts
+msgid "The tally is on-chain, proven against the final state root."
+msgstr "The tally is on-chain, proven against the final state root."
+
+#: src/protocol/types.ts
+msgid "Unknown"
+msgstr "Unknown"
+
+#: src/protocol/types.ts
+msgid "Not a census origin the registry accepts."
+msgstr "Not a census origin the registry accepts."
+
+#: src/protocol/types.ts
+msgid "Merkle tree, fixed"
+msgstr "Merkle tree, fixed"
+
+#: src/protocol/types.ts
+msgid "A lean-IMT census root published at creation and never changed. Voters prove membership against it."
+msgstr "A lean-IMT census root published at creation and never changed. Voters prove membership against it."
+
+#: src/protocol/types.ts
+msgid "Merkle tree, updatable"
+msgstr "Merkle tree, updatable"
+
+#: src/protocol/types.ts
+msgid "A lean-IMT census root the organizer can replace while the process is open (CensusUpdated)."
+msgstr "A lean-IMT census root the organizer can replace while the process is open (CensusUpdated)."
+
+#: src/protocol/types.ts
+msgid "On-chain census contract"
+msgstr "On-chain census contract"
+
+#: src/protocol/types.ts
+msgid "The census lives in a contract; every batch must use a root the contract held since the process was created."
+msgstr "The census lives in a contract; every batch must use a root the contract held since the process was created."
+
+#: src/protocol/types.ts
+msgid "Credential service provider"
+msgstr "Credential service provider"
+
+#: src/protocol/types.ts
+msgid "Voters present a signature from the CSP signer whose address is the census root."
+msgstr "Voters present a signature from the CSP signer whose address is the census root."
+
+#: src/protocol/types.ts
+msgid "Sequencer key"
+msgstr "Sequencer key"
+
+#: src/protocol/types.ts
+msgid "One sequencer node holds the election key: it could open the ballots and alone publishes the tally, with a zkVM results proof."
+msgstr "One sequencer node holds the election key: it could open the ballots and alone publishes the tally, with a zkVM results proof."
+
+#: src/protocol/types.ts
+msgid "DKG, automatic"
+msgstr "DKG, automatic"
+
+#: src/protocol/types.ts
+msgid "A davinci-dkg committee key. No sequencer and no organizer holds the secret; each committee member holds one share, and a threshold of them decrypts the final tally once asked."
+msgstr "A davinci-dkg committee key. No sequencer and no organizer holds the secret; each committee member holds one share, and a threshold of them decrypts the final tally once asked."
+
+#: src/protocol/types.ts
+msgid "DKG, organizer-locked"
+msgstr "DKG, organizer-locked"
+
+#: src/protocol/types.ts
+msgid "A davinci-dkg committee key combined with an organizer key. The tally is decrypted only after the organizer reveals its secret."
+msgstr "A davinci-dkg committee key combined with an organizer key. The tally is decrypted only after the organizer reveals its secret."
+
+#: src/routes/paths.ts
+msgid "Contracts"
+msgstr "Contracts"
+
+#: src/routes/paths.ts
+msgid "Sequencers"
+msgstr "Sequencers"
+
+#: src/routes/paths.ts
+msgid "Learn"
+msgstr "Learn"

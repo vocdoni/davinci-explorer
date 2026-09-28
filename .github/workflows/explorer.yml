@@ -1,10 +1,10 @@
 name: Explorer
 
-# Lint, typecheck, unit tests, the Playwright smoke suite (demo mode) and the
-# production build on every PR and push, then the nginx image. Branch pushes
-# publish the image to GHCR and Docker Hub under the branch name; a release tag
-# vX.Y.Z publishes :vX.Y.Z and moves :latest to it (prereleases don't). Pull
-# requests build the image only.
+# Lint, typecheck, unit tests, the translation catalogs, the Playwright smoke
+# suite (demo mode) and the production build on every PR and push, then the
+# nginx image. Branch pushes publish the image to GHCR and Docker Hub under the
+# branch name; a release tag vX.Y.Z publishes :vX.Y.Z and moves :latest to it
+# (prereleases don't). Pull requests build the image only.
 
 on:
   push:
@@ -48,6 +48,8 @@ jobs:
         run: pnpm format:check
       - name: Unit tests
         run: pnpm test
+      - name: Translations (catalogs extracted, es and ca complete)
+        run: pnpm i18n:check
       - name: Build
         run: pnpm build
         env:

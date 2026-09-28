@@ -1,3 +1,6 @@
+import type { MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import { useIndexer, useNetworkStats } from '~data/hooks'
 import type { ProcessPhase } from '~indexer/selectors'
@@ -7,14 +10,14 @@ import { formatNumber } from '~lib/format'
 import { CENSUS_ORIGIN_INFO, KEY_MODE_INFO, type CensusOriginName, type KeyModeName } from '~protocol/types'
 import { paths } from '~routes/paths'
 
-const PHASES: Array<{ phase: ProcessPhase; label: string; color: string }> = [
-  { phase: 'open', label: 'open', color: CHART_COLORS.emerald },
-  { phase: 'upcoming', label: 'upcoming', color: CHART_COLORS.teal },
-  { phase: 'paused', label: 'paused', color: CHART_COLORS.amber },
-  { phase: 'closed', label: 'voting closed', color: CHART_COLORS.warmGray },
-  { phase: 'ended', label: 'ended', color: CHART_COLORS.pewter },
-  { phase: 'results', label: 'results', color: CHART_COLORS.slate },
-  { phase: 'canceled', label: 'canceled', color: CHART_COLORS.red },
+const PHASES: Array<{ phase: ProcessPhase; label: MessageDescriptor; color: string }> = [
+  { phase: 'open', label: msg({ message: 'open', context: 'process phase' }), color: CHART_COLORS.emerald },
+  { phase: 'upcoming', label: msg({ message: 'upcoming', context: 'process phase' }), color: CHART_COLORS.teal },
+  { phase: 'paused', label: msg({ message: 'paused', context: 'process phase' }), color: CHART_COLORS.amber },
+  { phase: 'closed', label: msg({ message: 'voting closed', context: 'process phase' }), color: CHART_COLORS.warmGray },
+  { phase: 'ended', label: msg({ message: 'ended', context: 'process phase' }), color: CHART_COLORS.pewter },
+  { phase: 'results', label: msg({ message: 'results', context: 'process phase' }), color: CHART_COLORS.slate },
+  { phase: 'canceled', label: msg({ message: 'canceled', context: 'process phase' }), color: CHART_COLORS.red },
 ]
 
 const KEY_MODES: KeyModeName[] = ['sequencer', 'dkg-automatic', 'dkg-locked']
@@ -36,29 +39,30 @@ function CountLink({ to, label, count }: { to: string; label: string; count: num
 
 /** Processes by phase, key mode and census origin, each linking to the filtered list. */
 export function ProcessesPanel() {
+  const { i18n, t } = useLingui()
   const stats = useNetworkStats()
   const { loading } = useIndexer()
   const slices: DonutSlice[] = PHASES.filter((p) => stats.byPhase[p.phase] > 0).map((p) => ({
-    label: p.label,
+    label: i18n._(p.label),
     value: stats.byPhase[p.phase],
     color: p.color,
   }))
 
   return (
     <Panel
-      title='Processes'
-      label='By phase, key and census'
+      title={t`Processes`}
+      label={t`By phase, key and census`}
       actions={
         <Link to={paths.processes()} className='text-[13px] text-emerald hover:underline'>
-          All processes
+          <Trans>All processes</Trans>
         </Link>
       }
     >
       {!loading && stats.processes === 0 ? (
         <EmptyState
           compact
-          title='No processes yet'
-          description='Each process an organizer creates will be counted here by phase, key mode and census.'
+          title={t`No processes yet`}
+          description={t`Each process an organizer creates will be counted here by phase, key mode and census.`}
         />
       ) : (
         <div className='flex flex-col gap-5'>
@@ -66,11 +70,13 @@ export function ProcessesPanel() {
             slices={slices}
             loading={loading}
             centerValue={formatNumber(stats.processes)}
-            centerLabel='processes'
+            centerLabel={t`processes`}
           />
           <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2'>
             <div>
-              <div className='label-caps mb-1 text-[11px] text-pewter'>Key mode</div>
+              <div className='label-caps mb-1 text-[11px] text-pewter'>
+                <Trans>Key mode</Trans>
+              </div>
               <ul>
                 {KEY_MODES.map((m) => (
                   <CountLink
@@ -83,7 +89,9 @@ export function ProcessesPanel() {
               </ul>
             </div>
             <div>
-              <div className='label-caps mb-1 text-[11px] text-pewter'>Census</div>
+              <div className='label-caps mb-1 text-[11px] text-pewter'>
+                <Trans>Census</Trans>
+              </div>
               <ul>
                 {CENSUS.map((c) => (
                   <CountLink

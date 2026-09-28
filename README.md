@@ -52,7 +52,7 @@ and `"beaconUrl": "/proxy/beacon"`.
 ```sh
 pnpm lint           # tsc --noEmit + eslint
 pnpm format         # prettier --write
-pnpm test           # vitest: decoders, config, reducers, selectors, hooks, shell
+pnpm test           # vitest: decoders, config, reducers, selectors, hooks, shell, catalogs
 pnpm test:e2e       # Playwright smoke suite against demo mode (builds, then vite preview)
 pnpm build          # → dist/
 ```
@@ -64,6 +64,26 @@ the transition page does (it needs the network, so it is off by default).
 Playwright needs Chromium once: `pnpm test:e2e:install` (it goes to
 `~/.cache/ms-playwright`). `E2E_BASE_URL=http://127.0.0.1:5173 pnpm test:e2e`
 runs the suite against a server that is already up.
+
+## Translations
+
+The explorer is in English, Spanish and Catalan. The first visit follows the
+browser's language; the selector in the top bar switches it and the choice
+is kept in the browser. English is written inline in the code through the
+Lingui macros (`<Trans>`, `` t`…` ``, `` msg`…` ``) and is the source; the
+translations live in `src/locales/<locale>/messages.po`, and
+[`src/locales/GLOSSARY.md`](src/locales/GLOSSARY.md) fixes the words.
+
+```sh
+pnpm i18n:extract   # update every catalog from the code
+pnpm i18n:check     # fails when the catalogs are stale or es/ca miss a translation
+```
+
+Change text, run `i18n:extract`, translate the new Spanish and Catalan entries
+and commit the catalogs with the change; CI runs `i18n:check`. A new language
+is one entry in `LOCALES` (`src/i18n/locales.ts`, which the Lingui config
+reads) plus its catalog. [docs/translations.md](docs/translations.md) has the
+details.
 
 ## Configuration
 
@@ -146,11 +166,13 @@ and generated blobs. It makes no network request and needs no
 
 ```
 src/
-├── main.tsx, App.tsx     entry and provider tree (theme → config → query → data → router)
+├── main.tsx, App.tsx     entry and provider tree (locale → theme → config → query → data → router)
 ├── styles/index.css      Tailwind entry and the design tokens, dark and light
 ├── theme/                theme preference (system/light/dark), provider, hook
+├── i18n/                 languages, detection, catalog loading, the Lingui provider
+├── locales/              messages.po per language, and the glossary
 ├── config/               runtime config loader, <ConfigProvider>, useRuntimeConfig()
-├── app/                  shell: TopBar, ThemeToggle, ChainPill, GlobalSearch, StatusBanners, Footer
+├── app/                  shell: TopBar, ThemeToggle, LanguageSelect, ChainPill, GlobalSearch, StatusBanners, Footer
 ├── routes/               paths.ts (URL table), router.tsx
 ├── pages/<view>/         one folder per view
 ├── components/           domain components shared by the pages (badges, links, check marks)
@@ -164,12 +186,14 @@ src/
 tests/
 ├── vectors/              test vectors from the davinci-zkvm Rust SDK and a live Gnosis transition
 └── e2e/                  Playwright smoke suite
+docs/                     translations.md
+scripts/                  i18n-check.mjs
 docker/                   render.sh (entrypoint) and its test
 ```
 
 Path aliases (`~app`, `~components`, `~config`, `~contracts`, `~data`,
-`~fixtures`, `~hooks`, `~indexer`, `~kit`, `~lib`, `~pages`, `~protocol`,
-`~routes`, `~theme`) are defined in `tsconfig.paths.json`.
+`~fixtures`, `~hooks`, `~i18n`, `~indexer`, `~kit`, `~lib`, `~pages`,
+`~protocol`, `~routes`, `~theme`) are defined in `tsconfig.paths.json`.
 
 `src/contracts/abi/*.json` are copies of davinci-sequencer
 [`sequencer/abi/`](https://github.com/vocdoni/davinci-sequencer/tree/main/sequencer/abi),

@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useNavigate } from 'react-router'
 import { useStore } from '~data/hooks'
 import { useTransitionBlobs } from '~data/queries'
@@ -12,6 +13,7 @@ import { validateLookup } from './lookup'
  * result can be shared and reloaded.
  */
 export function LookupForm({ initialPid, initialVote }: { initialPid: string; initialVote: string }) {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const store = useStore()
   const listId = useId()
@@ -53,16 +55,16 @@ export function LookupForm({ initialPid, initialVote }: { initialPid: string; in
         className='grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto] md:items-start'
       >
         <Input
-          label='Process id'
+          label={t`Process id`}
           mono
           value={pid}
           onChange={(e) => setPid(e.target.value)}
-          placeholder='0x + 62 hex digits'
+          placeholder={t`0x + 62 hex digits`}
           list={listId}
           autoComplete='off'
           spellCheck={false}
           error={touched ? query.pidError : undefined}
-          hint='The election you voted in. Pick one of the known processes or paste its id.'
+          hint={t`The election you voted in. Pick one of the known processes or paste its id.`}
         />
         <datalist id={listId}>
           {known.map((p) => (
@@ -70,7 +72,7 @@ export function LookupForm({ initialPid, initialVote }: { initialPid: string; in
           ))}
         </datalist>
         <Input
-          label='Vote id'
+          label={t`Vote id`}
           mono
           value={vote}
           onChange={(e) => setVote(e.target.value)}
@@ -78,14 +80,16 @@ export function LookupForm({ initialPid, initialVote }: { initialPid: string; in
           autoComplete='off'
           spellCheck={false}
           error={touched ? query.voteError : undefined}
-          hint='0x and 16 hex digits, from the app you voted with.'
+          hint={t`0x and 16 hex digits, from the app you voted with.`}
         />
         <Button type='submit' variant='primary' className='justify-center md:mt-[22px]'>
-          Look up
+          <Trans>Look up</Trans>
         </Button>
       </form>
       <div className='mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ash'>
-        <span>No vote id at hand?</span>
+        <span>
+          <Trans>No vote id at hand?</Trans>
+        </span>
         <Button
           size='sm'
           variant='ghost'
@@ -93,14 +97,14 @@ export function LookupForm({ initialPid, initialVote }: { initialPid: string; in
           loading={wantExample && !exampleFailed}
           onClick={() => setWantExample(true)}
         >
-          Fill in an example
+          <Trans>Fill in an example</Trans>
         </Button>
         <span>
           {latest
             ? exampleFailed
-              ? 'The newest transition’s blobs could not be read, so there is no example to show.'
-              : 'It takes the first vote id of the newest settled transition.'
-            : 'No transition has settled yet, so there is no example.'}
+              ? t`The newest transition’s blobs could not be read, so there is no example to show.`
+              : t`It takes the first vote id of the newest settled transition.`
+            : t`No transition has settled yet, so there is no example.`}
         </span>
       </div>
     </Card>

@@ -1,13 +1,16 @@
 // Pure selectors over the entity store. Pages read the store only through
 // these (via the hooks in `~data/hooks`), so every derived number has one
-// definition and one test.
+// definition and one test. Their text (check labels, feed lines, search hits)
+// is made in the active language when they run, which is during a render.
 
+import { plural, t } from '@lingui/core/macro'
 import type { Address, Hex } from 'viem'
+import { formatNumber } from '~lib/format'
 import { blobsDigest, parseVoteId, versionedHash } from '~protocol/blob'
 import { isProcessId } from '~protocol/process-id'
 import { decodeBatchPublicValues, publicsPassed, type BatchPublics } from '~protocol/publics'
 import { matchRelease, type DeploymentPins, type ReleaseMatch } from '~protocol/releases'
-import type { CensusOriginName, KeyModeName, ProcessStatusName } from '~protocol/types'
+import { PROCESS_STATUS_INFO, type CensusOriginName, type KeyModeName, type ProcessStatusName } from '~protocol/types'
 import { paths } from '~routes/paths'
 import {
   processKey,
@@ -289,14 +292,14 @@ function check(id: TransitionCheck['id'], label: string, ok: boolean | null, det
  * here from the event, the calldata and the previous transition.
  */
 export function transitionDetail(store: IndexerStore, pid: string, index: number): TransitionDetail | null {
-  const t = store.transitions[transitionKey(pid, index)]
+  const tr = store.transitions[transitionKey(pid, index)]
   const p = store.processes[processKey(pid)]
-  if (!t || !p) return null
+  if (!tr || !p) return null
   const previous = index > 0 ? (store.transitions[transitionKey(pid, index - 1)] ?? null) : null
   const next = store.transitions[transitionKey(pid, index + 1)] ?? null
   const expectedBefore = previous ? previous.rootAfter : p.genesisRoot
-  const row = transitionRow(store, t, expectedBefore)
-  const tx = t.tx ? (store.txDetails[txKey(t.tx)] ?? null) : null
+  const row = transitionRow(store, tr, expectedBefore)
+  const tx = tr.tx ? (store.txDetails[txKey(tr.tx)] ?? null) : null
 
   let publics: BatchPublics | null = null
   let publicsError: string | null = null
@@ -311,30 +314,33 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
   }
 
   const checks: TransitionCheck[] = []
+  const ok = publics?.ok ? 1 : 0
+  const failMask = publics?.failMask ?? 0
   checks.push(
     check(
       'guest-ok',
-      'The zkVM guest accepted the batch',
+      t`The zkVM guest accepted the batch`,
       publics ? publicsPassed(publics) : null,
-      publics ? `ok = ${publics.ok ? 1 : 0}, fail mask = ${publics.failMask}` : 'Waiting for the calldata'
+      publics ? t`ok = ${ok}, fail mask = ${failMask}` : t`Waiting for the calldata`
     )
   )
+  const previousIndex = previous?.index ?? 0
   checks.push(
     check(
       'root-continuity',
-      'Starts from the previous root',
+      t`Starts from the previous root`,
       expectedBefore == null
         ? null
-        : expectedBefore === t.rootBefore && (!publics || publics.rootBefore === t.rootBefore),
-      previous ? `transition #${previous.index} ended at this root` : 'the genesis root of the process'
+        : expectedBefore === tr.rootBefore && (!publics || publics.rootBefore === tr.rootBefore),
+      previous ? t`transition #${previousIndex} ended at this root` : t`the genesis root of the process`
     )
   )
   checks.push(
     check(
       'root-after',
-      'The proven root is the new root',
-      publics ? publics.rootAfter === t.rootAfter : null,
-      'publics register 10..17 against the event'
+      t`The proven root is the new root`,
+      publics ? publics.rootAfter === tr.rootAfter : null,
+      t`publics register 10..17 against the event`
     )
   )
   const census = p.state?.census
@@ -355,60 +361,67 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
   checks.push(
     check(
       'census-root',
-      'Proven against the process census',
+      t`Proven against the process census`,
       censusOk,
       census?.origin === 'onchain-dynamic'
-        ? 'On-chain census: the registry asked the census contract whether it held this root'
-        : 'publics register 20..27 against the census root'
+        ? t`On-chain census: the registry asked the census contract whether it held this root`
+        : t`publics register 20..27 against the census root`
     )
   )
   const occupiedExpected = previous ? previous.votersCount : 0
+  const occupiedBefore = publics?.occupiedBefore ?? '…'
   checks.push(
     check(
       'occupied-before',
-      'Slots written before the batch match the registry',
+      t`Slots written before the batch match the registry`,
       publics ? publics.occupiedBefore === occupiedExpected : null,
-      `occupied_before = ${publics?.occupiedBefore ?? '…'}, registry votersCount = ${occupiedExpected}`
+      t`occupied_before = ${occupiedBefore}, registry votersCount = ${occupiedExpected}`
     )
   )
+  const newVoters = tr.newVoters
+  const overwrites = tr.overwrites
   checks.push(
     check(
       'voters',
-      'Vote counts match the event',
-      publics ? publics.voters - publics.overwrites === t.newVoters && publics.overwrites === t.overwrites : null,
-      `${t.newVoters} new voters, ${t.overwrites} overwrites`
+      t`Vote counts match the event`,
+      publics ? publics.voters - publics.overwrites === newVoters && publics.overwrites === overwrites : null,
+      t`${plural(newVoters, { one: '# new voter', other: '# new voters' })}, ${plural(overwrites, {
+        one: '# overwrite',
+        other: '# overwrites',
+      })}`
     )
   )
   // Null when the RPC left the field out: nothing to compare, not a mismatch.
   const hashes = tx?.blobVersionedHashes ?? null
+  const nBlobs = tr.nBlobs
   checks.push(
     check(
       'blob-count',
-      'One blob per published chunk',
-      hashes ? hashes.length === t.nBlobs && (!publics || publics.nBlobs === t.nBlobs) : null,
-      `${t.nBlobs} blob${t.nBlobs === 1 ? '' : 's'}`
+      t`One blob per published chunk`,
+      hashes ? hashes.length === nBlobs && (!publics || publics.nBlobs === nBlobs) : null,
+      plural(nBlobs, { one: '# blob', other: '# blobs' })
     )
   )
   checks.push(
     check(
       'blob-hashes',
-      'Each commitment is the blob the transaction carries',
+      t`Each commitment is the blob the transaction carries`,
       tx && hashes && tx.commitments.length > 0
         ? tx.commitments.length === hashes.length && tx.commitments.every((c, i) => versionedHash(c) === hashes[i])
         : null,
-      'versioned hash = 0x01 ‖ sha256(commitment)[1..]'
+      t`versioned hash = 0x01 ‖ sha256(commitment)[1..]`
     )
   )
   checks.push(
     check(
       'blobs-digest',
-      'The proof commits to these blobs',
+      t`The proof commits to these blobs`,
       tx && publics && tx.commitments.length > 0 ? blobsDigest(tx.commitments, tx.ys) === publics.blobsDigest : null,
-      'sha256(commitment ‖ evaluation …) against publics register 28..35'
+      t`sha256(commitment ‖ evaluation …) against publics register 28..35`
     )
   )
 
-  return { transition: t, row, process: p, previous, next, tx, publics, publicsError, checks }
+  return { transition: tr, row, process: p, previous, next, tx, publics, publicsError, checks }
 }
 
 // ── network ──────────────────────────────────────────────────────────────────
@@ -514,34 +527,48 @@ function feedEntry(store: IndexerStore, ev: IndexedEvent): FeedEntry {
   }
   switch (ev.name) {
     case 'ProcessCreated':
-      return { ...base, kind: 'created', label: 'Process created' }
+      return { ...base, kind: 'created', label: t`Process created` }
     case 'ProcessStateTransitioned': {
-      const t = transitionByTx(store, ev.tx ?? '') ?? null
-      const votes = t ? t.newVoters + t.overwrites : null
+      const tr = transitionByTx(store, ev.tx ?? '') ?? null
+      const index = tr?.index ?? '?'
+      const votes = tr ? tr.newVoters + tr.overwrites : 0
+      const nBlobs = ev.data.nBlobs
       return {
         ...base,
         kind: 'transition',
-        label: `Transition #${t?.index ?? '?'}${votes != null ? `: ${votes} vote${votes === 1 ? '' : 's'}` : ''} in ${ev.data.nBlobs} blob${ev.data.nBlobs === 1 ? '' : 's'}`,
-        href: t ? paths.transition(ev.processId, t.index) : base.href,
+        label: tr
+          ? t`Transition #${index}: ${plural(votes, { one: '# vote', other: '# votes' })} in ${plural(nBlobs, {
+              one: '# blob',
+              other: '# blobs',
+            })}`
+          : t`Transition #${index} in ${plural(nBlobs, { one: '# blob', other: '# blobs' })}`,
+        href: tr ? paths.transition(ev.processId, tr.index) : base.href,
       }
     }
     case 'ProcessResultsSet':
-      return { ...base, kind: 'results', label: 'Results published', href: paths.process(ev.processId, 'results') }
-    case 'ProcessStatusChanged':
-      return { ...base, kind: 'status', label: `Status ${ev.data.oldStatus} → ${ev.data.newStatus}` }
-    case 'ResultsDecryptionRequested':
+      return { ...base, kind: 'results', label: t`Results published`, href: paths.process(ev.processId, 'results') }
+    case 'ProcessStatusChanged': {
+      const from = PROCESS_STATUS_INFO[ev.data.oldStatus].label
+      const to = PROCESS_STATUS_INFO[ev.data.newStatus].label
+      return { ...base, kind: 'status', label: t`Status ${from} → ${to}` }
+    }
+    case 'ResultsDecryptionRequested': {
+      const count = ev.data.count
       return {
         ...base,
         kind: 'decryption',
-        label: `Tally sent to the DKG committee (${ev.data.count} ciphertext${ev.data.count === 1 ? '' : 's'})`,
+        label: t`Tally sent to the DKG committee (${plural(count, { one: '# ciphertext', other: '# ciphertexts' })})`,
         href: paths.process(ev.processId, 'results'),
       }
+    }
     case 'CensusUpdated':
-      return { ...base, kind: 'census', label: 'Census root replaced' }
+      return { ...base, kind: 'census', label: t`Census root replaced` }
     case 'ProcessDurationChanged':
-      return { ...base, kind: 'duration', label: 'Duration changed' }
-    case 'ProcessMaxVotersChanged':
-      return { ...base, kind: 'max-voters', label: `Max voters set to ${ev.data.maxVoters}` }
+      return { ...base, kind: 'duration', label: t`Duration changed` }
+    case 'ProcessMaxVotersChanged': {
+      const maxVoters = formatNumber(ev.data.maxVoters)
+      return { ...base, kind: 'max-voters', label: t`Max voters set to ${maxVoters}` }
+    }
   }
 }
 
@@ -638,27 +665,33 @@ export function searchStore(store: IndexerStore, raw: string, limit = 8): Search
     if (hits.length < limit && !hits.some((x) => x.href === h.href)) hits.push(h)
   }
 
-  if (isProcessId(q) && store.processes[q]) push({ kind: 'process', label: `Process ${q}`, href: paths.process(q) })
+  if (isProcessId(q) && store.processes[q]) {
+    const pid = q
+    push({ kind: 'process', label: t`Process ${pid}`, href: paths.process(pid) })
+  }
 
   if (/^0x[0-9a-f]{64}$/.test(q)) {
-    const t = transitionByTx(store, q)
-    if (t) push({ kind: 'transition', label: `Transition #${t.index}`, href: paths.transition(t.processId, t.index) })
+    const tr = transitionByTx(store, q)
+    if (tr) {
+      const index = tr.index
+      push({ kind: 'transition', label: t`Transition #${index}`, href: paths.transition(tr.processId, index) })
+    }
     for (const key of store.processOrder) {
       const p = store.processes[key]!
-      if (p.createdTx === q) push({ kind: 'process', label: 'Process creation', href: paths.process(p.id) })
-      if (p.results?.tx === q) push({ kind: 'process', label: 'Results', href: paths.process(p.id, 'results') })
+      if (p.createdTx === q) push({ kind: 'process', label: t`Process creation`, href: paths.process(p.id) })
+      if (p.results?.tx === q) push({ kind: 'process', label: t`Results`, href: paths.process(p.id, 'results') })
     }
   }
 
   if (/^0x[0-9a-f]{40}$/.test(q)) {
     const chain = store.chain
     const contracts = [chain.registryAddress, chain.registry?.ziskVerifier, chain.registry?.dkgAdapter].filter(Boolean)
-    if (contracts.includes(q as Address)) push({ kind: 'contract', label: 'Contract', href: paths.contracts() })
+    if (contracts.includes(q as Address)) push({ kind: 'contract', label: t`Contract`, href: paths.contracts() })
     const owned = store.processOrder.filter((k) => store.processes[k]!.organizer === q).length
     if (owned > 0) {
       push({
         kind: 'organizer',
-        label: `Organizer of ${owned} process${owned === 1 ? '' : 'es'}`,
+        label: t`Organizer of ${plural(owned, { one: '# process', other: '# processes' })}`,
         href: paths.processes({ organizer: q }),
       })
     }
@@ -666,26 +699,27 @@ export function searchStore(store: IndexerStore, raw: string, limit = 8): Search
 
   const voteId = parseVoteId(q)
   if (voteId != null && (q.startsWith('0x') || q.length >= 19)) {
-    push({ kind: 'vote', label: 'Vote id', href: paths.votes({ voteId: q }) })
+    push({ kind: 'vote', label: t`Vote id`, href: paths.votes({ voteId: q }) })
   }
 
   if (/^\d+$/.test(q) && q.length < 12) {
     const block = Number(q)
     for (const key of store.transitionOrder) {
-      const t = store.transitions[key]!
-      if (t.block === block)
+      const tr = store.transitions[key]!
+      const index = tr.index
+      if (tr.block === block)
         push({
           kind: 'block',
-          label: `Transition #${t.index} in block ${block}`,
-          href: paths.transition(t.processId, t.index),
+          label: t`Transition #${index} in block ${block}`,
+          href: paths.transition(tr.processId, index),
         })
     }
   }
 
   // A prefix of a process id.
   if (/^0x[0-9a-f]{6,61}$/.test(q)) {
-    for (const key of store.processOrder) {
-      if (key.startsWith(q)) push({ kind: 'process', label: `Process ${key}`, href: paths.process(key) })
+    for (const pid of store.processOrder) {
+      if (pid.startsWith(q)) push({ kind: 'process', label: t`Process ${pid}`, href: paths.process(pid) })
     }
   }
   return hits

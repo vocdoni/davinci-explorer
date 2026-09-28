@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/react/macro'
 import { Hash } from '~kit'
 import type { Point } from '~protocol/babyjubjub'
 import { isIdentity } from '~protocol/babyjubjub'
@@ -6,7 +7,13 @@ import { bigIntToHex } from '~lib/format'
 
 /** A BabyJubJub point as its two coordinates; the identity says so. */
 export function PointValue({ point }: { point: Point }) {
-  if (isIdentity(point)) return <span className='font-mono text-[12px] text-ash'>identity (0, 1)</span>
+  if (isIdentity(point)) {
+    return (
+      <span className='font-mono text-[12px] text-ash'>
+        <Trans>identity (0, 1)</Trans>
+      </span>
+    )
+  }
   return (
     <span className='inline-flex min-w-0 flex-col gap-0.5'>
       <span className='inline-flex min-w-0 items-center gap-1'>
@@ -29,7 +36,7 @@ export function CiphertextTable({ ciphertexts, firstField = 0 }: { ciphertexts: 
         <thead>
           <tr className='label-caps text-[10px] text-pewter'>
             <th scope='col' className='w-16 border-b border-charcoal px-2 py-1.5 text-left'>
-              Field
+              <Trans>Field</Trans>
             </th>
             <th scope='col' className='border-b border-charcoal px-2 py-1.5 text-left'>
               c1

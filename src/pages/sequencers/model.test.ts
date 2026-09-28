@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { i18n } from '@lingui/core'
 import { demoFixture } from '~fixtures/demo'
 import type { SequencerInfo, SequencerProcess } from '~protocol/sequencer-api'
 import { infoChecks, settledBy, settlers, syncState } from './model'
@@ -43,7 +44,15 @@ describe('infoChecks', () => {
   }
 
   it('passes for a node of this deployment', () => {
-    expect(infoChecks(info, store.chain).every((c) => c.state === 'pass')).toBe(true)
+    const checks = infoChecks(info, store.chain)
+    expect(checks.every((c) => c.state === 'pass')).toBe(true)
+    expect(checks.map((c) => i18n._(c.label))).toEqual([
+      'Chain id',
+      'Registry',
+      'Ballot VK hash',
+      'Vote-batch program vk',
+      'Results program vk',
+    ])
   })
 
   it('fails the fields of another deployment', () => {

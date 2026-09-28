@@ -1,6 +1,9 @@
 // Every URL the explorer renders, in one place. Build links with these
 // helpers, never from string literals, so a rename is a one-file change.
 
+import type { MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+
 export const PROCESS_TABS = ['overview', 'key', 'transitions', 'votes', 'results', 'raw'] as const
 export type ProcessTab = (typeof PROCESS_TABS)[number]
 
@@ -55,7 +58,8 @@ export const paths = {
 } as const
 
 export interface NavItem {
-  label: string
+  /** Render with `i18n._(item.label)`. */
+  label: MessageDescriptor
   to: string
   /** Marks the item active for any path under this prefix. */
   match: string
@@ -65,10 +69,10 @@ export interface NavItem {
 
 /** Primary navigation, in bar order. */
 export const NAV_ITEMS: NavItem[] = [
-  { label: 'Overview', to: patterns.home, match: '/' },
-  { label: 'Processes', to: patterns.processes, match: '/processes' },
-  { label: 'Votes', to: patterns.votes, match: '/votes' },
-  { label: 'Contracts', to: patterns.contracts, match: '/contracts' },
-  { label: 'Sequencers', to: patterns.sequencers, match: '/sequencers', needsSequencers: true },
-  { label: 'Learn', to: patterns.learn, match: '/learn' },
+  { label: msg`Overview`, to: patterns.home, match: '/' },
+  { label: msg`Processes`, to: patterns.processes, match: '/processes' },
+  { label: msg`Votes`, to: patterns.votes, match: '/votes' },
+  { label: msg`Contracts`, to: patterns.contracts, match: '/contracts' },
+  { label: msg`Sequencers`, to: patterns.sequencers, match: '/sequencers', needsSequencers: true },
+  { label: msg`Learn`, to: patterns.learn, match: '/learn' },
 ]
