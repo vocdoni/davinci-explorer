@@ -31,7 +31,7 @@ export function Footer() {
             Verify the deployment
           </Link>
           <a
-            href='https://github.com/vocdoni/davinci-sequencer'
+            href='https://github.com/vocdoni/davinci-explorer'
             target='_blank'
             rel='noreferrer noopener'
             className={LINK}
