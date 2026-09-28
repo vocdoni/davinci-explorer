@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { useRuntimeConfig } from '~config/config-context'
 import { Address, PageContainer } from '~kit'
 import { paths } from '~routes/paths'

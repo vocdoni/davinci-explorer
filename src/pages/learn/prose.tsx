@@ -2,7 +2,7 @@
 // code, links into the explorer and the "see it" pointers.
 
 import { Fragment, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { HashLink } from '~components/HashLink'
 import { ChevronRightIcon, ExternalIcon } from '~kit'
 import { cn } from '~lib/cn'

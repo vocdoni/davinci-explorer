@@ -1,5 +1,5 @@
 import { useEffect, type ComponentType } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { Card, ChevronLeftIcon, ChevronRightIcon, EmptyState, SectionHeader, Select, Stack } from '~kit'
 import { cn } from '~lib/cn'
 import { paths } from '~routes/paths'

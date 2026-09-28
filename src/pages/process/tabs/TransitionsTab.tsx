@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { SortingState } from '@tanstack/react-table'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { CheckMark, Explain, NativeAmount, Timestamp, TxLink } from '~components'
 import { useDataSource } from '~data/context'
 import type { ProcessView } from '~data/hooks'

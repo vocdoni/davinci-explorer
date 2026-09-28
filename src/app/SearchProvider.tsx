@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { useRuntimeConfig } from '~config/config-context'
 import { resolveSearch, type SearchResolver, type SearchTarget } from './search'
 import { SearchContext, type SearchApi } from './search-context'

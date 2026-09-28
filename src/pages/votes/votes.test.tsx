@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router'
 import { ConfigContext } from '~config/config-context'
 import { DEMO_CONFIG } from '~config/runtime-config'
 import { createExplorerData } from '~data/create'
@@ -29,10 +29,7 @@ describe('VotesPage', () => {
       <ConfigContext.Provider value={DEMO_CONFIG}>
         <QueryClientProvider client={client}>
           <DataProvider source={data.source} services={{ ...data.services, sequencers }}>
-            <MemoryRouter
-              initialEntries={[paths.vote(processId, formatVoteId(voteId))]}
-              future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-            >
+            <MemoryRouter initialEntries={[paths.vote(processId, formatVoteId(voteId))]}>
               <TooltipProvider>
                 <Routes>
                   <Route path={patterns.vote} element={<VotesPage />} />

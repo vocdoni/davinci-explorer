@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { useRuntimeConfig } from '~config/config-context'
 import { nativeSymbol } from '~data/client'
 import { useChainNow } from '~data/hooks'

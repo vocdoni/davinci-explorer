@@ -1,4 +1,4 @@
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router'
 import { useRuntimeConfig } from '~config/config-context'
 import { useIndexer, useStore } from '~data/hooks'
 import { ButtonLink, Callout, EmptyState, SectionHeader, SkeletonText, Stack } from '~kit'

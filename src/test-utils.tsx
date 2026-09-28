@@ -1,6 +1,6 @@
 import { render, type RenderOptions, type RenderResult } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from 'react-router'
 import type { ReactElement, ReactNode } from 'react'
 import { ConfigContext } from '~config/config-context'
 import { DEMO_CONFIG, type RuntimeConfig } from '~config/runtime-config'
@@ -32,7 +32,7 @@ export function renderWithProviders(
       <ConfigContext.Provider value={value}>
         <QueryClientProvider client={queryClient}>
           <DataProvider source={data.source} services={data.services}>
-            <MemoryRouter initialEntries={[route]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <MemoryRouter initialEntries={[route]}>
               <TooltipProvider>{children}</TooltipProvider>
             </MemoryRouter>
           </DataProvider>

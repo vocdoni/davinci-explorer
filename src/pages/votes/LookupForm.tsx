@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { useStore } from '~data/hooks'
 import { useTransitionBlobs } from '~data/queries'
 import { Button, Card, Input } from '~kit'

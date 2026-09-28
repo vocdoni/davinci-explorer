@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { Explain, NativeAmount, ProcessIdLink, ProcessPhaseBadge, Timestamp, TxLink } from '~components'
 import type { DecodedTransitionBlobs } from '~data/queries'
 import type { TransitionDetail } from '~indexer/selectors'

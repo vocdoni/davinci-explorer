@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router'
 import { HashLink, MissingEntity, ProcessIdLink } from '~components'
 import { useChainNow, useTransition, useTransitions } from '~data/hooks'
 import { useTransitionBlobs } from '~data/queries'

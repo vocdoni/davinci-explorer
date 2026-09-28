@@ -1,5 +1,5 @@
 import type { UseQueryResult } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { CheckMark } from '~components'
 import { CodeBlock, Disclosure } from '~components/code'
 import type { TrackerCheck } from '~data/queries'

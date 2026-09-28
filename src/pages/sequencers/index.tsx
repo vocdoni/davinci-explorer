@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { Timestamp } from '~components'
 import { useProcesses, useStore } from '~data/hooks'
 import { useSequencers } from '~data/queries'

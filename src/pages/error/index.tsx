@@ -1,4 +1,4 @@
-import { isRouteErrorResponse, useRouteError } from 'react-router-dom'
+import { isRouteErrorResponse, useRouteError } from 'react-router'
 import { Callout, PageContainer, SectionHeader, Stack } from '~kit'
 
 /** Route-level error boundary. Renders outside the shell, so it stays plain. */

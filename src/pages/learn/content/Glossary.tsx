@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router'
 import { HashLink } from '~components/HashLink'
 import { EmptyState, Input } from '~kit'
 import { cn } from '~lib/cn'

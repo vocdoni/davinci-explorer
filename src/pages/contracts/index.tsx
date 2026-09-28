@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router'
 import { HashLink } from '~components/HashLink'
 import { useRuntimeConfig } from '~config/config-context'
 import { useDeploymentDetails } from '~data/deployment'

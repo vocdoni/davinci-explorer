@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { useIndexer, useNetworkStats } from '~data/hooks'
 import type { ProcessPhase } from '~indexer/selectors'
 import { EmptyState, Panel } from '~kit'

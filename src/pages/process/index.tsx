@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router'
 import { CensusOriginBadge, KeyModeBadge, MissingEntity, ProcessPhaseBadge } from '~components'
 import { useProcess } from '~data/hooks'
 import { useJsonDocument } from '~data/queries'

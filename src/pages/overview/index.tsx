@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { Explain, Timestamp } from '~components'
 import { useRuntimeConfig } from '~config/config-context'
 import { useIndexer, useNetworkStats } from '~data/hooks'

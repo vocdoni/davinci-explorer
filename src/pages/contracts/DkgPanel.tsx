@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { CheckMark, Timestamp } from '~components'
 import { useRuntimeConfig } from '~config/config-context'
 import {

@@ -1,4 +1,4 @@
-import { Outlet, ScrollRestoration } from 'react-router-dom'
+import { Outlet, ScrollRestoration } from 'react-router'
 import { useIndexerSearchResolver } from '~data/hooks'
 import { PageContainer, TooltipProvider } from '~kit'
 import { useRegisterSearchResolver } from './search-context'

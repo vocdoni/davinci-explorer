@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 import { Button, buttonClasses, Card, Input } from '~kit'
 import { paths } from '~routes/paths'
 

@@ -1,6 +1,4 @@
-// The route table exports data, not components; fast refresh does not apply.
-/* eslint-disable react-refresh/only-export-components */
-import { createBrowserRouter, type RouteObject } from 'react-router-dom'
+import { createBrowserRouter, type RouteObject } from 'react-router'
 import { Shell } from '~app/Shell'
 import { RouteError } from '~pages/error'
 import { NotFoundPage } from '~pages/not-found'
@@ -135,12 +133,4 @@ export const routes: RouteObject[] = [
   },
 ]
 
-export const ROUTER_FUTURE = {
-  v7_relativeSplatPath: true,
-  v7_fetcherPersist: true,
-  v7_normalizeFormMethod: true,
-  v7_partialHydration: true,
-  v7_skipActionErrorRevalidation: true,
-} as const
-
-export const router = createBrowserRouter(routes, { future: ROUTER_FUTURE })
+export const router = createBrowserRouter(routes)

@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { RouterProvider } from 'react-router-dom'
+import { RouterProvider } from 'react-router/dom'
 import { ConfigProvider } from '~config/ConfigProvider'
 import { useRuntimeConfig } from '~config/config-context'
 import { DataProvider } from '~data/DataProvider'
@@ -40,7 +40,7 @@ export function App() {
       <ConfigProvider>
         <QueryClientProvider client={queryClient}>
           <Data>
-            <RouterProvider router={router} future={{ v7_startTransition: true }} />
+            <RouterProvider router={router} />
           </Data>
         </QueryClientProvider>
       </ConfigProvider>

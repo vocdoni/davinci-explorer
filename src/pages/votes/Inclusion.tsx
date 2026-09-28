@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { CheckMark, Timestamp, TxLink } from '~components'
 import { Disclosure } from '~components/code'
 import { useTransitionBlobs, type DecodedTransitionBlobs, type VoteInclusion } from '~data/queries'

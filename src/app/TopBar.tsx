@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router'
 import { useRuntimeConfig } from '~config/config-context'
 import { NAV_ITEMS, paths } from '~routes/paths'
 import { Button, CloseIcon, MenuIcon, PageContainer } from '~kit'

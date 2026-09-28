@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from 'react-router'
 import { ConfigContext } from '~config/config-context'
 import { DEMO_CONFIG, type RuntimeConfig } from '~config/runtime-config'
 import { DataProvider } from '~data/DataProvider'
@@ -65,7 +65,7 @@ function renderEmpty(ui: ReactNode) {
       <ConfigContext.Provider value={config}>
         <QueryClientProvider client={new QueryClient()}>
           <DataProvider source={emptySource()} services={createDemoServices()}>
-            <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <MemoryRouter>
               <TooltipProvider>{ui}</TooltipProvider>
             </MemoryRouter>
           </DataProvider>

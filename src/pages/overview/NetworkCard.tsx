@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { CheckMark, Explain, Timestamp } from '~components'
 import { useChain, useIndexer, useReleaseCheck } from '~data/hooks'
 import { Address, Badge, BlockCell, buttonClasses, Hash, KeyValue, Panel, Skeleton, Tooltip } from '~kit'

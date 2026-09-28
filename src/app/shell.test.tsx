@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { createMemoryRouter, RouterProvider } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider } from 'react-router'
 import { ConfigContext } from '~config/config-context'
 import { DEMO_CONFIG } from '~config/runtime-config'
 import { DataProvider } from '~data/DataProvider'
 import { createExplorerData } from '~data/create'
 import { demoFixture } from '~fixtures/demo'
-import { routes, ROUTER_FUTURE } from '~routes/router'
+import { routes } from '~routes/router'
 import { ThemeProvider } from '~theme/ThemeProvider'
 import { THEME_STORAGE_KEY } from '~theme/theme'
 
@@ -16,13 +16,13 @@ const fixture = demoFixture()
 
 function renderApp(path = '/') {
   const data = createExplorerData({ config: DEMO_CONFIG, demoOptions: { blockIntervalMs: 0 } })
-  const router = createMemoryRouter(routes, { initialEntries: [path], future: ROUTER_FUTURE })
+  const router = createMemoryRouter(routes, { initialEntries: [path] })
   return render(
     <ThemeProvider>
       <ConfigContext.Provider value={DEMO_CONFIG}>
         <QueryClientProvider client={new QueryClient()}>
           <DataProvider source={data.source} services={data.services}>
-            <RouterProvider router={router} future={{ v7_startTransition: true }} />
+            <RouterProvider router={router} />
           </DataProvider>
         </QueryClientProvider>
       </ConfigContext.Provider>

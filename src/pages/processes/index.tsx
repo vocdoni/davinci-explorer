@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { SortingState } from '@tanstack/react-table'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router'
 import { CensusOriginBadge, Explain, KeyModeBadge, ProcessIdLink, ProcessPhaseBadge, Timestamp } from '~components'
 import { useIndexer, useNetworkStats, useProcesses } from '~data/hooks'
 import type { ProcessRow } from '~indexer/selectors'

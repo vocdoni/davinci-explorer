@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { ProcessIdLink, Timestamp, TxLink } from '~components'
 import { useActivityFeed, useIndexer } from '~data/hooks'
 import type { FeedKind } from '~indexer/selectors'

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Explain, Timestamp } from '~components'
 import { useDataSource } from '~data/context'
 import type { ProcessView } from '~data/hooks'

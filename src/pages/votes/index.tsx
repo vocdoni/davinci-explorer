@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { Navigate, useParams, useSearchParams } from 'react-router'
 import { ProcessIdLink } from '~components'
 import { useServices } from '~data/context'
 import { useIndexer, useStore, useTransitions } from '~data/hooks'

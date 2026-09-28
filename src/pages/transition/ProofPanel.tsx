@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { Explain } from '~components'
 import { CodeBlock, Disclosure } from '~components/code'
 import { useChain, useReleaseCheck } from '~data/hooks'

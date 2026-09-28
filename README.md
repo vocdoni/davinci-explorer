@@ -7,8 +7,8 @@ browser (JSON-RPC and a beacon API, optionally sequencer node APIs) and has
 no backend. [EXPLORER.md](EXPLORER.md) describes the architecture and the
 building blocks the pages use.
 
-Stack: Vite 5, React 18, TypeScript (strict), Tailwind CSS v4, Radix
-primitives, TanStack Query / Table / Virtual, viem, react-router 6; vitest
+Stack: Vite 6, React 18, TypeScript (strict), Tailwind CSS v4, Radix
+primitives, TanStack Query / Table / Virtual, viem, react-router 7; vitest
 and Playwright for tests. The design system, kit and app shell come from the
 davinci-dkg explorer, so both look like one family; this one adds a
 light/dark/system theme switch.

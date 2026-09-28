@@ -1,5 +1,5 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { CheckMark, Explain, Timestamp, TxLink } from '~components'
 import { useDataSource } from '~data/context'
 import { useStore, type ProcessView } from '~data/hooks'

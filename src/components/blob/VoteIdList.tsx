@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { EmptyState, Input, Pagination } from '~kit'
 import { formatVoteId } from '~protocol/blob'
 import { paths } from '~routes/paths'

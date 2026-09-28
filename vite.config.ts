@@ -57,7 +57,7 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined
           if (/node_modules\/(\.pnpm\/)?(viem|ox|abitype|@noble|@scure|@adraffy)/.test(id)) return 'vendor-chain'
-          if (/node_modules\/(\.pnpm\/)?(react|react-dom|react-router|react-router-dom|@remix-run|scheduler)[@/]/.test(id)) return 'vendor-react'
+          if (/node_modules\/(\.pnpm\/)?(react|react-dom|react-router|scheduler)[@/]/.test(id)) return 'vendor-react'
           return 'vendor'
         },
       },

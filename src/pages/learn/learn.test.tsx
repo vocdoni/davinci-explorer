@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { screen, within } from '@testing-library/react'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router'
 import { renderWithProviders } from '../../test-utils'
 import { GLOSSARY, filterGlossary } from './glossary'
 import { pickExamples } from './examples'
