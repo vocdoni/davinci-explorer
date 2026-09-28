@@ -1,6 +1,6 @@
 #!/bin/sh
 # Checks docker/render.sh: defaults, overrides, clearing, proxies and
-# validation. Needs jq. Run from the explorer directory.
+# validation. Needs jq; runs from any directory.
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)

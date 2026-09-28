@@ -1,3 +1,6 @@
+.git
+.github
+.do
 node_modules
 dist
 .vite

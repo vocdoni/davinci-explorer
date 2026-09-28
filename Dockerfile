@@ -2,9 +2,9 @@
 # /config.json and the nginx site from environment variables at start, so one
 # image serves any deployment (see README.md, "Docker").
 #
-#   docker build -t davinci-explorer explorer/
+#   docker build -t davinci-explorer .
 #   docker run -p 8080:8080 davinci-explorer
-#   docker build --build-arg REGISTRY_ADDRESS=0x... -t davinci-explorer explorer/
+#   docker build --build-arg REGISTRY_ADDRESS=0x... -t davinci-explorer .
 
 FROM node:22-bookworm-slim AS build
 WORKDIR /app

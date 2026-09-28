@@ -1,7 +1,7 @@
-# The explorer on its own, at http://127.0.0.1:8080 (EXPLORER_PORT moves it).
+# The explorer at http://127.0.0.1:8080 (EXPLORER_PORT moves it).
 #
 #   docker compose up            # the published image (built here if missing)
-#   docker compose up --build    # build from this directory
+#   docker compose up --build    # build from source
 #   docker compose --profile watchtower up -d   # follow new releases
 #
 # The variables are passed through only when set in the shell or in .env;
