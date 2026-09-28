@@ -3,8 +3,11 @@ import { decodeTransitionBlobs, versionedHash } from '~protocol/blob'
 import { decodeBatchPublicValues } from '~protocol/publics'
 import { verifyTracker } from '~protocol/tracker'
 import { networkStats, rootChain, transitionDetail } from '~indexer/selectors'
+import { describeBallotMode } from '~pages/process/ballot-mode'
+import { ballotPasses, findBallot } from '../test/ballots'
 import { buildFixture, demoTransitionBlobs } from './synthetic'
 import { createDemoServices, demoFixture } from './demo'
+import { presetBallotMode, type ElectionPreset } from './presets'
 
 const fixture = demoFixture()
 const { store } = fixture
@@ -34,6 +37,54 @@ describe('synthetic network', () => {
     }
     expect(stats.transitions).toBeGreaterThan(50)
     expect(stats.withResults).toBeGreaterThan(1)
+  })
+
+  it('gives every process a ballot a voter can fill, and shows every ballot kind', () => {
+    const kinds = new Set<string>()
+    for (const pid of store.processOrder) {
+      const bm = store.processes[pid]!.state!.ballotMode
+      const d = describeBallotMode(bm)
+      expect(d.kind, pid).not.toBe('unsatisfiable')
+      const ballot = findBallot(bm)
+      expect(ballot != null && ballotPasses(bm, ballot), pid).toBe(true)
+      kinds.add(d.kind)
+    }
+    expect([...kinds].sort()).toEqual([
+      'approval',
+      'custom',
+      'multiple-choice',
+      'points',
+      'quadratic',
+      'ranking',
+      'rating',
+      'single-choice',
+    ])
+  })
+
+  it('stores the preset in the metadata, and it resolves to the registered ballot mode', () => {
+    let presets = 0
+    for (const pid of store.processOrder) {
+      const s = store.processes[pid]!.state!
+      const doc = fixture.metadata.get(s.metadataURI) as { meta?: { electionPreset?: ElectionPreset } }
+      const preset = doc.meta?.electionPreset
+      if (!preset) continue
+      presets += 1
+      expect(presetBallotMode(preset, s.ballotMode.numFields), pid).toEqual(s.ballotMode)
+    }
+    expect(presets).toBe(store.processOrder.length - 1)
+  })
+
+  it('publishes tallies the ballots could add up to', () => {
+    for (const pid of store.processOrder) {
+      const p = store.processes[pid]!
+      const bm = p.state!.ballotMode
+      if (!p.results || bm.costExponent !== 1) continue
+      const voters = BigInt(p.state!.votersCount)
+      const sum = p.results.values.reduce((a, v) => a + v, 0n)
+      expect(sum, pid).toBeGreaterThanOrEqual(voters * bm.minValueSum)
+      if (bm.maxValueSum > 0n) expect(sum, pid).toBeLessThanOrEqual(voters * bm.maxValueSum)
+      for (const v of p.results.values) expect(v, pid).toBeLessThanOrEqual(voters * bm.maxValue)
+    }
   })
 
   it('keeps every root chain continuous up to the registry root', () => {

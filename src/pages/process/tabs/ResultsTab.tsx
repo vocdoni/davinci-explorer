@@ -1,20 +1,18 @@
-import { useEffect, useMemo, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import { CheckMark, Explain, Timestamp, TxLink } from '~components'
-import { useDataSource } from '~data/context'
-import { useStore, type ProcessView } from '~data/hooks'
-import { useDkgApplication, useJsonDocument } from '~data/queries'
+import type { ProcessView } from '~data/hooks'
+import { useJsonDocument } from '~data/queries'
 import type { CheckState } from '~indexer/selectors'
-import { txKey } from '~indexer/types'
 import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, SkeletonText } from '~kit'
 import { formatNumber, formatPercent } from '~lib/format'
-import { decodeResultsPublicValues, resultsFailBits, type ResultsPublics } from '~protocol/publics'
 import type { KeyModeName } from '~protocol/types'
 import { describeBallotMode } from '../ballot-mode'
 import { fetchableUri, metadataChoices } from '../metadata'
+import { useDkgResultsChecks, useSequencerResultsChecks } from '../results-checks'
 import { tallyRows } from '../tally'
 import { paths } from '~routes/paths'
 
@@ -218,23 +216,8 @@ function NoResultsPanel({ view }: { view: ProcessView }) {
 
 function SequencerProofPanel({ view }: { view: ProcessView }) {
   const { i18n, t } = useLingui()
-  const store = useStore()
-  const source = useDataSource()
-  const s = view.process.state!
   const results = view.process.results
-  const tx = results?.tx ? store.txDetails[txKey(results.tx)] : undefined
-  useEffect(() => {
-    if (results?.tx && !tx) source.ensureTxDetails([results.tx])
-  }, [source, results?.tx, tx])
-
-  const decoded = useMemo((): { publics: ResultsPublics | null; error: string | null } => {
-    if (!tx?.publicValues) return { publics: null, error: tx?.decodeError ?? null }
-    try {
-      return { publics: decodeResultsPublicValues(tx.publicValues), error: null }
-    } catch (err) {
-      return { publics: null, error: err instanceof Error ? err.message : String(err) }
-    }
-  }, [tx])
+  const { checks, decodeError } = useSequencerResultsChecks(view)
 
   if (!results) {
     return (
@@ -249,58 +232,6 @@ function SequencerProofPanel({ view }: { view: ProcessView }) {
       </Panel>
     )
   }
-
-  const pub = decoded.publics
-  const lastRoot = view.transitions[view.transitions.length - 1]?.rootAfter ?? view.process.genesisRoot
-  const nf = s.ballotMode.numFields
-  const ok = pub?.ok ? 1 : 0
-  const failMask = pub?.failMask ?? 0
-  const failBits = pub ? resultsFailBits(pub.failMask).join(', ') : ''
-  const lastRegister = 9 + 2 * nf
-  const checks: Check[] = [
-    {
-      label: t`The results program passed every check`,
-      state: pub ? (pub.ok && pub.failMask === 0 ? 'pass' : 'fail') : 'unknown',
-      detail: pub
-        ? failMask
-          ? t`ok = ${ok}, fail mask = ${failMask} (${failBits})`
-          : t`ok = ${ok}, fail mask = ${failMask}`
-        : t`Waiting for the transaction’s calldata`,
-    },
-    {
-      label: t`Proven against the final state root`,
-      state:
-        pub && lastRoot
-          ? pub.stateRoot === lastRoot && pub.stateRoot === s.latestStateRoot
-            ? 'pass'
-            : 'fail'
-          : 'unknown',
-      detail: pub ? (
-        <span className='inline-flex flex-wrap items-center gap-1'>
-          <Trans>
-            public values register 2..9 <Hash value={pub.stateRoot} chars={6} /> against the last transition’s root
-          </Trans>
-        </span>
-      ) : (
-        t`public values register 2..9 against the last transition’s root`
-      ),
-    },
-    {
-      label: t`The stored tally is the proven one`,
-      state: pub
-        ? results.values.length === nf && results.values.every((v, i) => pub.results[i] === v)
-          ? 'pass'
-          : 'fail'
-        : 'unknown',
-      detail: t`registers 10..${lastRegister}, one 64-bit value per field, against the ProcessResultsSet event`,
-    },
-    {
-      label: t`The PLONK verified on-chain`,
-      state: 'pass',
-      detail: t`The registry emits ProcessResultsSet only after the verifier accepted the proof under the results program vk.`,
-    },
-  ]
-  const decodeError = decoded.error
 
   return (
     <Panel title={t`How the result was produced`} label={t`zkVM results proof`} description={i18n._(RESULTS_PROGRAM)}>
@@ -337,59 +268,12 @@ function SequencerProofPanel({ view }: { view: ProcessView }) {
 function DkgDecryptionPanel({ view }: { view: ProcessView }) {
   const { i18n, t } = useLingui()
   const s = view.process.state!
-  const dkg = useDkgApplication(view.process.id)
   const request = view.process.decryptionRequest
   const results = view.process.results
-  const app = dkg.data
-  const locked = s.keyMode === 'dkg-locked'
-  const completed = app?.ciphertexts.filter((c) => c.completed).length ?? 0
-  const submitted = s.dkg?.count ?? 0
-  const combined = formatNumber(completed)
-  const total = formatNumber(submitted)
+  const { checks } = useDkgResultsChecks(view)
   const requestBlock = request ? formatNumber(request.block) : null
   const requestCount = request ? formatNumber(request.count) : null
   const requestFirst = request ? formatNumber(request.firstIndex) : null
-
-  const checks: Check[] = request
-    ? [
-        {
-          label: t`The accumulator is the one in the final state root`,
-          state: 'pass',
-          detail: t`ResultsDecryptionRequested is emitted only after the registry verified the accumulator’s inclusion as leaf 0x04.`,
-        },
-        ...(locked
-          ? [
-              {
-                label: t`The organizer revealed its secret`,
-                state: (app ? (app.revealed ? 'pass' : 'unknown') : 'unknown') as CheckState,
-                detail: app?.revealed
-                  ? t`The DKG checked sk·G = PK_org when it accepted the reveal.`
-                  : t`Until the reveal the DKG refuses every partial decryption and combine.`,
-              },
-            ]
-          : []),
-        {
-          label: t`Every submitted ciphertext is combined`,
-          state: (app ? (completed === submitted ? 'pass' : 'unknown') : 'unknown') as CheckState,
-          detail: app
-            ? t`${combined} of ${total} combined on the DKG`
-            : dkg.isLoading
-              ? t`Reading the DKG contracts…`
-              : t`The DKG state could not be read`,
-        },
-        ...(results && app && app.ciphertexts.length > 0
-          ? [
-              {
-                label: t`The stored tally is the committee’s plaintexts`,
-                state: (app.ciphertexts.every((c) => c.completed && results.values[c.field] === c.plaintext)
-                  ? 'pass'
-                  : 'fail') as CheckState,
-                detail: t`Each combined plaintext against its field in ProcessResultsSet.`,
-              },
-            ]
-          : []),
-      ]
-    : []
 
   return (
     <Panel

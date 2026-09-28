@@ -1,0 +1,762 @@
+// The cards of the vote check. Each gets its outcome from `model.ts` and says
+// what it means in one sentence; "How this is checked" holds the mechanism,
+// the values compared and the command.
+
+import { plural } from '@lingui/core/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import type { UseQueryResult } from '@tanstack/react-query'
+import { Link } from 'react-router'
+import { CheckMark, ProcessPhaseBadge, TxLink } from '~components'
+import { CodeBlock, Disclosure } from '~components/code'
+import { Formula } from '~components/Formula'
+import type { ProcessView } from '~data/hooks'
+import type { DecodedTransitionBlobs, TrackerCheck, VoteInclusion, VoteStatusBySequencer } from '~data/queries'
+import type { TransitionRow } from '~indexer/selectors'
+import { BlockCell, Hash, ProgressBar } from '~kit'
+import { formatTimestamp } from '~lib/format'
+import { formatVoteId } from '~protocol/blob'
+import { SMT_LEVELS } from '~protocol/limits'
+import { paths } from '~routes/paths'
+import { GET_PROCESS } from '~pages/transition/commands'
+import type { ResultsCheck } from '~pages/process/results-checks'
+import { CheckCard, Compared, HowPart, RedoCommand } from '../checklist'
+import type { BatchCheck } from '../batch'
+import type { VerifyStatus } from '../status'
+import type { ResultReason, Settled, TrackerReason } from './model'
+import { SequencerStatus } from './SequencerStatus'
+
+const LINK = 'text-emerald hover:underline'
+
+export function ElectionCard({
+  pid,
+  view,
+  status,
+  title,
+  registry,
+}: {
+  pid: string
+  view: ProcessView | null
+  status: VerifyStatus
+  title: string | null
+  registry: string
+}) {
+  const { t } = useLingui()
+  const created = view?.row.createdAt != null ? formatTimestamp(view.row.createdAt) : null
+  const short = `${pid.slice(0, 10)}…${pid.slice(-4)}`
+  return (
+    <CheckCard
+      id='election'
+      status={status}
+      title={t`The election exists`}
+      statusLabel={status === 'fail' ? t`Not found` : undefined}
+      summary={
+        view ? (
+          <span className='inline-flex flex-wrap items-center gap-x-2 gap-y-1'>
+            <span>
+              {title ? (
+                created ? (
+                  <Trans>
+                    “{title}” is on the registry, created on {created}.
+                  </Trans>
+                ) : (
+                  <Trans>“{title}” is on the registry.</Trans>
+                )
+              ) : created ? (
+                <Trans>
+                  Election {short} is on the registry, created on {created}.
+                </Trans>
+              ) : (
+                <Trans>Election {short} is on the registry.</Trans>
+              )}
+            </span>
+            <ProcessPhaseBadge phase={view.row.phase} />
+          </span>
+        ) : status === 'pending' ? (
+          <Trans>Looking for the election on the registry…</Trans>
+        ) : (
+          <Trans>
+            This registry has no election {short}. Check the id, or whether this explorer reads the network you voted
+            on.
+          </Trans>
+        )
+      }
+      how={
+        <>
+          <p>
+            <Trans>
+              Every election is created on the ProcessRegistry contract, which keeps its rules, its census, its
+              encryption key and its current state. The explorer reads it with <code>getProcess</code>.
+            </Trans>
+          </p>
+          <HowPart title={t`Values read`}>
+            <Compared
+              rows={[
+                { label: t`Process id`, value: <span className='font-mono break-all'>{pid}</span> },
+                ...(view
+                  ? [
+                      {
+                        label: t`Organizer`,
+                        value: <span className='font-mono break-all'>{view.process.organizer}</span>,
+                      },
+                      {
+                        label: t`Created in block`,
+                        value: <BlockCell block={view.process.createdBlock} />,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          </HowPart>
+          <RedoCommand code={`cast call ${registry} \\\n  "${GET_PROCESS}" \\\n  ${pid} --rpc-url $RPC`} />
+        </>
+      }
+    />
+  )
+}
+
+/** Where the blob that lists the vote came from, and what ties it to the transaction. */
+function blobOrigin(data: DecodedTransitionBlobs | undefined): 'commitment' | 'beacon-filter' | 'sequencer' | null {
+  if (!data) return null
+  if (data.source === 'sequencer' || data.blobs.some((b) => b.binding === 'sequencer')) return 'sequencer'
+  if (data.blobs.some((b) => b.binding === 'beacon-filter')) return 'beacon-filter'
+  return 'commitment'
+}
+
+export function SettledCard({
+  pid,
+  settled,
+  inclusion,
+  found,
+  batches,
+  statuses,
+  blobs,
+}: {
+  pid: string
+  settled: Settled
+  inclusion: VoteInclusion
+  found: TransitionRow | undefined
+  batches: number
+  statuses: VoteStatusBySequencer[]
+  blobs: DecodedTransitionBlobs | undefined
+}) {
+  const { t } = useLingui()
+  const origin = blobOrigin(blobs)
+  const url = blobs?.sourceUrl
+  const unread = inclusion.errors.length
+  const searched = inclusion.total
+  const index = found?.index
+  const when = found?.timestamp != null ? formatTimestamp(found.timestamp) : null
+  const batchLink = found ? (
+    <Link to={paths.transition(pid, found.index)} className={`font-mono ${LINK}`}>
+      #{index}
+    </Link>
+  ) : null
+
+  let summary
+  switch (settled.reason) {
+    case 'found':
+      summary =
+        found && when ? (
+          <Trans>
+            Your vote is in{' '}
+            <Link to={paths.transition(pid, found.index)} className={LINK}>
+              batch #{index}
+            </Link>
+            , settled on {when}.
+          </Trans>
+        ) : found ? (
+          <Trans>
+            Your vote is in{' '}
+            <Link to={paths.transition(pid, found.index)} className={LINK}>
+              batch #{index}
+            </Link>
+            .
+          </Trans>
+        ) : null
+      break
+    case 'no-election':
+      summary = <Trans>There is no election to look in.</Trans>
+      break
+    case 'no-batches':
+      summary = (
+        <Trans>
+          No batch of votes has been settled for this election yet. Your vote shows up here once its batch is.
+        </Trans>
+      )
+      break
+    case 'reading':
+      summary = <Trans>Looking through the election’s settled batches for your vote id, newest first…</Trans>
+      break
+    case 'waiting':
+      summary = (
+        <Trans>
+          A sequencer has your vote and is working on the batch that carries it. It shows up here once that batch is
+          settled on-chain.
+        </Trans>
+      )
+      break
+    case 'refused':
+      summary = (
+        <Trans>
+          A sequencer refused this vote, so it will not be settled. The reason is below; you can vote again while the
+          election is open.
+        </Trans>
+      )
+      break
+    case 'unreadable':
+      summary = (
+        <Trans>
+          The data of this election’s batches is no longer available, so the explorer cannot look for your vote id in
+          it. The tracker proof below does not need that data.
+        </Trans>
+      )
+      break
+    case 'not-found':
+      summary = (
+        <Trans>
+          Your vote id is not in any of the <Plural value={searched} one='# settled batch' other='# settled batches' />{' '}
+          of this election. It may still be waiting at a sequencer, it may belong to another election, or the id may
+          have a typo.
+        </Trans>
+      )
+      break
+  }
+
+  return (
+    <CheckCard
+      id='settled'
+      status={settled.status}
+      title={t`Your vote was settled on-chain`}
+      statusLabel={
+        settled.reason === 'not-found'
+          ? t`Not found`
+          : settled.reason === 'unreadable'
+            ? t`Unavailable`
+            : settled.reason === 'waiting' || settled.reason === 'no-batches'
+              ? t`Not yet`
+              : undefined
+      }
+      summary={summary}
+      how={
+        <>
+          <p>
+            <Trans>
+              Every batch of votes a sequencer settles publishes the vote ids it added, in data attached to its
+              transaction (EIP-4844 blobs). The explorer downloads this election’s batches, newest first, and looks for
+              your vote id. Being listed means the batch put the vote id into the election’s state, and the zkVM proof
+              the registry verified covers that.
+            </Trans>
+          </p>
+          {found ? (
+            <HowPart title={t`Where it was found`}>
+              <Compared
+                rows={[
+                  { label: t`Batch`, value: batchLink },
+                  { label: t`Block`, value: <BlockCell block={found.block} /> },
+                  { label: t`Transaction`, value: found.tx ? <TxLink hash={found.tx} chars={8} /> : '—' },
+                  { label: t`State root after`, value: <Hash value={found.rootAfter} chars={10} /> },
+                  {
+                    label: t`Batch size`,
+                    value: (
+                      <Trans>
+                        <Plural value={found.votes} one='# ballot' other='# ballots' /> ·{' '}
+                        <Plural value={found.nBlobs} one='# blob' other='# blobs' />
+                      </Trans>
+                    ),
+                  },
+                  ...(origin && url
+                    ? [
+                        {
+                          label: t`Data from`,
+                          value: (
+                            <span
+                              data-testid='vote-inclusion-source'
+                              className={origin === 'sequencer' ? 'text-amber' : undefined}
+                            >
+                              {origin === 'sequencer'
+                                ? t`${url}, a sequencer’s archive. It is matched to the batch by position only, not checked against the transaction’s blob hashes.`
+                                : origin === 'beacon-filter'
+                                  ? t`The beacon API ${url}, which selected it by the transaction’s versioned hash.`
+                                  : t`The beacon API ${url}. Its KZG commitment hashes to the transaction’s versioned hash.`}
+                            </span>
+                          ),
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            </HowPart>
+          ) : null}
+          {statuses.length > 0 ? (
+            <HowPart title={t`What the sequencers say`}>
+              <p>
+                <Trans>
+                  Before a vote is settled, only a sequencer knows where it stands: queued, in a batch being proved, or
+                  settled.
+                </Trans>
+              </p>
+              <SequencerStatus statuses={statuses} />
+            </HowPart>
+          ) : null}
+          {unread > 0 ? (
+            <Disclosure summary={t`${plural(unread, { one: '# batch not read', other: '# batches not read' })}`}>
+              <ul className='flex flex-col gap-1 font-mono text-[11px] break-all text-ash'>
+                {inclusion.errors.map((e, i) => (
+                  <li key={i}>{e}</li>
+                ))}
+              </ul>
+            </Disclosure>
+          ) : null}
+          {found?.tx ? (
+            <RedoCommand
+              note={
+                <Trans>
+                  The transaction lists one versioned hash per blob; a beacon node serves the blob with that hash for
+                  about two weeks after the block.
+                </Trans>
+              }
+              code={`cast tx ${found.tx} blobVersionedHashes --rpc-url $RPC`}
+            />
+          ) : null}
+        </>
+      }
+    >
+      {settled.reason === 'reading' && inclusion.total > 0 ? (
+        <ProgressBar
+          value={inclusion.checked}
+          total={inclusion.total}
+          label={t`Batches read, newest first`}
+          tone='neutral'
+          size='sm'
+        />
+      ) : null}
+      {(settled.reason === 'waiting' || settled.reason === 'refused') && statuses.length > 0 ? (
+        <SequencerStatus statuses={statuses.filter((s) => s.status.data != null)} />
+      ) : null}
+      {settled.reason === 'found' && origin === 'sequencer' ? (
+        <p className='text-[13px] text-amber'>
+          <Trans>
+            The list came from a sequencer’s archive rather than from the chain’s own blob store, so it is matched to
+            the batch by position only.
+          </Trans>
+        </p>
+      ) : null}
+      {settled.reason === 'not-found' && batches > 0 && unread > 0 ? (
+        <p className='text-[13px] text-ash'>
+          <Plural
+            value={unread}
+            one='The data of # batch could not be read, so the vote may be in that one.'
+            other='The data of # batches could not be read, so the vote may be in one of those.'
+          />
+        </p>
+      ) : null}
+    </CheckCard>
+  )
+}
+
+export function BatchCard({
+  pid,
+  status,
+  checks,
+  found,
+}: {
+  pid: string
+  status: VerifyStatus
+  checks: BatchCheck[] | null
+  found: TransitionRow | undefined
+}) {
+  const { t } = useLingui()
+  const index = found?.index
+  const passed = checks?.filter((c) => c.state === 'pass').length ?? 0
+  const total = checks?.length ?? 0
+  return (
+    <CheckCard
+      id='batch'
+      status={status}
+      title={t`That batch passed every check`}
+      summary={
+        !found ? (
+          status === 'pending' ? (
+            <Trans>This check runs once your vote is found in a settled batch.</Trans>
+          ) : (
+            <Trans>There is no batch to check.</Trans>
+          )
+        ) : status === 'pass' ? (
+          <Trans>
+            <Link to={paths.transition(pid, found.index)} className={LINK}>
+              Batch #{index}
+            </Link>{' '}
+            passed all {total} checks the registry makes before it accepts a batch of votes, including its zkVM proof.
+          </Trans>
+        ) : status === 'fail' ? (
+          <Trans>
+            <Link to={paths.transition(pid, found.index)} className={LINK}>
+              Batch #{index}
+            </Link>{' '}
+            failed a check. The registry would have refused it, so compare the values on the batch page.
+          </Trans>
+        ) : (
+          <Trans>
+            {passed} of {total} checks of{' '}
+            <Link to={paths.transition(pid, found.index)} className={LINK}>
+              batch #{index}
+            </Link>{' '}
+            passed so far; the rest are still being read.
+          </Trans>
+        )
+      }
+      how={
+        found ? (
+          <>
+            <p>
+              <Trans>
+                Before it accepts a batch, the registry checks that the zkVM guest accepted every ballot in it, that it
+                starts from the election’s current state, that its voters were in the census, that its counts add up and
+                that its blobs are the ones the proof covers; then it verifies the proof itself. A single failure would
+                have undone the whole transaction. The explorer recomputes each check from public data.
+              </Trans>
+            </p>
+            {checks ? (
+              <ul className='grid gap-x-6 gap-y-1.5 sm:grid-cols-2' data-testid='batch-checks'>
+                {checks.map((c) => (
+                  <li key={c.id} className='flex items-start gap-2 text-[12px] text-silver'>
+                    <CheckMark state={c.state} className='mt-0.5' />
+                    <span>{c.label}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <p>
+              <Trans>
+                The{' '}
+                <Link to={paths.transition(pid, found.index)} className={LINK}>
+                  batch page
+                </Link>{' '}
+                explains each check and gives the command that redoes it.
+              </Trans>
+            </p>
+            {found.tx ? (
+              <RedoCommand
+                note={<Trans>A settled batch’s transaction succeeded: the receipt says status 1.</Trans>}
+                code={`cast receipt ${found.tx} --rpc-url $RPC`}
+              />
+            ) : null}
+          </>
+        ) : undefined
+      }
+    />
+  )
+}
+
+export function ResultCard({
+  pid,
+  view,
+  status,
+  reason,
+  found,
+  chain,
+  resultChecks,
+}: {
+  pid: string
+  view: ProcessView | null
+  status: VerifyStatus
+  reason: ResultReason
+  found: TransitionRow | undefined
+  chain: VerifyStatus
+  resultChecks: ResultsCheck[]
+}) {
+  const { t } = useLingui()
+  const results = view?.process.results
+  const when = results?.timestamp != null ? formatTimestamp(results.timestamp) : null
+  const end = view?.row.endTime != null ? formatTimestamp(view.row.endTime) : null
+  const later = view ? view.transitions.length - 1 - (found?.index ?? 0) : 0
+  const to = paths.process(pid, 'results')
+  return (
+    <CheckCard
+      id='result'
+      status={status}
+      title={t`The result includes it`}
+      statusLabel={reason === 'not-yet' ? t`Not yet` : undefined}
+      summary={
+        reason === 'blocked' ? (
+          status === 'pending' ? (
+            <Trans>This check runs once your vote is found in a settled batch.</Trans>
+          ) : (
+            <Trans>There is no settled vote to follow into the result.</Trans>
+          )
+        ) : reason === 'canceled' ? (
+          <Trans>The election was canceled, so no result will be published.</Trans>
+        ) : reason === 'not-yet' ? (
+          end ? (
+            <Trans>The result is not published yet. It comes after the vote ends, on {end}.</Trans>
+          ) : (
+            <Trans>The result is not published yet. It comes after the vote ends.</Trans>
+          )
+        ) : status === 'pass' ? (
+          when ? (
+            <Trans>
+              <Link to={to} className={LINK}>
+                The result
+              </Link>
+              , published on {when}, counts every settled batch, yours included.
+            </Trans>
+          ) : (
+            <Trans>
+              <Link to={to} className={LINK}>
+                The result
+              </Link>{' '}
+              counts every settled batch, yours included.
+            </Trans>
+          )
+        ) : status === 'fail' ? (
+          <Trans>
+            The chain from your batch to the{' '}
+            <Link to={to} className={LINK}>
+              result
+            </Link>{' '}
+            does not hold. The details below say where.
+          </Trans>
+        ) : (
+          <Trans>
+            Checking that the{' '}
+            <Link to={to} className={LINK}>
+              result
+            </Link>{' '}
+            follows from your batch…
+          </Trans>
+        )
+      }
+      how={
+        reason === 'counted' ? (
+          <>
+            <p>
+              <Trans>
+                Each batch adds its ballots to an encrypted running total kept in the election’s state. Every later
+                batch must start from the state the previous one left, so the state after your batch leads, batch by
+                batch, to the final state. The result is proven to be the decryption of the total in that final state.
+              </Trans>
+            </p>
+            <ul className='flex flex-col gap-1.5'>
+              <li className='flex items-start gap-2 text-[12px] text-silver'>
+                <CheckMark
+                  state={chain === 'pass' ? 'pass' : chain === 'fail' ? 'fail' : 'unknown'}
+                  className='mt-0.5'
+                />
+                <span>
+                  <Plural
+                    value={later}
+                    one='Your batch and the # batch after it chain up to the final state root'
+                    other='Your batch and the # batches after it chain up to the final state root'
+                  />
+                </span>
+              </li>
+              {resultChecks.map((c) => (
+                <li key={c.id} className='flex items-start gap-2 text-[12px] text-silver'>
+                  <CheckMark state={c.state} className='mt-0.5' />
+                  <span>
+                    {c.label}
+                    <span className='block text-ash'>{c.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p>
+              <Trans>
+                The{' '}
+                <Link to={paths.process(pid, 'results')} className={LINK}>
+                  results tab
+                </Link>{' '}
+                and the{' '}
+                <Link to={paths.verifyElection(pid)} className={LINK}>
+                  election check
+                </Link>{' '}
+                go through how the result was produced.
+              </Trans>
+            </p>
+          </>
+        ) : undefined
+      }
+    />
+  )
+}
+
+export function TrackerCard({
+  pid,
+  voteId,
+  status,
+  reason,
+  tracker,
+  transitions,
+  genesisRoot,
+}: {
+  pid: string
+  voteId: bigint
+  status: VerifyStatus
+  reason: TrackerReason
+  tracker: UseQueryResult<TrackerCheck | null>
+  transitions: TransitionRow[]
+  genesisRoot: string | null
+}) {
+  const { t } = useLingui()
+  const data = tracker.data
+  const root = data?.proof.root.toLowerCase()
+  const at = root ? transitions.find((tr) => tr.rootAfter === root) : undefined
+  const atIndex = at?.index
+  const upstream = data?.sequencer.upstream
+  const siblings = data?.proof.siblings.length ?? 0
+  const levels = SMT_LEVELS
+  const error = tracker.error?.message
+  return (
+    <CheckCard
+      id='tracker'
+      status={status}
+      title={t`A sequencer’s receipt for your vote checks out`}
+      statusLabel={
+        reason === 'no-sequencer'
+          ? t`Not available`
+          : reason === 'unavailable'
+            ? t`Unavailable`
+            : reason === 'unknown-vote'
+              ? t`Not yet`
+              : undefined
+      }
+      summary={
+        reason === 'no-sequencer' ? (
+          <Trans>
+            Not available: no sequencer is configured in this explorer. The on-chain check above does the same job from
+            the batches’ data.
+          </Trans>
+        ) : reason === 'loading' ? (
+          <Trans>Asking the sequencers for the tracker proof of your vote…</Trans>
+        ) : reason === 'unavailable' ? (
+          <Trans>The sequencers could not be asked: {error}</Trans>
+        ) : reason === 'unknown-vote' ? (
+          <Trans>
+            No configured sequencer has this vote in its copy of the state yet. They do once its batch settles.
+          </Trans>
+        ) : data?.otherVote ? (
+          <Trans>The sequencer answered with a proof for another vote, so it proves nothing about yours.</Trans>
+        ) : status === 'pass' ? (
+          at ? (
+            <Trans>
+              Your browser rebuilt the sequencer’s proof: your vote id is in the state the election had after{' '}
+              <Link to={paths.transition(pid, at.index)} className={LINK}>
+                batch #{atIndex}
+              </Link>
+              , a state the registry holds.
+            </Trans>
+          ) : (
+            <Trans>Your browser rebuilt the sequencer’s proof: your vote id is in a state the registry holds.</Trans>
+          )
+        ) : data && !data.valid ? (
+          <Trans>The sequencer’s proof does not add up: its path does not reach the root it names.</Trans>
+        ) : (
+          <Trans>The sequencer’s proof leads to a state the registry never held for this election.</Trans>
+        )
+      }
+      how={
+        reason === 'no-sequencer' ? undefined : (
+          <>
+            <p>
+              <Trans>
+                A tracker proof is a sequencer’s receipt: the path from your vote id to the root of the election’s state
+                tree. Your browser hashes the path up and checks that it ends at a root the registry has held. The leaf
+                and each level are:
+              </Trans>
+            </p>
+            <div className='flex flex-col gap-1.5'>
+              <Formula block expr='leaf = sha256(le64(voteId) ‖ 0x00…00 ‖ 0x01)' />
+              <Formula block expr='node = sha256(left ‖ right)' />
+            </div>
+            <p>
+              <Trans>
+                The 32 zero bytes are the leaf’s value, and the bits of the vote id say which side each level takes, the
+                lowest bit at the root. A settled vote has such a path because the batch that carried it added its vote
+                id to the tree.
+              </Trans>
+            </p>
+            {data ? (
+              <>
+                <ul className='flex flex-col gap-1.5'>
+                  <li className='flex items-start gap-2 text-[12px] text-silver'>
+                    <CheckMark state={data.valid ? 'pass' : 'fail'} className='mt-0.5' />
+                    <span>
+                      {data.otherVote
+                        ? t`The sequencer answered with a proof for another vote`
+                        : data.valid
+                          ? t`The path reaches the root the proof names`
+                          : t`The path does not reach its root`}
+                    </span>
+                  </li>
+                  <li className='flex items-start gap-2 text-[12px] text-silver'>
+                    <CheckMark state={data.rootOnChain ? 'pass' : 'fail'} className='mt-0.5' />
+                    <span>
+                      {data.rootOnChain
+                        ? t`That root is one the registry held for this process`
+                        : t`That root is not one the registry held for this process`}
+                    </span>
+                  </li>
+                </ul>
+                <HowPart title={t`Values compared`}>
+                  <Compared
+                    rows={[
+                      { label: t`Root`, value: <Hash value={data.proof.root} chars={10} /> },
+                      {
+                        label: t`Which state`,
+                        value: at ? (
+                          <Link to={paths.transition(pid, at.index)} className={LINK}>
+                            <Trans>the root after batch #{atIndex}</Trans>
+                          </Link>
+                        ) : root && root === genesisRoot ? (
+                          t`the genesis root`
+                        ) : data.rootOnChain ? (
+                          t`the latest root`
+                        ) : (
+                          t`not the genesis root nor any transition root`
+                        ),
+                      },
+                      {
+                        label: t`Path`,
+                        value: (
+                          <Trans>
+                            <Plural value={siblings} one='# sibling' other='# siblings' /> of at most {levels} levels
+                          </Trans>
+                        ),
+                      },
+                      { label: t`Served by`, value: <span className='font-mono break-all'>{upstream}</span> },
+                    ]}
+                  />
+                </HowPart>
+                <Disclosure summary={t`The proof as served`}>
+                  <CodeBlock
+                    code={JSON.stringify(
+                      {
+                        processId: data.proof.processId,
+                        voteId: formatVoteId(data.proof.voteId),
+                        root: data.proof.root,
+                        siblings: data.proof.siblings,
+                      },
+                      null,
+                      2
+                    )}
+                    label={t`Copy the tracker proof`}
+                    maxHeight={280}
+                  />
+                </Disclosure>
+                <RedoCommand
+                  note={
+                    <Trans>
+                      The route is in the sequencer’s README; davinci_client::api::verify_tracker checks the answer
+                      against the registry.
+                    </Trans>
+                  }
+                  code={`curl ${data.sequencer.upstream.replace(/\/+$/, '')}/votes/${pid}/voteId/${formatVoteId(voteId)}/proof`}
+                />
+              </>
+            ) : null}
+          </>
+        )
+      }
+    />
+  )
+}

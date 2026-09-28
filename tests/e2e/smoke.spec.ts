@@ -29,7 +29,10 @@ test.describe('every route renders', () => {
   const routes: Array<[string, string]> = [
     ['/', 'page-overview'],
     ['/processes', 'page-processes'],
-    ['/votes', 'page-votes'],
+    ['/verify', 'page-verify'],
+    ['/verify/vote', 'page-verify-vote'],
+    ['/verify/election', 'page-verify-election'],
+    ['/verify/deployment', 'page-verify-deployment'],
     ['/contracts', 'page-contracts'],
     ['/sequencers', 'page-sequencers'],
     ['/learn', 'page-learn'],
@@ -62,9 +65,9 @@ test.describe('every route renders', () => {
     await expect(page.getByTestId('transition-summary')).toContainText('vote ids')
   })
 
-  test('vote lookup', async ({ page }) => {
-    await demo(page, '/votes')
-    await expect(page.getByRole('button', { name: 'Look up' })).toBeVisible()
+  test('vote check', async ({ page }) => {
+    await demo(page, '/verify/vote')
+    await expect(page.getByRole('button', { name: 'Check this vote' })).toBeVisible()
   })
 })
 
@@ -115,11 +118,11 @@ test.describe('search', () => {
     await expect(page.getByTestId('process-count')).not.toHaveText('0 processes')
   })
 
-  test('a vote id opens the vote lookup', async ({ page }) => {
+  test('a vote id opens the vote check', async ({ page }) => {
     await demo(page, '/')
     await search(page).fill('0x8000000000000001')
     await search(page).press('Enter')
-    await expect(page).toHaveURL(/\/votes\?voteId=0x8000000000000001/)
+    await expect(page).toHaveURL(/\/verify\/vote\?voteId=0x8000000000000001/)
   })
 
   test('a transaction hash resolves to its transition', async ({ page }) => {

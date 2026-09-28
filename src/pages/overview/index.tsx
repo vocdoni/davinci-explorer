@@ -10,7 +10,6 @@ import { paths } from '~routes/paths'
 import { ActivityPanel } from './ActivityPanel'
 import { NetworkCard } from './NetworkCard'
 import { ProcessesPanel } from './ProcessesPanel'
-import { RoleCards } from './RoleCards'
 import { VotesPerDayPanel } from './VotesPerDayPanel'
 
 /** The front page: what the deployment is doing, and where to start checking it. */
@@ -103,8 +102,6 @@ export function OverviewPage() {
           hint={lastBlock ? t`block ${lastBlock}` : t`no registry events yet`}
         />
       </StatRow>
-
-      <RoleCards />
 
       <div className='grid items-start gap-6 lg:grid-cols-5'>
         <Stack className='min-w-0 lg:col-span-3'>

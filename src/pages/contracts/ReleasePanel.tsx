@@ -1,8 +1,10 @@
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { Link } from 'react-router'
 import { CheckMark } from '~components'
 import { Badge, Callout, Hash, Panel } from '~kit'
 import { formatDate } from '~lib/format'
 import { KNOWN_RELEASES, PIN_LABELS, type ReleaseMatch } from '~protocol/releases'
+import { paths } from '~routes/paths'
 import { PIN_DETAILS, releaseVerdict } from './model'
 import { Code } from './parts'
 
@@ -78,7 +80,11 @@ export function ReleasePanel({ match }: { match: ReleaseMatch }) {
           The explorer only knows the releases it was built with, so a difference can also mean a newer release it has
           not heard of. Either way the registry verifies something other than those releases, and a sequencer built on
           them refuses to start against it: its boot check compares the same values, names each one that differs and has
-          no override. Check the pins against the release notes of davinci-zkvm, or rebuild them from source below.
+          no override. Check the pins against the release notes of davinci-zkvm, or{' '}
+          <Link to={paths.verifyDeployment()} className='text-silver hover:text-emerald'>
+            rebuild them from source
+          </Link>
+          .
         </Trans>
       </Callout>
     </Panel>

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { ConfigContext } from '~config/config-context'
@@ -13,7 +13,7 @@ import { transitionKey } from '~indexer/types'
 import { TooltipProvider } from '~kit'
 import { formatVoteId } from '~protocol/blob'
 import { patterns, paths } from '~routes/paths'
-import { VotesPage } from '.'
+import { VerifyVotePage } from '.'
 
 const fixture = demoFixture()
 
@@ -29,8 +29,7 @@ function renderAt(url: string, services?: Partial<ReturnType<typeof createExplor
           <MemoryRouter initialEntries={[url]}>
             <TooltipProvider>
               <Routes>
-                <Route path={patterns.votes} element={<VotesPage />} />
-                <Route path={patterns.vote} element={<VotesPage />} />
+                <Route path={patterns.verifyVote} element={<VerifyVotePage />} />
               </Routes>
             </TooltipProvider>
           </MemoryRouter>
@@ -40,7 +39,7 @@ function renderAt(url: string, services?: Partial<ReturnType<typeof createExplor
   )
 }
 
-describe('VotesPage', () => {
+describe('VerifyVotePage', () => {
   it('says so when the sequencer answers with a proof for another vote', async () => {
     const { processId, voteId } = fixture.featured.settledVote
     const other = fixture.transitionData.get(transitionKey(processId, 1))!.voteIds[0]!
@@ -49,30 +48,37 @@ describe('VotesPage', () => {
     const trackerProof: SequencerApi['trackerProof'] = (pid, _voteId, signal) => api.trackerProof(pid, other, signal)
     const sequencers = [{ ...data.services.sequencers[0]!, api: { ...api, trackerProof } }]
     renderAt(paths.vote(processId, formatVoteId(voteId)), { sequencers })
-    const panel = await screen.findByTestId('tracker-proof')
-    expect(await within(panel).findByText('The sequencer answered with a proof for another vote')).toBeInTheDocument()
+    const card = await screen.findByTestId('check-tracker')
     expect(
-      within(panel).getByText(new RegExp(`it names vote ${formatVoteId(other)}, not the one asked for`))
+      await within(card).findByText(
+        'The sequencer answered with a proof for another vote, so it proves nothing about yours.'
+      )
     ).toBeInTheDocument()
+    expect(card).toHaveAttribute('data-status', 'fail')
   })
 
   it('shows the form in the active language', async () => {
     await activateLocale('es')
     renderAt(paths.votes({ voteId: '0x1' }))
-    expect(screen.getByLabelText('Id de proceso')).toBeInTheDocument()
     expect(screen.getByLabelText('Id de voto')).toHaveValue('0x1')
   })
 
-  it('names the transition a vote was found in', async () => {
+  it('asks for the election when only a vote id is given', () => {
+    renderAt(paths.votes({ voteId: '0x8000000000000001' }))
+    expect(screen.getByText('Which election?')).toBeInTheDocument()
+    expect(screen.getByTestId('verify-stepper')).toHaveTextContent('Choose')
+  })
+
+  it('finds the batch a vote is in, and says the receipt needs a sequencer', async () => {
     const { processId, voteId } = fixture.featured.settledVote
     renderAt(paths.vote(processId, formatVoteId(voteId)), { sequencers: [] })
-    const summary = await screen.findByTestId('vote-summary')
-    expect(summary).toHaveTextContent(/no sequencer configured/)
-    await within(await screen.findByTestId('vote-inclusion')).findByText(
-      /Listed in the blob of/,
-      {},
-      { timeout: 15_000 }
-    )
-    expect(summary).toHaveTextContent(/inclusion: found in transition #\d+/)
+    const settled = await screen.findByTestId('check-settled')
+    await waitFor(() => expect(settled).toHaveAttribute('data-status', 'pass'), { timeout: 15_000 })
+    expect(settled).toHaveTextContent(/Your vote is in batch #\d+, settled on/)
+    const tracker = screen.getByTestId('check-tracker')
+    expect(tracker).toHaveAttribute('data-status', 'na')
+    expect(tracker).toHaveTextContent('Not available: no sequencer is configured')
+    expect(screen.getByTestId('check-election')).toHaveAttribute('data-status', 'pass')
+    await waitFor(() => expect(screen.getByTestId('check-batch')).toHaveAttribute('data-status', 'pass'))
   })
 })

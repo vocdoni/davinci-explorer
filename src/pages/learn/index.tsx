@@ -1,11 +1,10 @@
 import { useEffect, type ComponentType } from 'react'
-import type { MessageDescriptor } from '@lingui/core'
-import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { Card, ChevronLeftIcon, ChevronRightIcon, EmptyState, SectionHeader, Select, Stack } from '~kit'
 import { cn } from '~lib/cn'
 import { paths } from '~routes/paths'
+import { RedirectTo } from '~routes/redirects'
 import { Blobs } from './content/Blobs'
 import { Census } from './content/Census'
 import { Glossary } from './content/Glossary'
@@ -14,11 +13,8 @@ import { KeyModes } from './content/KeyModes'
 import { Results } from './content/Results'
 import { Settlement } from './content/Settlement'
 import { SilentRevoting } from './content/SilentRevoting'
-import { VerifyAuditor } from './content/VerifyAuditor'
-import { VerifyOrganizer } from './content/VerifyOrganizer'
-import { VerifyVoter } from './content/VerifyVoter'
 import { useLearnExamples, type LearnExamples } from './examples'
-import { TOPIC_GROUPS, TOPICS, findTopic, neighbours, type TopicMeta } from './topics'
+import { MOVED_TOPICS, TOPIC_GROUPS, TOPICS, findTopic, neighbours, type TopicMeta } from './topics'
 
 const CONTENT: Record<string, ComponentType<{ ex: LearnExamples }>> = {
   'how-it-works': HowItWorks,
@@ -28,129 +24,22 @@ const CONTENT: Record<string, ComponentType<{ ex: LearnExamples }>> = {
   blobs: Blobs,
   settlement: Settlement,
   results: Results,
-  'verify-voter': VerifyVoter,
-  'verify-organizer': VerifyOrganizer,
-  'verify-auditor': VerifyAuditor,
   glossary: Glossary,
 }
 
-/** `/learn` (the index) and `/learn/:topic`. */
+/** `/learn/:topic`, and `/learn`, which opens on the first topic. */
 export function LearnPage() {
   const { topic } = useParams()
   const { hash } = useLocation()
-  const meta = findTopic(topic)
+  const meta = topic ? findTopic(topic) : TOPICS[0]!
 
   // A deep link (#term-vote-id, #ballot-slots) lands once the topic has rendered.
   useEffect(() => {
     if (hash) document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView()
   }, [topic, hash])
 
-  return (
-    <Stack data-testid='page-learn'>
-      {!topic ? <LearnIndex /> : meta ? <TopicPage meta={meta} /> : <UnknownTopic slug={topic} />}
-    </Stack>
-  )
-}
-
-const ROLES: Array<{ slug: string; who: MessageDescriptor; text: MessageDescriptor }> = [
-  {
-    slug: 'verify-voter',
-    who: msg`I voted`,
-    text: msg`Find the transition that included your vote, check its tracker proof and see it counted.`,
-  },
-  {
-    slug: 'verify-organizer',
-    who: msg`I run a process`,
-    text: msg`Check what the registry stored, the key, the batches as they settle and the results.`,
-  },
-  {
-    slug: 'verify-auditor',
-    who: msg`I audit the deployment`,
-    text: msg`The pinned keys, every transition, the data behind it and the results, without trusting a sequencer.`,
-  },
-]
-
-function LearnIndex() {
-  const { i18n, t } = useLingui()
-  return (
-    <>
-      <SectionHeader
-        size='page'
-        label={t`Learn`}
-        title={t`How DAVINCI works`}
-        description={t`A guide to what this explorer shows: how votes become a proven tally, whom each part trusts, and how to check every step yourself.`}
-      />
-
-      <Card data-testid='learn-summary'>
-        <h2 className='text-[15px] font-semibold text-ghost'>
-          <Trans>In short</Trans>
-        </h2>
-        <div className='mt-2 grid gap-x-10 gap-y-3 text-[14px] leading-[1.7] text-pewter lg:grid-cols-2'>
-          <p>
-            <Trans>
-              Voters encrypt their ballots and prove in zero knowledge that each one is valid. Sequencers group the
-              ballots into batches, and a single zkVM program proves everything about a batch at once: every ballot
-              proof, every signature, census membership, the updated state and the encrypted tally.
-            </Trans>
-          </p>
-          <p>
-            <Trans>
-              Each batch settles on the ProcessRegistry contract with its proof and the EIP-4844 blobs that publish what
-              changed, so anyone can rebuild the state. At the end the protocol decrypts only the final encrypted sum,
-              by the sequencer that holds the key or by a DKG committee, and that step is proven too.
-            </Trans>
-          </p>
-        </div>
-        <Link
-          to={paths.learn('how-it-works')}
-          className='mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-emerald hover:underline'
-        >
-          <Trans>The full walk-through</Trans> <ChevronRightIcon size={14} />
-        </Link>
-      </Card>
-
-      <section aria-labelledby='learn-roles'>
-        <h2 id='learn-roles' className='label-caps mb-3 text-[11px] text-pewter'>
-          <Trans>Check it yourself</Trans>
-        </h2>
-        <div className='grid gap-4 md:grid-cols-3'>
-          {ROLES.map((r) => (
-            <Link
-              key={r.slug}
-              to={paths.learn(r.slug)}
-              className='group rounded-md border border-charcoal bg-carbon p-5 transition-colors hover:border-emerald/50'
-            >
-              <div className='text-[15px] font-semibold text-ghost group-hover:text-emerald'>{i18n._(r.who)}</div>
-              <p className='mt-1.5 text-[13px] leading-relaxed text-ash'>{i18n._(r.text)}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {TOPIC_GROUPS.filter((g) => g.id !== 'verify').map((g) => (
-        <section key={g.id} aria-labelledby={`learn-${g.id}`}>
-          <h2 id={`learn-${g.id}`} className='label-caps mb-3 text-[11px] text-pewter'>
-            {i18n._(g.label)}
-          </h2>
-          <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-            {TOPICS.filter((topic) => topic.group === g.id).map((topic) => (
-              <Link
-                key={topic.slug}
-                to={paths.learn(topic.slug)}
-                data-testid={`topic-card-${topic.slug}`}
-                className='group flex flex-col rounded-md border border-charcoal bg-carbon p-5 transition-colors hover:border-emerald/50'
-              >
-                <span className='text-[14px] font-semibold text-ghost group-hover:text-emerald'>
-                  {i18n._(topic.title)}
-                </span>
-                <span className='mt-1.5 text-[13px] leading-relaxed text-ash'>{i18n._(topic.summary)}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ))}
-    </>
-  )
+  if (topic && MOVED_TOPICS[topic]) return <RedirectTo to={MOVED_TOPICS[topic]} />
+  return <Stack data-testid='page-learn'>{meta ? <TopicPage meta={meta} /> : <UnknownTopic slug={topic!} />}</Stack>
 }
 
 function TopicNav({ current }: { current: string }) {
@@ -194,11 +83,9 @@ function TopicPage({ meta }: { meta: TopicMeta }) {
   return (
     <div className='grid gap-10 lg:grid-cols-[220px_minmax(0,1fr)]'>
       <aside className='hidden lg:block'>
-        <div className='sticky top-20'>
-          <Link to={paths.learn()} className='mb-5 block text-[13px] text-pewter hover:text-emerald'>
-            ← <Trans>All topics</Trans>
-          </Link>
+        <div className='sticky top-20 flex flex-col gap-8'>
           <TopicNav current={meta.slug} />
+          <CheckItYourself />
         </div>
       </aside>
 
@@ -263,6 +150,27 @@ function TopicPage({ meta }: { meta: TopicMeta }) {
         </nav>
       </article>
     </div>
+  )
+}
+
+/** The way from reading about the checks to running them. */
+function CheckItYourself() {
+  return (
+    <Link
+      to={paths.verify()}
+      className='group block rounded-md border border-emerald/30 bg-emerald/[0.05] p-4 transition-colors hover:border-emerald/60'
+    >
+      <span className='label-caps block text-[11px] text-emerald'>
+        <Trans>Check it yourself</Trans>
+      </span>
+      <span className='mt-1.5 block text-[13px] leading-relaxed text-silver'>
+        <Trans>Was your vote counted, was an election run correctly, is this the published code?</Trans>
+      </span>
+      <span className='mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-emerald'>
+        <Trans>Verify</Trans>{' '}
+        <ChevronRightIcon size={13} className='transition-transform group-hover:translate-x-0.5' />
+      </span>
+    </Link>
   )
 }
 

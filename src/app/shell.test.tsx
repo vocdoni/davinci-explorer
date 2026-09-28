@@ -42,11 +42,12 @@ describe('Shell', () => {
   it('renders the brand, the navigation and the overview', async () => {
     renderApp()
     expect(screen.getByLabelText('DAVINCI explorer home')).toBeInTheDocument()
-    for (const label of ['Overview', 'Processes', 'Votes', 'Contracts', 'Sequencers', 'Learn']) {
+    for (const label of ['Overview', 'Processes', 'Sequencers', 'Contracts', 'Learn', 'Verify']) {
       expect(screen.getAllByRole('link', { name: label }).length).toBeGreaterThan(0)
     }
     expect(await screen.findByTestId('page-overview')).toBeInTheDocument()
-    expect(screen.getByText('Demo network', { selector: 'span' })).toBeInTheDocument()
+    // One chain pill in the bar, one beside the search on narrower screens; CSS shows one.
+    expect(screen.getAllByText('Demo network', { selector: 'span' })).toHaveLength(2)
   })
 
   it('persists the theme choice', async () => {
@@ -98,6 +99,27 @@ describe('Shell', () => {
     const t = fixture.store.transitions[fixture.store.transitionOrder[3]!]!
     renderApp(`/tx/${t.tx}`)
     expect(await screen.findByTestId('page-transition')).toBeInTheDocument()
+  })
+
+  it('sends the old vote lookup and the old guides to the Verify flows', async () => {
+    const { processId } = fixture.featured.settledVote
+    const { unmount } = renderApp(`/votes/${processId}/0x8000000000000001`)
+    expect(await screen.findByTestId('page-verify-vote')).toBeInTheDocument()
+    expect(screen.getByLabelText('Election')).toHaveValue(processId)
+    expect(screen.getByLabelText('Vote id')).toHaveValue('0x8000000000000001')
+    unmount()
+
+    const second = renderApp('/votes?voteId=0x8000000000000002')
+    expect(await screen.findByTestId('page-verify-vote')).toBeInTheDocument()
+    expect(screen.getByLabelText('Vote id')).toHaveValue('0x8000000000000002')
+    second.unmount()
+
+    const third = renderApp('/learn/verify-organizer')
+    expect(await screen.findByTestId('page-verify-election')).toBeInTheDocument()
+    third.unmount()
+
+    renderApp('/learn/verify-auditor')
+    expect(await screen.findByTestId('page-verify-deployment')).toBeInTheDocument()
   })
 
   it('shows 404 for unknown routes', async () => {

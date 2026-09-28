@@ -24,6 +24,8 @@ export {
 export { Address, BlockCell, Hash, TxCell, type AddressProps, type HashProps } from './Address'
 export { checksum } from '~lib/address'
 export { CopyButton, type CopyButtonProps } from './CopyButton'
+export { UriLink, type UriLinkProps } from './UriLink'
+export { uriHost } from './uri'
 export { ProgressBar, type ProgressBarProps } from './ProgressBar'
 export { Skeleton, SkeletonText, type SkeletonProps } from './Skeleton'
 export { Callout, type CalloutProps, type CalloutTone } from './Callout'

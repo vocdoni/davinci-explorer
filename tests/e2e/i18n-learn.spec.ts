@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
-// The guide in Catalan and Spanish: the index, a topic and the glossary with a
-// deep link. Slugs and anchors (`#term-vote-id`) stay English in every
+// The guide in Catalan and Spanish: the first topic, the topic list and the
+// glossary with a deep link. Slugs and anchors (`#term-vote-id`) stay English in every
 // language, so links into the guide work whatever the reader picked.
 
 async function demo(page: Page, path: string) {
@@ -14,15 +14,19 @@ const html = (page: Page) => page.locator('html')
 const selector = (page: Page) => page.getByTestId('language-select')
 
 test.describe('the guide in Catalan and Spanish', () => {
-  test('Català: the index, a topic and a term linked from it', async ({ page }) => {
+  test('Català: the first topic, the topic list and a term linked from it', async ({ page }) => {
     await demo(page, '/learn')
     await selector(page).selectOption('ca')
     await expect(html(page)).toHaveAttribute('lang', 'ca')
+    // /learn opens on the first topic.
     const index = page.getByTestId('page-learn')
     await expect(index.getByRole('heading', { level: 1, name: 'Com funciona DAVINCI' })).toBeVisible()
-    await expect(index.getByText('Aprèn', { exact: true })).toBeVisible()
+    await expect(index.getByTestId('learn-topic')).toHaveAttribute('data-topic', 'how-it-works')
 
-    await index.getByTestId('topic-card-how-it-works').click()
+    // The topic list on the left links every topic under its English slug.
+    await index.locator('aside nav a[href^="/learn/glossary"]').click()
+    await expect(page).toHaveURL(/\/learn\/glossary$/)
+    await index.locator('aside nav a[href^="/learn/how-it-works"]').click()
     await expect(page).toHaveURL(/\/learn\/how-it-works$/)
     const topic = page.getByTestId('learn-topic')
     await expect(topic).toHaveAttribute('data-topic', 'how-it-works')

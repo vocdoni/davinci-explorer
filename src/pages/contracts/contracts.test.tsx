@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { demoDeploymentDetails } from '~data/deployment'
 import { demoFixture } from '~fixtures/demo'
 import { activateLocale } from '~i18n/i18n'
@@ -39,24 +38,7 @@ describe('ContractsPage', () => {
     expect(screen.getByTestId('page-contracts')).toHaveTextContent(`pins frozen on ${formatDate(release.date)}`)
   })
 
-  it('switches the verification command between the chain’s pins and the release’s', async () => {
-    const user = userEvent.setup()
-    renderWithProviders(<ContractsPage />, { route: '/contracts' })
-    const script = screen.getByTestId('verify-script')
-    expect(script).toHaveTextContent('python3 script/verify_deployment.py')
-    expect(script).toHaveTextContent(`--batch-vk ${release.batchProgramVK}`)
-    await user.click(within(script).getByRole('radio', { name: `Pins of ${release.label}` }))
-    expect(within(script).getByRole('radio', { name: `Pins of ${release.label}` })).toHaveAttribute(
-      'aria-checked',
-      'true'
-    )
-    expect(script).toHaveTextContent('also checks that the registry holds exactly the released keys')
-    expect(screen.getByText(/belongs to the ZisK snark setup/)).toHaveTextContent(
-      `rootCVadcopFinal belongs to the ZisK snark setup (ZisK ${release.zisk} for ${release.label}), not to the guests.`
-    )
-  })
-
-  it('formats numbers and dates in the active language and leaves the commands alone', async () => {
+  it('formats numbers and dates in the active language', async () => {
     await activateLocale('es')
     renderWithProviders(<ContractsPage />, { route: '/contracts' })
     const page = screen.getByTestId('page-contracts')
@@ -65,7 +47,15 @@ describe('ContractsPage', () => {
     const date = formatDate(release.date)
     expect(date).not.toBe(release.date)
     expect(page).toHaveTextContent(date)
-    expect(screen.getByTestId('verify-script')).toHaveTextContent(`--batch-vk ${release.batchProgramVK}`)
+  })
+
+  it('sends the reader to the deployment check to verify it', () => {
+    renderWithProviders(<ContractsPage />, { route: '/contracts' })
+    expect(screen.queryByTestId('verify-script')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Verify it without trusting this page' })).toHaveAttribute(
+      'href',
+      '/verify/deployment'
+    )
   })
 })
 

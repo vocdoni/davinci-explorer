@@ -18,13 +18,20 @@ export const patterns = {
   processTab: '/processes/:pid/:tab',
   transition: '/processes/:pid/transitions/:index',
   tx: '/tx/:hash',
-  votes: '/votes',
-  vote: '/votes/:pid/:voteId',
+  verify: '/verify',
+  verifyVote: '/verify/vote',
+  verifyElection: '/verify/election',
+  verifyElectionProcess: '/verify/election/:pid',
+  verifyDeployment: '/verify/deployment',
   contracts: '/contracts',
   sequencers: '/sequencers',
+  sequencer: '/sequencers/:address',
   learn: '/learn',
   learnTopic: '/learn/:topic',
   kit: '/kit',
+  /** Old vote lookup URLs; they redirect to the vote check. */
+  legacyVotes: '/votes',
+  legacyVote: '/votes/:pid/:voteId',
 } as const
 
 export interface ProcessListFilter {
@@ -49,10 +56,17 @@ export const paths = {
     tab && tab !== 'overview' ? `/processes/${pid}/${tab}` : `/processes/${pid}`,
   transition: (pid: string, index: number) => `/processes/${pid}/transitions/${index}`,
   tx: (hash: string) => `/tx/${hash}`,
-  votes: (params: { pid?: string; voteId?: string } = {}) => withQuery(patterns.votes, params),
-  vote: (pid: string, voteId: string) => `/votes/${pid}/${voteId}`,
+  verify: () => patterns.verify,
+  /** The vote check (Verify → My vote), with the lookup filled in when given. */
+  votes: (params: { pid?: string; voteId?: string } = {}) => withQuery(patterns.verifyVote, params),
+  /** The vote check of one vote. */
+  vote: (pid: string, voteId: string) => withQuery(patterns.verifyVote, { pid, voteId }),
+  /** The election check; without a pid, its process picker. */
+  verifyElection: (pid?: string) => (pid ? `/verify/election/${pid}` : patterns.verifyElection),
+  verifyDeployment: () => patterns.verifyDeployment,
   contracts: () => patterns.contracts,
   sequencers: () => patterns.sequencers,
+  sequencer: (address: string) => `/sequencers/${address.toLowerCase()}`,
   learn: (topic?: string) => (topic ? `/learn/${topic}` : patterns.learn),
   kit: () => patterns.kit,
 } as const
@@ -63,16 +77,16 @@ export interface NavItem {
   to: string
   /** Marks the item active for any path under this prefix. */
   match: string
-  /** Hidden unless the deployment configures sequencers. */
-  needsSequencers?: boolean
+  /** The bar's call to action, drawn as a pill. */
+  primary?: boolean
 }
 
 /** Primary navigation, in bar order. */
 export const NAV_ITEMS: NavItem[] = [
   { label: msg`Overview`, to: patterns.home, match: '/' },
   { label: msg`Processes`, to: patterns.processes, match: '/processes' },
-  { label: msg`Votes`, to: patterns.votes, match: '/votes' },
+  { label: msg`Sequencers`, to: patterns.sequencers, match: '/sequencers' },
   { label: msg`Contracts`, to: patterns.contracts, match: '/contracts' },
-  { label: msg`Sequencers`, to: patterns.sequencers, match: '/sequencers', needsSequencers: true },
   { label: msg`Learn`, to: patterns.learn, match: '/learn' },
+  { label: msg`Verify`, to: patterns.verify, match: '/verify', primary: true },
 ]

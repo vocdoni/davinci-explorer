@@ -70,33 +70,37 @@ test.describe('transition page', () => {
   })
 })
 
-test.describe('vote lookup', () => {
+test.describe('vote check', () => {
+  // The election field is new text; it is found by its process list.
+  const electionInput = (page: Page) => page.getByTestId('page-verify-vote').locator('input[list]')
+
   test('in Spanish: a vote id from a transition, found on-chain', async ({ page }) => {
     await openIn(page, `/processes/${OPEN_PID}/transitions/${MULTI_BLOB}`, 'es')
     const link = page.getByTestId('vote-id-list').locator('a').first()
     const id = (await link.textContent())!.trim()
     await link.click()
-    await expect(page).toHaveURL(new RegExp(`/votes/${OPEN_PID}/${id}`))
+    await expect(page).toHaveURL(new RegExp(`/verify/vote\\?pid=${OPEN_PID}&voteId=${id}`))
     await expect(page.locator('html')).toHaveAttribute('lang', 'es')
-    await expect(page.getByLabel('Id de proceso')).toHaveValue(OPEN_PID)
+    await expect(electionInput(page)).toHaveValue(OPEN_PID)
     await expect(page.getByLabel('Id de voto')).toHaveValue(id)
-    await expect(page.getByTestId('vote-summary')).toContainText(`#${MULTI_BLOB}`, { timeout: 15_000 })
-    const inclusion = page.getByTestId('vote-inclusion')
+    const settled = page.getByTestId('check-settled')
+    await expect(settled).toContainText(`#${MULTI_BLOB}`, { timeout: 15_000 })
+    await settled.locator('summary').click()
     for (const label of ['Bloque', 'Transacción']) {
-      await expect(inclusion.getByText(label, { exact: true })).toBeVisible()
+      await expect(settled.getByText(label, { exact: true })).toBeVisible()
     }
-    await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Votos' })).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Principal' }).locator('a[href="/verify"]')).toBeVisible()
   })
 
   test('in Catalan: the form, and the language survives a lookup', async ({ page }) => {
-    await openIn(page, '/votes', 'ca')
-    await page.getByLabel('Id de procés').fill(OPEN_PID)
+    await openIn(page, '/verify/vote', 'ca')
+    await electionInput(page).fill(OPEN_PID)
     await page.getByLabel('Id de vot').fill('0x1')
-    await page.getByTestId('page-votes').locator('form button[type="submit"]').click()
-    await expect(page).toHaveURL(/\/votes\?demo=1$/)
+    await page.getByTestId('page-verify-vote').locator('form button[type="submit"]').click()
+    await expect(page).toHaveURL(/\/verify\/vote\?demo=1$/)
     await page.reload()
     await expect(page.locator('html')).toHaveAttribute('lang', 'ca')
-    await expect(page.getByLabel('Id de procés')).toBeVisible()
-    await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Vots' })).toBeVisible()
+    await expect(page.getByLabel('Id de vot')).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Principal' }).locator('a[href="/verify"]')).toBeVisible()
   })
 })

@@ -36,10 +36,10 @@ A piece more than one view uses goes in `src/components/`, a shared hook in
 | `pages/processes/` | `/processes?status=&keyMode=&census=&organizer=&q=` |
 | `pages/process/` | `/processes/:pid` and `/processes/:pid/:tab` (`overview`, `key`, `transitions`, `votes`, `results`, `raw`); one file per tab in `tabs/` |
 | `pages/transition/` | `/processes/:pid/transitions/:index`, and `/tx/:hash` (`tx.tsx`, resolves a hash to its transition or process) |
-| `pages/votes/` | `/votes?pid=&voteId=` and `/votes/:pid/:voteId` |
-| `pages/contracts/` | `/contracts` |
-| `pages/sequencers/` | `/sequencers` (the nav item shows only when sequencers are configured) |
-| `pages/learn/` | `/learn` and `/learn/:topic` |
+| `pages/verify/` | `/verify` (the three checks), `/verify/vote?pid=&voteId=`, `/verify/election/:pid?` and `/verify/deployment`; one folder per flow. The old `/votes?pid=&voteId=` and `/votes/:pid/:voteId` redirect to the vote check, and the old `/learn/verify-*` guides to the matching flow |
+| `pages/contracts/` | `/contracts`: the addresses and parameters, as reference |
+| `pages/sequencers/` | `/sequencers` |
+| `pages/learn/` | `/learn/:topic`; `/learn` opens on the first topic |
 | `pages/kit/` | `/kit`, the design review page |
 
 Every page root carries `data-testid="page-<name>"`; the Playwright suite
@@ -48,8 +48,19 @@ Every page root carries `data-testid="page-<name>"`; the Playwright suite
 suite in the same change.
 
 Build every link with `paths` from `~routes/paths` (`paths.process(pid, 'results')`,
-`paths.transition(pid, i)`, `paths.vote(pid, voteId)`, `paths.tx(hash)`,
-`paths.processes({ organizer })`, ...), never from string literals.
+`paths.transition(pid, i)`, `paths.vote(pid, voteId)` (the vote check),
+`paths.verifyElection(pid)`, `paths.tx(hash)`, `paths.processes({ organizer })`,
+...), never from string literals.
+
+The Verify flows share one frame (`pages/verify/frame.tsx`: the stepper
+1 Choose · 2 Check · 3 Redo it yourself, numbered sections, "What this
+proves, and what it doesn't") and one checklist (`checklist.tsx`): a card per
+check with a `VerifyStatus` (`pass`, `fail`, `pending`, `na`), one plain
+sentence, and "How this is checked" with the values compared and the command.
+Each flow computes its outcomes in a pure, tested `model.ts` from the
+selectors (`transitionDetail(...).checks` through `batchChecks`, `rootChain`)
+and the results checks the process's results tab shows
+(`pages/process/results-checks.tsx`).
 
 ## Data flow
 
@@ -226,7 +237,8 @@ it in both themes after a design change.
 `CensusOriginBadge` (each with its explanation on hover), `ProcessIdLink`,
 `TxLink` (in-app `/tx/:hash` plus the block explorer), `Timestamp` (UTC, and
 "5 min ago" against the chain head), `NativeAmount` (wei in xDAI/ETH),
-`CheckMark` (pass / fail / unknown), `Explain` (the "what is this" info
+`CheckMark` (pass / fail / unknown), `Formula` (a formula in the mono font,
+its parts coloured, `||` as ‖), `Explain` (the "what is this" info
 glyph), `MissingEntity` (skeleton until the first poll, then "not found"),
 `CodeBlock` (a command with a copy button) and `HashLink`. Link to a section
 of the page with `HashLink`, never a plain `href="#id"`: the router's scroll

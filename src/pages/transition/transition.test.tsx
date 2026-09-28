@@ -13,7 +13,7 @@ import { activateLocale } from '~i18n/i18n'
 import { TooltipProvider } from '~kit'
 import { formatVoteId } from '~protocol/blob'
 import { patterns, paths } from '~routes/paths'
-import { VotesPage } from '~pages/votes'
+import { VerifyVotePage } from '~pages/verify/vote'
 import { TransitionPage } from '.'
 
 const fixture = demoFixture()
@@ -90,12 +90,12 @@ describe('TransitionPage', () => {
   })
 })
 
-describe('VotesPage', () => {
+describe('VerifyVotePage', () => {
   it('works without a sequencer', async () => {
     const { processId, voteId } = fixture.featured.settledVote
-    renderAt(paths.vote(processId, formatVoteId(voteId)), <VotesPage />, patterns.vote, { sequencers: [] })
-    expect(screen.getAllByText(/No sequencer is configured/)).toHaveLength(2)
-    await waitFor(() => expect(screen.getByTestId('vote-summary')).toHaveTextContent(/found in transition/), {
+    renderAt(paths.vote(processId, formatVoteId(voteId)), <VerifyVotePage />, patterns.verifyVote, { sequencers: [] })
+    expect(screen.getByTestId('check-tracker')).toHaveTextContent(/no sequencer is configured/)
+    await waitFor(() => expect(screen.getByTestId('check-settled')).toHaveTextContent(/Your vote is in batch #/), {
       timeout: 15_000,
     })
   })

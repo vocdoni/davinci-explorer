@@ -5,7 +5,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { CensusOriginBadge, CheckMark, Explain, Timestamp, TxLink } from '~components'
 import { useChain, type ProcessView } from '~data/hooks'
 import { useJsonDocument } from '~data/queries'
-import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar, SkeletonText } from '~kit'
+import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar, SkeletonText, UriLink } from '~kit'
 import { formatDuration, formatNumber, formatTimestamp } from '~lib/format'
 import { NUM_FIELDS } from '~protocol/limits'
 import { parseProcessId } from '~protocol/process-id'
@@ -34,26 +34,15 @@ function Label({ children, help }: { children: ReactNode; help: ReactNode }) {
   )
 }
 
-function UriLink({ uri }: { uri: string }) {
-  const href = browsableUri(uri)
+/** A URI as a compact link (what it opens, its host, the full URI on hover), never the whole string inline. */
+function Uri({ uri, label }: { uri: string; label: string }) {
   if (!uri)
     return (
       <span className='text-ash'>
         <Trans>none</Trans>
       </span>
     )
-  return href ? (
-    <a
-      href={href}
-      target='_blank'
-      rel='noreferrer noopener'
-      className='font-mono text-[12px] text-silver hover:text-emerald'
-    >
-      {uri}
-    </a>
-  ) : (
-    <span className='font-mono text-[12px]'>{uri}</span>
-  )
+  return <UriLink uri={uri} href={browsableUri(uri)} label={label} />
 }
 
 export function OverviewTab({ view }: { view: ProcessView }) {
@@ -252,7 +241,7 @@ function CensusPanel({ view }: { view: ProcessView }) {
                 <Trans>Census URI</Trans>
               </Label>
             ),
-            value: <UriLink uri={c.uri} />,
+            value: <Uri uri={c.uri} label={isCsp ? t`Open the signer’s service` : t`Open the census file`} />,
           },
         ]}
       />
@@ -271,8 +260,8 @@ function CensusPanel({ view }: { view: ProcessView }) {
                 <li key={`${u.block}:${i}`} className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
                   <Timestamp value={u.timestamp} className='text-ash' />
                   <Hash value={u.value.root} chars={8} />
-                  <span className='min-w-0 flex-1 truncate'>
-                    <UriLink uri={u.value.uri} />
+                  <span className='min-w-0 flex-1'>
+                    <Uri uri={u.value.uri} label={t`Open the census file`} />
                   </span>
                   {u.tx ? <TxLink hash={u.tx} chars={4} /> : null}
                 </li>
@@ -485,7 +474,7 @@ function MetadataPanel({ uri, numFields }: { uri: string; numFields: number }) {
       label={t`Published by the organizer`}
       description={t`The registry stores only this URI. The document (title, questions, options) is not verified on-chain; read it as the organizer’s description.`}
     >
-      <KeyValue items={[{ label: t`Metadata URI`, value: <UriLink uri={uri} /> }]} />
+      <KeyValue items={[{ label: t`Metadata URI`, value: <Uri uri={uri} label={t`Open the document`} /> }]} />
       <div className='mt-3' data-testid='process-metadata'>
         {!uri ? (
           <p className='text-[13px] text-ash'>

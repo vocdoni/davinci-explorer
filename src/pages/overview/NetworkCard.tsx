@@ -37,7 +37,7 @@ export function NetworkCard() {
       label={t`Deployment`}
       description={t`Where this explorer reads from, and whether the deployment runs a known release.`}
       actions={
-        <Link to={paths.contracts()} className={buttonClasses('ghost', 'sm')}>
+        <Link to={paths.verifyDeployment()} className={buttonClasses('ghost', 'sm')}>
           <Trans>Verify the deployment</Trans>
         </Link>
       }

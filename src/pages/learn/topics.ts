@@ -1,11 +1,13 @@
 // The guide's table of contents. Slugs are the `/learn/:topic` URLs; keep
 // them stable, other pages link to them. Titles, summaries and group labels
-// are descriptors: render them with `i18n._`.
+// are descriptors: render them with `i18n._`. The first topic is what `/learn`
+// opens on.
 
 import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
+import { paths } from '~routes/paths'
 
-export type TopicGroup = 'protocol' | 'verify' | 'reference'
+export type TopicGroup = 'protocol' | 'reference'
 
 export interface TopicMeta {
   slug: string
@@ -17,7 +19,6 @@ export interface TopicMeta {
 
 export const TOPIC_GROUPS: Array<{ id: TopicGroup; label: MessageDescriptor }> = [
   { id: 'protocol', label: msg`How it works` },
-  { id: 'verify', label: msg`Check it yourself` },
   { id: 'reference', label: msg`Reference` },
 ]
 
@@ -65,24 +66,6 @@ export const TOPICS: TopicMeta[] = [
     group: 'protocol',
   },
   {
-    slug: 'verify-voter',
-    title: msg`For voters: check your vote`,
-    summary: msg`Find the transition that included your vote, check its tracker proof and see it counted.`,
-    group: 'verify',
-  },
-  {
-    slug: 'verify-organizer',
-    title: msg`For organizers: watch your process`,
-    summary: msg`Parameters, census, key, progress and results of your processes, and what to do at the end.`,
-    group: 'verify',
-  },
-  {
-    slug: 'verify-auditor',
-    title: msg`For auditors: check the deployment`,
-    summary: msg`The pinned keys, every transition, the data behind it and the results, without trusting any sequencer.`,
-    group: 'verify',
-  },
-  {
     slug: 'glossary',
     title: msg`Glossary`,
     summary: msg`Process id, vote id, state root, slot, program vk, blob, epoch and the rest, in a sentence or two each.`,
@@ -99,4 +82,11 @@ export function neighbours(slug: string): { prev: TopicMeta | null; next: TopicM
   const i = TOPICS.findIndex((t) => t.slug === slug)
   if (i < 0) return { prev: null, next: null }
   return { prev: TOPICS[i - 1] ?? null, next: TOPICS[i + 1] ?? null }
+}
+
+/** Guides that became the Verify flows: their old URLs land on the flow. */
+export const MOVED_TOPICS: Record<string, string> = {
+  'verify-voter': paths.votes(),
+  'verify-organizer': paths.verifyElection(),
+  'verify-auditor': paths.verifyDeployment(),
 }

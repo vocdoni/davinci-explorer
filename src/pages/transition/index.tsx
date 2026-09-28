@@ -35,15 +35,7 @@ export function TransitionPage() {
   const blobs = useTransitionBlobs(pid, i)
   const now = useChainNow()
 
-  if (!pid || i == null || !detail) {
-    const number = param ?? ''
-    const processId = pid ?? ''
-    const id = t({
-      message: `#${number} of process ${processId}`,
-      comment: 'Fills {id} in "The registry has no transition {id}."',
-    })
-    return <MissingEntity what='transition' id={id} />
-  }
+  if (!pid || i == null || !detail) return <MissingEntity what='transition' index={param} processId={pid} />
   const { previous, next, process } = detail
   const index = detail.transition.index
   // Shown on the disabled step buttons at either end of the process's transitions.

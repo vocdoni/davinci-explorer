@@ -7,24 +7,25 @@ import { HashLink } from '~components/HashLink'
 import { useRuntimeConfig } from '~config/config-context'
 import { useDeploymentDetails } from '~data/deployment'
 import { useChain, useReleaseCheck } from '~data/hooks'
-import { Callout, SectionHeader, Stack } from '~kit'
+import { buttonClasses, Callout, SectionHeader, Stack } from '~kit'
 import { paths } from '~routes/paths'
 import { AddressesPanel } from './AddressesPanel'
 import { DkgPanel } from './DkgPanel'
 import { ParametersPanel } from './ParametersPanel'
 import { ReleasePanel } from './ReleasePanel'
-import { VerifyPanel } from './VerifyPanel'
-import { contractRows, publicRpc, releaseVerdict, wiringChecks } from './model'
+import { contractRows, releaseVerdict, wiringChecks } from './model'
 
 const SECTIONS: Array<{ id: string; label: MessageDescriptor }> = [
   { id: 'addresses', label: msg`Addresses` },
   { id: 'parameters', label: msg`Pinned values` },
   { id: 'release', label: msg`Release check` },
-  { id: 'verify', label: msg`Verify it yourself` },
   { id: 'dkg', label: msg`DKG committee` },
 ]
 
-/** The auditor's page: what the deployment is, what it is pinned to, and how to check both. */
+/**
+ * What the deployment is and what it is pinned to, as reference. Checking it
+ * without trusting this page is the Verify deployment flow.
+ */
 export function ContractsPage() {
   const { i18n, t } = useLingui()
   const config = useRuntimeConfig()
@@ -39,7 +40,7 @@ export function ContractsPage() {
   const ready = chain.registry != null
   const released = match.release?.label
 
-  // Deep links (#verify, #dkg) land after the lazy page and its data have rendered.
+  // Deep links (#release, #dkg) land after the lazy page and its data have rendered.
   useEffect(() => {
     if (!hash) return
     document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView()
@@ -51,7 +52,12 @@ export function ContractsPage() {
         size='page'
         label={t`Contracts`}
         title={t`Contracts and parameters`}
-        description={t`What this deployment is made of and what it is pinned to: the contract addresses, the verification keys every proof is checked against, and the commands to check both without trusting this page.`}
+        description={t`What this deployment is made of and what it is pinned to: the contract addresses, the parameters they hold and the verification keys every proof is checked against.`}
+        actions={
+          <Link to={paths.verifyDeployment()} className={buttonClasses('ghost', 'md')}>
+            <Trans>Check it yourself</Trans>
+          </Link>
+        }
       />
 
       <Callout
@@ -84,8 +90,8 @@ export function ContractsPage() {
             {i18n._(s.label)}
           </HashLink>
         ))}
-        <Link to={paths.learn('verify-auditor')} className='text-pewter transition-colors hover:text-emerald'>
-          <Trans>The auditor’s guide</Trans>
+        <Link to={paths.verifyDeployment()} className='text-pewter transition-colors hover:text-emerald'>
+          <Trans>Verify it without trusting this page</Trans>
         </Link>
       </nav>
 
@@ -97,9 +103,6 @@ export function ContractsPage() {
       </section>
       <section id='release' className='scroll-mt-20'>
         <ReleasePanel match={match} />
-      </section>
-      <section id='verify' className='scroll-mt-20'>
-        <VerifyPanel chain={chain} rpc={publicRpc(config.rpcUrls)} match={match} />
       </section>
       <section id='dkg' className='scroll-mt-20'>
         <DkgPanel

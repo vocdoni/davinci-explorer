@@ -20,7 +20,7 @@ const PHASE: Record<
   )
 > = {
   loading: { label: msg`Loading`, tone: 'neutral', description: msg`The process state has not been read yet.` },
-  upcoming: { label: msg`Upcoming`, tone: 'neutral', description: msg`Ready, but the voting window has not opened.` },
+  upcoming: { label: msg`Upcoming`, tone: 'info', description: msg`Ready, but the voting window has not opened.` },
   open: { label: msg`Open`, tone: 'ok', dot: true, status: 'ready' },
   paused: { label: msg`Paused`, tone: 'warn', status: 'paused' },
   closed: {
@@ -30,7 +30,7 @@ const PHASE: Record<
   },
   ended: { label: msg`Ended`, tone: 'neutral', status: 'ended' },
   canceled: { label: msg`Canceled`, tone: 'danger', status: 'canceled' },
-  results: { label: msg`Results`, tone: 'accent', status: 'results' },
+  results: { label: msg`Results`, tone: 'done', status: 'results' },
 }
 
 /** A process's phase (on-chain status plus the clock), with its meaning on hover. */
@@ -49,12 +49,13 @@ export function ProcessPhaseBadge({ phase, size }: { phase: ProcessPhase; size?:
   )
 }
 
+/** Who holds the key: violet for every mode, so it never competes with the phase beside it. */
 export function KeyModeBadge({ mode, size }: { mode: KeyModeName; size?: 'sm' | 'md' }) {
   const info = KEY_MODE_INFO[mode]
   return (
     <Tooltip content={info.description}>
       <span className='inline-flex'>
-        <Badge tone={mode === 'sequencer' ? 'neutral' : 'accent'} size={size}>
+        <Badge tone='violet' size={size}>
           {info.label}
         </Badge>
       </span>
@@ -62,12 +63,13 @@ export function KeyModeBadge({ mode, size }: { mode: KeyModeName; size?: 'sm' | 
   )
 }
 
+/** Where the voters come from: slate, a calm category tint. */
 export function CensusOriginBadge({ origin, size }: { origin: CensusOriginName; size?: 'sm' | 'md' }) {
   const info = CENSUS_ORIGIN_INFO[origin]
   return (
     <Tooltip content={info.description}>
       <span className='inline-flex'>
-        <Badge tone='neutral' size={size}>
+        <Badge tone='slate' size={size}>
           {info.label}
         </Badge>
       </span>

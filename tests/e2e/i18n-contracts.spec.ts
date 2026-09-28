@@ -19,9 +19,7 @@ const TEXT: Record<
     batchVk: string
     passed: string
     epochLength: string
-    sequencersTitle: string
     observer: string
-    account: string
   }
 > = {
   en: {
@@ -34,9 +32,7 @@ const TEXT: Record<
     batchVk: 'Vote-batch program vk',
     passed: 'passed',
     epochLength: '17,280',
-    sequencersTitle: 'Sequencer nodes',
     observer: 'Observer',
-    account: 'Account',
   },
   es: {
     contractsTitle: 'Contratos y parámetros',
@@ -48,9 +44,7 @@ const TEXT: Record<
     batchVk: 'vk del programa de lotes de votos',
     passed: 'superada',
     epochLength: '17.280',
-    sequencersTitle: 'Nodos secuenciadores',
     observer: 'Observador',
-    account: 'Cuenta',
   },
   ca: {
     contractsTitle: 'Contractes i paràmetres',
@@ -62,9 +56,7 @@ const TEXT: Record<
     batchVk: 'vk del programa de lots de vots',
     passed: 'superada',
     epochLength: '17.280',
-    sequencersTitle: 'Nodes seqüenciadors',
     observer: 'Observador',
-    account: 'Compte',
   },
 }
 
@@ -90,22 +82,18 @@ for (const locale of ['en', 'es', 'ca'] as const) {
       await expect(page.getByTestId('contract-row-registry')).toContainText('ProcessRegistry')
       await expect(page.getByTestId('pin-batchProgramVK')).toContainText(text.batchVk)
       await expect(page.getByTestId('pin-batchProgramVK').getByRole('img', { name: text.passed })).toBeVisible()
-      // Numbers follow the language; commands and hex do not.
+      // Numbers follow the language.
       await expect(page.locator('#dkg')).toContainText(text.epochLength)
-      const script = page.getByTestId('verify-script')
-      await expect(script).toContainText('python3 script/verify_deployment.py')
-      await expect(script).toContainText('--registry 0x')
     })
 
     test('the sequencers page', async ({ page }) => {
       await open(page, '/sequencers', locale)
-      const root = page.getByTestId('page-sequencers')
-      await expect(root.getByRole('heading', { name: text.sequencersTitle })).toBeVisible()
+      const table = page.getByTestId('sequencer-table')
+      await expect(table.getByText(text.observer, { exact: true })).toBeVisible()
+      await table.getByRole('link', { name: /^0x/ }).first().click()
       const checks = page.getByTestId('sequencer-0').getByTestId('sequencer-info-checks')
       await expect(checks.getByRole('img', { name: text.passed })).toHaveCount(5)
       await expect(checks).toContainText(text.batchVk)
-      await expect(page.getByTestId('sequencer-1').getByText(text.observer, { exact: true })).toBeVisible()
-      await expect(page.getByTestId('settlers').getByRole('columnheader', { name: text.account })).toBeVisible()
     })
   })
 }

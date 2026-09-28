@@ -1,0 +1,67 @@
+import { describe, expect, it } from 'vitest'
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { Route, Routes } from 'react-router'
+import { demoFixture } from '~fixtures/demo'
+import { metadataTitle } from '~pages/process/metadata'
+import { patterns } from '~routes/paths'
+import { renderWithProviders } from '../../../test-utils'
+import { VerifyElectionPage } from '.'
+
+const fixture = demoFixture()
+const openTitle = metadataTitle(
+  fixture.metadata.get(fixture.store.processes[fixture.featured.openProcess]!.state!.metadataURI)
+)!
+
+function renderAt(route: string) {
+  return renderWithProviders(
+    <Routes>
+      <Route path={patterns.verifyElection} element={<VerifyElectionPage />} />
+      <Route path={patterns.verifyElectionProcess} element={<VerifyElectionPage />} />
+    </Routes>,
+    { route }
+  )
+}
+
+describe('VerifyElectionPage', () => {
+  it('lists the elections and finds one by title', async () => {
+    const user = userEvent.setup()
+    renderAt('/verify/election')
+    const picker = screen.getByTestId('process-picker')
+    await waitFor(() => expect(within(picker).getAllByTestId('picker-row').length).toBeGreaterThan(1))
+    await user.type(within(picker).getByLabelText('Find the election'), openTitle.toLowerCase())
+    await waitFor(() => expect(within(picker).getAllByTestId('picker-row')).toHaveLength(1))
+    expect(within(picker).getByTestId('picker-row')).toHaveAttribute(
+      'href',
+      `/verify/election/${fixture.featured.openProcess}`
+    )
+  })
+
+  it('checks every batch and the root chain of an election with results', async () => {
+    const pid = fixture.featured.resultsProcess
+    renderAt(`/verify/election/${pid}`)
+    const batches = await screen.findByTestId('check-batches')
+    await waitFor(() => expect(batches).toHaveAttribute('data-status', 'pass'), { timeout: 10_000 })
+    const n = fixture.store.processes[pid]!.transitions.length
+    expect(batches).toHaveTextContent(`${n} of ${n} batches passed every check`)
+    expect(screen.getByTestId('check-chain')).toHaveAttribute('data-status', 'pass')
+    expect(screen.getByTestId('check-published')).toHaveAttribute('data-status', 'pass')
+    await waitFor(() => expect(screen.getByTestId('check-tally')).toHaveAttribute('data-status', 'pass'))
+    expect(screen.getByTestId('check-rules')).toHaveAttribute('data-status', 'pass')
+  })
+
+  it('counts a settled batch as the census check of an on-chain census', async () => {
+    renderAt(`/verify/election/${fixture.featured.openProcess}`)
+    await waitFor(() => expect(screen.getByTestId('check-census')).toHaveAttribute('data-status', 'pass'), {
+      timeout: 10_000,
+    })
+    await waitFor(() => expect(screen.getByTestId('check-batches')).toHaveAttribute('data-status', 'pass'))
+    // Open, so the result is still to come.
+    expect(screen.getByTestId('check-published')).toHaveAttribute('data-status', 'pending')
+  })
+
+  it('says when there is no such election', async () => {
+    renderAt(`/verify/election/0x${'ab'.repeat(31)}`)
+    expect(await screen.findByText('No such election')).toBeInTheDocument()
+  })
+})

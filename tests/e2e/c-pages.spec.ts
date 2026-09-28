@@ -42,8 +42,13 @@ test.describe('contracts', () => {
     expect(errors).toEqual([])
   })
 
-  test('the verification command follows the chosen pins', async ({ page }) => {
+  test('the verification command follows the chosen pins, on the deployment check', async ({ page }) => {
     await demo(page, '/contracts')
+    await expect(page.getByTestId('verify-script')).toHaveCount(0)
+    await page
+      .getByRole('navigation', { name: 'On this page' })
+      .getByRole('link', { name: /without trusting/ })
+      .click()
     const script = page.getByTestId('verify-script')
     await expect(script).toContainText('python3 script/verify_deployment.py')
     await expect(script).toContainText('--registry 0x')
@@ -65,38 +70,77 @@ test.describe('contracts', () => {
 
   test('the section links scroll to their section', async ({ page }) => {
     await demo(page, '/contracts')
-    await page
-      .getByRole('navigation', { name: 'On this page' })
-      .getByRole('link', { name: 'Verify it yourself' })
-      .click()
-    await expect(page).toHaveURL(/#verify$/)
-    await expect(page.getByTestId('verify-script')).toBeInViewport()
+    await page.getByRole('navigation', { name: 'On this page' }).getByRole('link', { name: 'DKG committee' }).click()
+    await expect(page).toHaveURL(/#dkg$/)
+    await expect(page.getByTestId('dkg-epoch')).toBeInViewport()
   })
 
-  test('the footer’s "Verify the deployment" lands here', async ({ page }) => {
+  test('the footer’s "Verify the deployment" lands on the deployment check', async ({ page }) => {
     await demo(page, '/')
     await page.getByRole('navigation', { name: 'Footer' }).getByRole('link', { name: 'Verify the deployment' }).click()
-    await expect(page.getByTestId('page-contracts')).toBeVisible()
+    await expect(page.getByTestId('page-verify-deployment')).toBeVisible()
   })
 })
 
 test.describe('sequencers', () => {
-  test('shows each node, its checks and the processes it serves', async ({ page }) => {
+  test('lists every settling account and every configured node', async ({ page }) => {
     const errors = collectErrors(page)
     await demo(page, '/sequencers')
-    const first = page.getByTestId('sequencer-0')
-    await expect(first.getByText('Signer', { exact: true })).toBeVisible()
-    await expect(first.getByText('Up', { exact: true })).toBeVisible()
-    await expect(first.getByTestId('sequencer-info-checks').getByRole('img', { name: 'passed' })).toHaveCount(5)
-    await expect(first.getByText('at the on-chain root').first()).toBeVisible()
-    await expect(page.getByTestId('sequencer-1').getByText('Observer', { exact: true })).toBeVisible()
-    await expect(page.getByTestId('settlers').getByText('configured')).toBeVisible()
+    const table = page.getByTestId('sequencer-table')
+    // Two demo accounts settled; the observer reports no account and gets a row of its own.
+    await expect(table.getByRole('row')).toHaveCount(4)
+    await expect(table.getByText('Signer', { exact: true })).toBeVisible()
+    await expect(table.getByText('Observer', { exact: true })).toBeVisible()
+    await expect(table.getByText('Online', { exact: true })).toHaveCount(2)
+    await expect(table.getByText('not configured')).toBeVisible()
     expect(errors).toEqual([])
   })
 
-  test('a served process opens its page', async ({ page }) => {
+  test('sorts by a column', async ({ page }) => {
     await demo(page, '/sequencers')
-    const link = page.getByTestId('sequencer-0').locator('a[href^="/processes/0x"]').first()
+    const table = page.getByTestId('sequencer-table')
+    const first = table.getByRole('row').nth(1)
+    // Numbers sort busiest first, then the other way round.
+    await table.getByRole('columnheader', { name: 'Transitions' }).click()
+    await expect(first).toContainText('sequencer-1.demo.invalid')
+    await table.getByRole('columnheader', { name: 'Transitions' }).click()
+    await expect(first).toContainText('observer.demo.invalid')
+  })
+
+  test('an account opens its page: numbers, transitions and its node', async ({ page }) => {
+    const errors = collectErrors(page)
+    await demo(page, '/sequencers')
+    await page.getByTestId('sequencer-table').getByRole('link', { name: /^0x/ }).first().click()
+    const root = page.getByTestId('page-sequencer')
+    await expect(root).toBeVisible()
+    await expect(
+      root
+        .getByTestId('sequencer-transitions')
+        .getByRole('link', { name: /^#\d+$/ })
+        .first()
+    ).toBeVisible()
+    const node = page.getByTestId('sequencer-0')
+    await expect(node.getByTestId('sequencer-info-checks').getByRole('img', { name: 'passed' })).toHaveCount(5)
+    await expect(node.getByText('at the on-chain root').first()).toBeVisible()
+    await root
+      .getByTestId('sequencer-transitions')
+      .getByRole('link', { name: /^#\d+$/ })
+      .first()
+      .click()
+    await expect(page.getByTestId('page-transition')).toBeVisible()
+    expect(errors).toEqual([])
+  })
+
+  test('an observer has a page of its own', async ({ page }) => {
+    await demo(page, '/sequencers')
+    await page.getByTestId('sequencer-table').getByRole('link', { name: 'observer.demo.invalid' }).click()
+    await expect(page).toHaveURL(/\/sequencers\/node-2/)
+    await expect(page.getByTestId('sequencer-1').getByText('Observer', { exact: true })).toBeVisible()
+  })
+
+  test('a served process opens its page', async ({ page }) => {
+    await demo(page, '/sequencers/node-2')
+    const link = page.getByTestId('sequencer-1').locator('a[href^="/processes/0x"]').first()
     const href = await link.getAttribute('href')
     await link.click()
     await expect(page).toHaveURL(new RegExp(`${href}$`))
@@ -113,18 +157,29 @@ test.describe('learn', () => {
     'blobs',
     'settlement',
     'results',
-    'verify-voter',
-    'verify-organizer',
-    'verify-auditor',
     'glossary',
   ]
 
-  test('the index links every topic and every role', async ({ page }) => {
+  test('/learn opens on the first topic, with the topic list beside it', async ({ page }) => {
     await demo(page, '/learn')
-    await expect(page.getByTestId('learn-summary')).toBeVisible()
-    await page.getByRole('link', { name: /I audit the deployment/ }).click()
-    await expect(page).toHaveURL(/\/learn\/verify-auditor$/)
-    await expect(page.getByTestId('learn-topic')).toHaveAttribute('data-topic', 'verify-auditor')
+    await expect(page.getByTestId('learn-topic')).toHaveAttribute('data-topic', 'how-it-works')
+    const nav = page.getByRole('navigation', { name: 'Guide topics' })
+    await expect(nav.getByRole('link')).toHaveCount(topics.length)
+    await nav.getByRole('link', { name: 'Glossary' }).click()
+    await expect(page).toHaveURL(/\/learn\/glossary$/)
+    await page.getByRole('link', { name: /Check it yourself/ }).click()
+    await expect(page.getByTestId('page-verify')).toBeVisible()
+  })
+
+  test('the old check-it-yourself guides land on the Verify flows', async ({ page }) => {
+    for (const [slug, testId] of [
+      ['verify-voter', 'page-verify-vote'],
+      ['verify-organizer', 'page-verify-election'],
+      ['verify-auditor', 'page-verify-deployment'],
+    ]) {
+      await demo(page, `/learn/${slug}`)
+      await expect(page.getByTestId(testId!)).toBeVisible()
+    }
   })
 
   for (const slug of topics) {
@@ -180,7 +235,7 @@ test.describe('learn', () => {
   test('the footer’s "How it works" lands on the guide', async ({ page }) => {
     await demo(page, '/contracts')
     await page.getByRole('navigation', { name: 'Footer' }).getByRole('link', { name: 'How it works' }).click()
-    await expect(page.getByTestId('learn-summary')).toBeVisible()
+    await expect(page.getByTestId('learn-topic')).toHaveAttribute('data-topic', 'how-it-works')
   })
 
   test('on a phone the topic picker navigates', async ({ page }) => {

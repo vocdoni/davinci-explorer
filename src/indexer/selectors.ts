@@ -724,3 +724,215 @@ export function searchStore(store: IndexerStore, raw: string, limit = 8): Search
   }
   return hits
 }
+
+// ── sequencers ───────────────────────────────────────────────────────────────
+
+/** A block and its time (exact, or estimated from the head). */
+export interface BlockTime {
+  block: number
+  timestamp: number | null
+}
+
+/** One account that settled transitions or published results, from the registry events. */
+export interface SequencerRow {
+  address: Address
+  /** State transitions it settled. */
+  transitions: number
+  /** Ballots in them: new votes plus overwrites. */
+  ballots: number
+  newVoters: number
+  overwrites: number
+  /** Distinct processes it settled a transition or published results for. */
+  processes: number
+  /** EIP-4844 blobs its transitions carried. */
+  blobs: number
+  /** `ProcessResultsSet` events it sent. */
+  results: number
+  /**
+   * What its settlement and results transactions paid, in wei (execution plus
+   * blob gas), over the receipts read so far. Reverted transactions (a lost
+   * race) leave no registry event and are not in it.
+   */
+  fees: bigint
+  /** Its transactions whose receipt is not read yet; `fees` is a lower bound until this is 0. */
+  feesPending: number
+  first: BlockTime
+  last: BlockTime
+}
+
+interface SequencerAcc extends SequencerRow {
+  pids: Set<string>
+  txs: Set<string>
+}
+
+function sequencerAcc(address: Address): SequencerAcc {
+  return {
+    address,
+    transitions: 0,
+    ballots: 0,
+    newVoters: 0,
+    overwrites: 0,
+    processes: 0,
+    blobs: 0,
+    results: 0,
+    fees: 0n,
+    feesPending: 0,
+    first: { block: Number.MAX_SAFE_INTEGER, timestamp: null },
+    last: { block: -1, timestamp: null },
+    pids: new Set(),
+    txs: new Set(),
+  }
+}
+
+function touch(store: IndexerStore, acc: SequencerAcc, block: number, timestamp: number | null) {
+  const at = { block, timestamp: timestamp ?? blockTimestamp(store, block) }
+  if (block < acc.first.block) acc.first = at
+  if (block >= acc.last.block) acc.last = at
+}
+
+/**
+ * Every account that settled a transition or published results, busiest
+ * first (transitions, then results, then the latest activity). Anyone may
+ * settle: an account here is a sequencer because the registry accepted its
+ * proofs, not because it is listed anywhere.
+ */
+export function sequencerRows(store: IndexerStore): SequencerRow[] {
+  const by = new Map<string, SequencerAcc>()
+  const acc = (sender: Address) => {
+    const address = sender.toLowerCase() as Address
+    let a = by.get(address)
+    if (!a) by.set(address, (a = sequencerAcc(address)))
+    return a
+  }
+  for (const key of store.transitionOrder) {
+    const t = store.transitions[key]
+    if (!t) continue
+    const a = acc(t.sender)
+    a.transitions += 1
+    a.newVoters += t.newVoters
+    a.overwrites += t.overwrites
+    a.ballots += t.newVoters + t.overwrites
+    a.blobs += t.nBlobs
+    a.pids.add(t.processId.toLowerCase())
+    if (t.tx) a.txs.add(txKey(t.tx))
+    touch(store, a, t.block, t.timestamp)
+  }
+  for (const key of store.processOrder) {
+    const r = store.processes[key]?.results
+    if (!r) continue
+    const a = acc(r.sender)
+    a.results += 1
+    a.pids.add(key)
+    if (r.tx) a.txs.add(txKey(r.tx))
+    touch(store, a, r.block, r.timestamp)
+  }
+  return [...by.values()]
+    .map(({ pids, txs, ...row }) => {
+      let fees = 0n
+      let feesPending = 0
+      for (const tx of txs) {
+        const d = store.txDetails[tx]
+        if (d) fees += d.fee
+        else feesPending += 1
+      }
+      return { ...row, processes: pids.size, fees, feesPending }
+    })
+    .sort((a, b) => b.transitions - a.transitions || b.results - a.results || b.last.block - a.last.block)
+}
+
+/** One account's row; null when it never settled a transition nor published results. */
+export function sequencerRow(store: IndexerStore, address: string): SequencerRow | null {
+  const a = address.toLowerCase()
+  return sequencerRows(store).find((r) => r.address === a) ?? null
+}
+
+export interface SequencerDay {
+  /** YYYY-MM-DD (UTC). */
+  day: string
+  transitions: number
+  ballots: number
+  newVoters: number
+  overwrites: number
+  blobs: number
+  results: number
+}
+
+/** One account's work per UTC day over the last `days` days (oldest first), up to the chain's now. */
+export function sequencerActivity(store: IndexerStore, address: string, days = 30): SequencerDay[] {
+  const now = chainNow(store)
+  if (now == null) return []
+  const a = address.toLowerCase()
+  const dayOf = (ts: number) => new Date(ts * 1000).toISOString().slice(0, 10)
+  const buckets = new Map<string, SequencerDay>()
+  const end = Math.floor(now / 86400)
+  for (let d = end - days + 1; d <= end; d++) {
+    const day = dayOf(d * 86400)
+    buckets.set(day, { day, transitions: 0, ballots: 0, newVoters: 0, overwrites: 0, blobs: 0, results: 0 })
+  }
+  const bucket = (block: number, timestamp: number | null) => {
+    const ts = timestamp ?? blockTimestamp(store, block)
+    return ts == null ? undefined : buckets.get(dayOf(ts))
+  }
+  for (const key of store.transitionOrder) {
+    const t = store.transitions[key]!
+    if (t.sender.toLowerCase() !== a) continue
+    const b = bucket(t.block, t.timestamp)
+    if (!b) continue
+    b.transitions += 1
+    b.newVoters += t.newVoters
+    b.overwrites += t.overwrites
+    b.ballots += t.newVoters + t.overwrites
+    b.blobs += t.nBlobs
+  }
+  for (const key of store.processOrder) {
+    const r = store.processes[key]!.results
+    if (!r || r.sender.toLowerCase() !== a) continue
+    const b = bucket(r.block, r.timestamp)
+    if (b) b.results += 1
+  }
+  return [...buckets.values()]
+}
+
+/** The transitions one account settled, newest first. */
+export function sequencerTransitions(store: IndexerStore, address: string): TransitionRow[] {
+  const a = address.toLowerCase()
+  const out: TransitionRow[] = []
+  for (let i = store.transitionOrder.length - 1; i >= 0; i--) {
+    const t = store.transitions[store.transitionOrder[i]!]!
+    if (t.sender.toLowerCase() !== a) continue
+    const before =
+      t.index === 0
+        ? (store.processes[processKey(t.processId)]?.genesisRoot ?? null)
+        : (store.transitions[transitionKey(t.processId, t.index - 1)]?.rootAfter ?? null)
+    out.push(transitionRow(store, t, before))
+  }
+  return out
+}
+
+export interface SequencerResult {
+  processId: Hex
+  block: number
+  tx: Hex | null
+  timestamp: number | null
+  /** Null until the receipt is read. */
+  fee: bigint | null
+}
+
+/** The results one account published, newest first. */
+export function sequencerResults(store: IndexerStore, address: string): SequencerResult[] {
+  const a = address.toLowerCase()
+  const out: SequencerResult[] = []
+  for (const key of store.processOrder) {
+    const p = store.processes[key]!
+    const r = p.results
+    if (!r || r.sender.toLowerCase() !== a) continue
+    out.push({
+      processId: p.id,
+      block: r.block,
+      tx: r.tx,
+      timestamp: r.timestamp ?? blockTimestamp(store, r.block),
+      fee: r.tx ? (store.txDetails[txKey(r.tx)]?.fee ?? null) : null,
+    })
+  }
+  return out.sort((x, y) => y.block - x.block)
+}

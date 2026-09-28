@@ -43,24 +43,14 @@ test.describe('overview', () => {
     expect(errors).toEqual([])
   })
 
-  test('the organizer box lists that organizer’s processes', async ({ page }) => {
+  test('the overview leads to the checks', async ({ page }) => {
     await demo(page, '/')
-    const box = page.getByRole('textbox', { name: 'Organizer address' })
-    await box.fill('0x1234')
-    await expect(page.getByText('An address is 0x followed by 40 hex digits.')).toBeVisible()
-    await box.fill(`0x${ORG0.toUpperCase()}`)
-    await page.getByRole('button', { name: 'Show my processes' }).click()
-    await expect(page).toHaveURL(new RegExp(`/processes\\?organizer=0x${ORG0}`))
-    await expect(page.getByTestId('process-count')).toHaveText('4 processes')
-  })
-
-  test('role cards link to the vote lookup and the contracts', async ({ page }) => {
+    await expect(page.getByTestId('role-cards')).toHaveCount(0)
+    await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Verify' }).click()
+    await expect(page.getByTestId('page-verify')).toBeVisible()
     await demo(page, '/')
-    await page.getByRole('link', { name: 'Check my vote' }).click()
-    await expect(page).toHaveURL(/\/votes$/)
-    await demo(page, '/')
-    await page.getByRole('link', { name: 'Contracts and pins' }).click()
-    await expect(page).toHaveURL(/\/contracts$/)
+    await page.getByTestId('page-overview').getByRole('link', { name: 'Verify the deployment' }).click()
+    await expect(page.getByTestId('page-verify-deployment')).toBeVisible()
   })
 })
 
@@ -177,7 +167,7 @@ test.describe('process page', () => {
     await expect(page.getByText(/A vote id is a number from 2\^63/)).toBeVisible()
     await box.fill(voteId)
     await page.getByRole('button', { name: 'Look up this vote' }).click()
-    await expect(page).toHaveURL(new RegExp(`/votes/${OPEN}/${voteId}$`))
+    await expect(page).toHaveURL(new RegExp(`/verify/vote\\?pid=${OPEN}&voteId=${voteId}`))
   })
 
   test('results tab: zkVM tally, DKG tally and no results yet', async ({ page }) => {

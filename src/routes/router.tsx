@@ -14,8 +14,12 @@ import {
   SequencersPage,
   TransitionPage,
   TxPage,
-  VotesPage,
+  VerifyDeploymentPage,
+  VerifyElectionPage,
+  VerifyPage,
+  VerifyVotePage,
 } from './pages'
+import { LegacyVoteRedirect } from './redirects'
 
 /** The route table, shared by the browser router and the tests' memory router. */
 export const routes: RouteObject[] = [
@@ -73,21 +77,47 @@ export const routes: RouteObject[] = [
         ),
       },
       {
-        path: patterns.votes,
+        path: patterns.verify,
         element: (
           <Lazy>
-            <VotesPage />
+            <VerifyPage />
           </Lazy>
         ),
       },
       {
-        path: patterns.vote,
+        path: patterns.verifyVote,
         element: (
           <Lazy>
-            <VotesPage />
+            <VerifyVotePage />
           </Lazy>
         ),
       },
+      {
+        path: patterns.verifyElection,
+        element: (
+          <Lazy>
+            <VerifyElectionPage />
+          </Lazy>
+        ),
+      },
+      {
+        path: patterns.verifyElectionProcess,
+        element: (
+          <Lazy>
+            <VerifyElectionPage />
+          </Lazy>
+        ),
+      },
+      {
+        path: patterns.verifyDeployment,
+        element: (
+          <Lazy>
+            <VerifyDeploymentPage />
+          </Lazy>
+        ),
+      },
+      { path: patterns.legacyVotes, element: <LegacyVoteRedirect /> },
+      { path: patterns.legacyVote, element: <LegacyVoteRedirect /> },
       {
         path: patterns.contracts,
         element: (
@@ -98,6 +128,14 @@ export const routes: RouteObject[] = [
       },
       {
         path: patterns.sequencers,
+        element: (
+          <Lazy>
+            <SequencersPage />
+          </Lazy>
+        ),
+      },
+      {
+        path: patterns.sequencer,
         element: (
           <Lazy>
             <SequencersPage />

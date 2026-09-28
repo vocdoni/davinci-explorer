@@ -36,7 +36,7 @@ export function Address({ value, chars = 4, full = false, copy = true, explorer 
   const href = explorer ? explorerAddressUrl(config.blockExplorerUrl, checksummed) : null
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1 font-mono text-[12px]', className)}>
-      <Tooltip content={checksummed}>
+      <Tooltip content={checksummed} value>
         {to ? (
           <Link
             to={to}
@@ -74,7 +74,7 @@ export function Hash({ value, chars = 6, full = false, copy = true, href, classN
   const text = full ? value : shortHash(value, chars, 4)
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1 font-mono text-[12px]', className)}>
-      <Tooltip content={value}>
+      <Tooltip content={value} value>
         {href ? (
           <Link
             to={href}
@@ -109,7 +109,7 @@ export function TxCell({ hash, chars = 6, copy = false, className }: TxCellProps
   const href = explorerTxUrl(config.blockExplorerUrl, hash)
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1 font-mono text-[12px]', className)}>
-      <Tooltip content={hash}>
+      <Tooltip content={hash} value>
         {href ? (
           <a
             href={href}

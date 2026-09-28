@@ -31,7 +31,7 @@ export function Footer() {
           <Link to={paths.learn()} className={LINK}>
             <Trans>How it works</Trans>
           </Link>
-          <Link to={paths.contracts()} className={LINK}>
+          <Link to={paths.verifyDeployment()} className={LINK}>
             <Trans>Verify the deployment</Trans>
           </Link>
           <a

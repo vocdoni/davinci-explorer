@@ -84,8 +84,14 @@ patterns and examples, `src/locales/GLOSSARY.md` the words.
   so read them while rendering.
 - Run `pnpm i18n:extract` and fill `es` and `ca` in the same change, or
   `pnpm i18n:check` fails in CI.
-- `tests/e2e/i18n.spec.ts` switches languages; extend it when a page is
-  translated. Unit tests run in English.
+- Playwright reads pages in Spanish and Catalan in `tests/e2e/i18n.spec.ts`
+  (the shell, the overview, the lists) and in one spec per area beside it
+  (`i18n-learn.spec.ts`, `i18n-process.spec.ts`, `i18n-transition.spec.ts`,
+  `i18n-contracts.spec.ts`); extend the area's spec when a page is translated,
+  or add an `i18n-<area>.spec.ts`. Unit tests run in English.
+- Formulas (`sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)`) go through
+  `<Formula expr='…' />` (`~components/Formula`), never raw `||` or back-ticks
+  in prose; `expr` keeps the formula out of the catalogs.
 
 ## Where things live
 

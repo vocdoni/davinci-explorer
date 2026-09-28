@@ -39,6 +39,15 @@
   --color-amber: #e3b341;
   --color-red: #f85149;
 
+  /* ── Tag hues: text colour of a badge, and its tint at 12–18 % ───────────
+   * blue for what has not started, green (deeper than the accent) for a
+   * published result, slate and violet for categories that sit beside a
+   * status (census origin, key mode) without competing with it. */
+  --color-blue: #79b8ff;
+  --color-green: #56c26a;
+  --color-slate: #a3b1c6;
+  --color-violet: #b9adf2;
+
   /* ── Chart companions: emerald plus two desaturated hues, then greys ── */
   --color-series-1: #00d992;
   --color-series-2: #4f9d8a;
@@ -86,6 +95,11 @@ html[data-theme='light'] {
 
   --color-amber: #8a5a00;
   --color-red: #c9252d;
+
+  --color-blue: #0b5cad;
+  --color-green: #1b6b35;
+  --color-slate: #4a5b72;
+  --color-violet: #5b48b5;
 
   --color-series-1: #059669;
   --color-series-2: #2f7d6d;

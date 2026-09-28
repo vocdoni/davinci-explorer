@@ -83,7 +83,7 @@ describe('an empty registry', () => {
     expect(screen.getByText('No ballots settled in the last 30 days')).toBeInTheDocument()
     // The deployment itself is still checkable.
     expect(screen.getByText(/matches davinci-zkvm/)).toBeInTheDocument()
-    expect(screen.getByTestId('role-cards')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Verify the deployment' })).toHaveAttribute('href', '/verify/deployment')
   })
 
   it('the processes list explains itself', () => {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { CensusOriginBadge, CheckMark, Explain, KeyModeBadge, NativeAmount, ProcessPhaseBadge } from '~components'
 import {
@@ -31,15 +31,33 @@ import {
   TimelineRow,
   Toggle,
   TxCell,
+  UriLink,
   type AnyColumnDef,
 } from '~kit'
 import { Donut, Sparkline, StackedBars } from '~kit/charts'
+import type { ProcessPhase } from '~indexer/selectors'
 import { formatNumber } from '~lib/format'
+import type { CensusOriginName, KeyModeName } from '~protocol/types'
 import { useTheme } from '~theme/theme-context'
 
 const SAMPLE_ADDRESS = '0x3cde68c39e26ecf94bd029b6ed3b9f945441daf3'
 const SAMPLE_PID = '0x42fc20654efd78c6887ff0bd1cc50c9ec1dab58980c5bb9300000000000004'
 const SAMPLE_TX = `0x${'9f'.repeat(32)}`
+const SAMPLE_ROOT = `0x${'0bc9dc8e'.repeat(8)}`
+const SAMPLE_URI = 'https://metadata.example.org/processes/0x42fc20654efd78c6887ff0bd1cc50c9ec1dab589/metadata.json'
+const SAMPLE_FILE_URI = 'file:///var/lib/davinci/census/0x42fc20654efd78c6887ff0bd1cc50c9ec1dab589/census.json'
+const PHASES: ProcessPhase[] = ['upcoming', 'open', 'paused', 'closed', 'ended', 'canceled', 'results', 'loading']
+const KEY_MODES: KeyModeName[] = ['sequencer', 'dkg-automatic', 'dkg-locked']
+const CENSUS_ORIGINS: CensusOriginName[] = ['merkle-static', 'merkle-dynamic', 'onchain-dynamic', 'csp']
+
+function BadgeRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+      <span className='label-caps w-36 shrink-0 text-[11px] text-pewter'>{label}</span>
+      <div className='flex min-w-0 flex-wrap items-center gap-2'>{children}</div>
+    </div>
+  )
+}
 
 interface Row {
   index: number
@@ -126,33 +144,82 @@ export function KitPage() {
             <Trans>Loading</Trans>
           </Button>
         </div>
-        <div className='mt-4 flex flex-wrap items-center gap-2'>
-          <Badge tone='ok' dot>
-            <Trans>live</Trans>
-          </Badge>
-          <Badge tone='accent'>
-            <Trans>accent</Trans>
-          </Badge>
-          <Badge tone='warn'>
-            <Trans>warning</Trans>
-          </Badge>
-          <Badge tone='danger'>
-            <Trans>danger</Trans>
-          </Badge>
-          <Badge>
-            <Trans>neutral</Trans>
-          </Badge>
-          <ProcessPhaseBadge phase='open' />
-          <ProcessPhaseBadge phase='closed' />
-          <ProcessPhaseBadge phase='results' />
-          <KeyModeBadge mode='dkg-locked' />
-          <CensusOriginBadge origin='csp' />
-          <CheckMark state='pass' />
-          <CheckMark state='fail' />
-          <CheckMark state='unknown' />
-          <Explain>
-            <Trans>Every value can carry a plain-words explanation.</Trans>
-          </Explain>
+        <div className='mt-5 flex flex-col gap-3' data-testid='kit-badges'>
+          <BadgeRow label={t`Tones`}>
+            <Badge tone='ok' dot>
+              <Trans>ok</Trans>
+            </Badge>
+            <Badge tone='accent'>
+              <Trans>accent</Trans>
+            </Badge>
+            <Badge tone='done'>
+              <Trans>done</Trans>
+            </Badge>
+            <Badge tone='info'>
+              <Trans>info</Trans>
+            </Badge>
+            <Badge tone='warn'>
+              <Trans>warning</Trans>
+            </Badge>
+            <Badge tone='danger'>
+              <Trans>danger</Trans>
+            </Badge>
+            <Badge>
+              <Trans>neutral</Trans>
+            </Badge>
+            <Badge tone='slate'>
+              <Trans>slate</Trans>
+            </Badge>
+            <Badge tone='violet'>
+              <Trans>violet</Trans>
+            </Badge>
+          </BadgeRow>
+          <BadgeRow label={t`Phases`}>
+            {PHASES.map((phase) => (
+              <ProcessPhaseBadge key={phase} phase={phase} />
+            ))}
+          </BadgeRow>
+          <BadgeRow label={t`Key modes`}>
+            {KEY_MODES.map((mode) => (
+              <KeyModeBadge key={mode} mode={mode} />
+            ))}
+          </BadgeRow>
+          <BadgeRow label={t`Census origins`}>
+            {CENSUS_ORIGINS.map((origin) => (
+              <CensusOriginBadge key={origin} origin={origin} />
+            ))}
+          </BadgeRow>
+          <BadgeRow label={t`Checks`}>
+            <CheckMark state='pass' />
+            <CheckMark state='fail' />
+            <CheckMark state='unknown' />
+            <Explain>
+              <Trans>Every value can carry a plain-words explanation.</Trans>
+            </Explain>
+          </BadgeRow>
+        </div>
+      </Panel>
+
+      <Panel
+        title={t`Long values`}
+        description={t`Hover a shortened value: the tooltip grows to the whole value, and wraps only past the screen’s edge.`}
+      >
+        <div className='flex flex-col gap-3 text-[13px]'>
+          <BadgeRow label={t`Hash`}>
+            <Hash value={SAMPLE_ROOT} chars={8} />
+          </BadgeRow>
+          <BadgeRow label={t`Address`}>
+            <Address value={SAMPLE_ADDRESS} chars={6} />
+          </BadgeRow>
+          <BadgeRow label={t`Transaction`}>
+            <TxCell hash={SAMPLE_TX} copy />
+          </BadgeRow>
+          <BadgeRow label={t`Link to a document`}>
+            <UriLink uri={SAMPLE_URI} href={SAMPLE_URI} label={t`Open the document`} />
+          </BadgeRow>
+          <BadgeRow label={t`Not a web link`}>
+            <UriLink uri={SAMPLE_FILE_URI} href={null} label={t`Open the census file`} />
+          </BadgeRow>
         </div>
       </Panel>
 

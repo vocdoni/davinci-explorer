@@ -28,7 +28,7 @@ export function TxLink({ hash, chars = 6, className }: { hash: string; chars?: n
   const external = explorerTxUrl(blockExplorerUrl, hash)
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1 font-mono text-[12px]', className)}>
-      <Tooltip content={hash}>
+      <Tooltip content={hash} value>
         <Link to={paths.tx(hash)} className='truncate text-silver transition-colors hover:text-emerald'>
           {shortHash(hash, chars, 4)}
         </Link>

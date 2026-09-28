@@ -20,6 +20,7 @@ function renderLearn(route: string) {
     <Routes>
       <Route path='/learn' element={<LearnPage />} />
       <Route path='/learn/:topic' element={<LearnPage />} />
+      <Route path='/verify/*' element={<p data-testid='verify-flow'>verify</p>} />
     </Routes>,
     { route }
   )
@@ -100,13 +101,22 @@ describe('pickExamples', () => {
 })
 
 describe('LearnPage', () => {
-  it('renders the index with every topic', () => {
+  it('opens on the first topic, with every topic in the list', () => {
     renderLearn('/learn')
-    const page = screen.getByTestId('page-learn')
-    for (const t of TOPICS.filter((x) => x.group !== 'verify')) {
-      expect(within(page).getByTestId(`topic-card-${t.slug}`)).toBeInTheDocument()
+    const article = screen.getByTestId('learn-topic')
+    expect(article).toHaveAttribute('data-topic', TOPICS[0]!.slug)
+    const nav = screen.getByRole('navigation', { name: 'Guide topics' })
+    for (const t of TOPICS) expect(within(nav).getByRole('link', { name: i18n._(t.title) })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: i18n._(TOPICS[0]!.title) })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: /Check it yourself/ })).toHaveAttribute('href', '/verify')
+  })
+
+  it('sends the old check-it-yourself guides to the Verify flows', () => {
+    for (const slug of ['verify-voter', 'verify-organizer', 'verify-auditor']) {
+      renderLearn(`/learn/${slug}`)
+      expect(screen.getByTestId('verify-flow')).toBeInTheDocument()
+      cleanup()
     }
-    expect(within(page).getByText('I voted')).toBeInTheDocument()
   })
 
   for (const t of TOPICS) {

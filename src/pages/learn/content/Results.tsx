@@ -111,9 +111,8 @@ export function Results({ ex }: { ex: LearnExamples }) {
         )}
         <P>
           <Trans>
-            Next: check it yourself, as a <A to={paths.learn('verify-voter')}>voter</A>, an{' '}
-            <A to={paths.learn('verify-organizer')}>organizer</A> or an{' '}
-            <A to={paths.learn('verify-auditor')}>auditor</A>.
+            Next: check it yourself, as a <A to={paths.votes()}>voter</A>, an{' '}
+            <A to={paths.verifyElection()}>organizer</A> or an <A to={paths.verifyDeployment()}>auditor</A>.
           </Trans>
         </P>
       </Section>

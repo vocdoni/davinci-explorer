@@ -35,7 +35,8 @@ import {
   applyTxDetails,
   createEmptyStore,
 } from '~indexer/reduce'
-import type { IndexedEvent, IndexerStore, ProcessState, RegistryInfo, TxDetails } from '~indexer/types'
+import type { BallotMode, IndexedEvent, IndexerStore, ProcessState, RegistryInfo, TxDetails } from '~indexer/types'
+import { demoBallotMode, type DemoBallot } from './presets'
 import { voteIdTreeRoot } from './smt'
 
 // ── deterministic randomness ─────────────────────────────────────────────────
@@ -190,6 +191,8 @@ interface Spec {
   keyMode: KeyModeName
   census: CensusOriginName
   numFields: number
+  /** An SDK preset (stored in the metadata, as the SDK does) or the raw budget recipe. */
+  ballot: DemoBallot
   /** Days before the head the process was created. */
   createdDaysAgo: number
   /** Voting window, days. */
@@ -212,6 +215,7 @@ const SPECS: Spec[] = [
     keyMode: 'sequencer',
     census: 'merkle-static',
     numFields: 4,
+    ballot: { type: 'single_choice' },
     createdDaysAgo: 28,
     durationDays: 7,
     transitions: 9,
@@ -225,6 +229,7 @@ const SPECS: Spec[] = [
     keyMode: 'dkg-automatic',
     census: 'csp',
     numFields: 6,
+    ballot: { type: 'budget', maxPerOption: 50, budget: 100 },
     createdDaysAgo: 24,
     durationDays: 6,
     transitions: 7,
@@ -238,6 +243,7 @@ const SPECS: Spec[] = [
     keyMode: 'dkg-locked',
     census: 'merkle-dynamic',
     numFields: 3,
+    ballot: { type: 'multiple_choice', minSelections: 1, maxSelections: 2 },
     createdDaysAgo: 20,
     durationDays: 8,
     transitions: 8,
@@ -252,6 +258,7 @@ const SPECS: Spec[] = [
     keyMode: 'sequencer',
     census: 'onchain-dynamic',
     numFields: 16,
+    ballot: { type: 'quadratic', budget: 100 },
     createdDaysAgo: 18,
     durationDays: 30,
     transitions: 40,
@@ -266,6 +273,7 @@ const SPECS: Spec[] = [
     keyMode: 'dkg-automatic',
     census: 'merkle-static',
     numFields: 2,
+    ballot: { type: 'single_choice', allowAbstain: true },
     createdDaysAgo: 5,
     durationDays: 14,
     transitions: 6,
@@ -279,6 +287,7 @@ const SPECS: Spec[] = [
     keyMode: 'sequencer',
     census: 'csp',
     numFields: 5,
+    ballot: { type: 'multiple_choice', maxSelections: 2 },
     createdDaysAgo: 12,
     durationDays: 20,
     transitions: 5,
@@ -292,6 +301,7 @@ const SPECS: Spec[] = [
     keyMode: 'dkg-locked',
     census: 'merkle-static',
     numFields: 4,
+    ballot: { type: 'ranking' },
     createdDaysAgo: 1,
     durationDays: 10,
     startDelayDays: 3,
@@ -306,6 +316,7 @@ const SPECS: Spec[] = [
     keyMode: 'sequencer',
     census: 'merkle-dynamic',
     numFields: 8,
+    ballot: { type: 'approval' },
     createdDaysAgo: 15,
     durationDays: 10,
     transitions: 2,
@@ -320,6 +331,7 @@ const SPECS: Spec[] = [
     keyMode: 'sequencer',
     census: 'merkle-static',
     numFields: 1,
+    ballot: { type: 'single_choice', allowAbstain: true },
     createdDaysAgo: 10,
     durationDays: 9,
     transitions: 4,
@@ -333,6 +345,7 @@ const SPECS: Spec[] = [
     keyMode: 'dkg-automatic',
     census: 'onchain-dynamic',
     numFields: 3,
+    ballot: { type: 'rating', minValue: 1, maxValue: 5 },
     createdDaysAgo: 9,
     durationDays: 4,
     transitions: 3,
@@ -360,10 +373,14 @@ const TITLES: Record<string, { es: string; ca: string }> = {
   'Tooling survey': { es: 'Encuesta sobre herramientas', ca: 'Enquesta sobre eines' },
 }
 
-/** A process's metadata document, in English (the default), Spanish and Catalan. */
-function metadataDocument(title: string, numFields: number) {
+/**
+ * A process's metadata document, in English (the default), Spanish and
+ * Catalan. A preset goes under `meta.electionPreset`, where the SDK keeps it.
+ */
+function metadataDocument(title: string, numFields: number, ballot: DemoBallot) {
   const tr = TITLES[title] ?? { es: title, ca: title }
   return {
+    ...(ballot.type === 'budget' ? {} : { meta: { electionPreset: ballot } }),
     title: { default: title, es: tr.es, ca: tr.ca },
     description: {
       default: `${title}: a synthetic process of the demo network.`,
@@ -406,6 +423,26 @@ function registersToPublicValues(regs: number[]): Hex {
 function setBytes32(regs: number[], base: number, bytes: Uint8Array): void {
   const view = new DataView(bytes.buffer, bytes.byteOffset, 32)
   for (let i = 0; i < 8; i++) regs[base + i] = view.getUint32(i * 4, true)
+}
+
+/**
+ * Scales random draws to a total that `voters` ballots of a linear-cost mode
+ * can add up to (a single choice sums to the voter count). The draws keep
+ * their proportions; the rounding remainder goes to the largest.
+ */
+function fitTally(bm: BallotMode, voters: number, draws: bigint[]): bigint[] {
+  if (bm.costExponent !== 1 || voters === 0) return draws
+  const n = BigInt(voters)
+  const nf = BigInt(bm.numFields)
+  const floor = nf * bm.minValue > bm.minValueSum ? nf * bm.minValue : bm.minValueSum
+  const ceiling = bm.maxValueSum > 0n && bm.maxValueSum < nf * bm.maxValue ? bm.maxValueSum : nf * bm.maxValue
+  const sum = draws.reduce((a, v) => a + v, 0n)
+  const target = sum < n * floor ? n * floor : sum > n * ceiling ? n * ceiling : sum
+  if (target === sum || sum === 0n) return draws
+  const out = draws.map((v) => (v * target) / sum)
+  const largest = draws.indexOf(draws.reduce((m, v) => (v > m ? v : m), 0n))
+  out[largest]! += target - out.reduce((a, v) => a + v, 0n)
+  return out
 }
 
 /** Builds the synthetic network. Deterministic for a given `seed`. */
@@ -481,6 +518,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
     const endTime = startTime + duration
     const now = o.headTimestamp
     const nf = spec.numFields
+    const ballotMode = demoBallotMode(spec.ballot, nf)
     const censusRoots: Hex[] = [
       spec.census === 'csp' ? toHex(bigIntToBe(BigInt(rng.hex(20)), 32)) : toHex(bigIntToBe(BigInt(rng.hex(31)), 32)),
     ]
@@ -700,7 +738,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
         break
       }
       case 'results': {
-        result.push(...tally())
+        result.push(...fitTally(ballotMode, voters, tally()))
         if (spec.keyMode === 'sequencer') {
           const tx = rng.hex(32)
           emit({
@@ -827,7 +865,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
     }
 
     const metadataURI = `https://metadata.example.org/${pid}.json`
-    metadata.set(metadataURI, metadataDocument(spec.title, nf))
+    metadata.set(metadataURI, metadataDocument(spec.title, nf, spec.ballot))
 
     states.set(pid, {
       status,
@@ -843,16 +881,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
       creationBlock: createdBlock,
       batchNumber: nTransitions,
       metadataURI,
-      ballotMode: {
-        uniqueValues: spec.numFields > 1 && specIndex % 2 === 0,
-        numFields: nf,
-        groupSize: 0,
-        costExponent: specIndex === 1 ? 2 : 1,
-        maxValue: BigInt(specIndex === 1 ? 10 : 1),
-        minValue: 0n,
-        maxValueSum: BigInt(specIndex === 1 ? 20 : nf),
-        minValueSum: 0n,
-      },
+      ballotMode,
       census: {
         origin: spec.census,
         root: censusRoots[censusRoots.length - 1]!,

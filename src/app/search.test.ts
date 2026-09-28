@@ -23,12 +23,14 @@ describe('resolveSearch', () => {
     })
   })
 
-  it('routes vote ids, hex or decimal, to the vote lookup', () => {
+  it('routes vote ids, hex or decimal, to the vote check', () => {
     expect(resolveSearch('0x80000000000000ff', ctx)).toMatchObject({
       kind: 'route',
-      path: '/votes?voteId=0x80000000000000ff',
+      path: '/verify/vote?voteId=0x80000000000000ff',
     })
-    expect(resolveSearch('9223372036854775809', ctx)).toMatchObject({ path: '/votes?voteId=9223372036854775809' })
+    expect(resolveSearch('9223372036854775809', ctx)).toMatchObject({
+      path: '/verify/vote?voteId=9223372036854775809',
+    })
   })
 
   it('sends a block number and a DKG epoch to their explorers', () => {

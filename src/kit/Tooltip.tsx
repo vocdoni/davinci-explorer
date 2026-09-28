@@ -13,6 +13,12 @@ export function TooltipProvider({ children }: { children: ReactNode }) {
 
 export interface TooltipProps {
   content: ReactNode
+  /**
+   * The content is a value (a hash, an address, a URI): monospace, as wide as
+   * the value up to the viewport, and broken anywhere past that. Prose
+   * tooltips stay a readable column.
+   */
+  value?: boolean
   side?: 'top' | 'right' | 'bottom' | 'left'
   align?: 'start' | 'center' | 'end'
   /** Rendered as-is; must accept a ref (Radix asChild). */
@@ -20,7 +26,7 @@ export interface TooltipProps {
   className?: string
 }
 
-export function Tooltip({ content, side = 'top', align = 'center', children, className }: TooltipProps) {
+export function Tooltip({ content, value = false, side = 'top', align = 'center', children, className }: TooltipProps) {
   if (content == null || content === '') return <>{children}</>
   return (
     <RadixTooltip.Root>
@@ -32,8 +38,14 @@ export function Tooltip({ content, side = 'top', align = 'center', children, cla
           sideOffset={6}
           collisionPadding={8}
           className={cn(
-            'z-50 max-w-xs rounded-sm border border-charcoal bg-onyx px-2.5 py-1.5',
+            'z-50 rounded-sm border border-charcoal bg-onyx px-2.5 py-1.5',
             'text-[11px] leading-snug text-silver shadow-pop',
+            // 16 px: the collision padding on both sides. A 66-character hex
+            // string is ~440 px in the mono font, so it fits on one line
+            // from a tablet up and wraps in two on a phone.
+            value
+              ? 'w-max max-w-[min(48rem,calc(100vw-16px))] font-mono break-all'
+              : 'max-w-[min(20rem,calc(100vw-16px))] [overflow-wrap:anywhere]',
             className
           )}
         >

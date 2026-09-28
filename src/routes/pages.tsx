@@ -7,7 +7,14 @@ export const ProcessesPage = lazy(() => import('~pages/processes').then((m) => (
 export const ProcessPage = lazy(() => import('~pages/process').then((m) => ({ default: m.ProcessPage })))
 export const TransitionPage = lazy(() => import('~pages/transition').then((m) => ({ default: m.TransitionPage })))
 export const TxPage = lazy(() => import('~pages/transition/tx').then((m) => ({ default: m.TxPage })))
-export const VotesPage = lazy(() => import('~pages/votes').then((m) => ({ default: m.VotesPage })))
+export const VerifyPage = lazy(() => import('~pages/verify').then((m) => ({ default: m.VerifyPage })))
+export const VerifyVotePage = lazy(() => import('~pages/verify/vote').then((m) => ({ default: m.VerifyVotePage })))
+export const VerifyElectionPage = lazy(() =>
+  import('~pages/verify/election').then((m) => ({ default: m.VerifyElectionPage }))
+)
+export const VerifyDeploymentPage = lazy(() =>
+  import('~pages/verify/deployment').then((m) => ({ default: m.VerifyDeploymentPage }))
+)
 export const ContractsPage = lazy(() => import('~pages/contracts').then((m) => ({ default: m.ContractsPage })))
 export const SequencersPage = lazy(() => import('~pages/sequencers').then((m) => ({ default: m.SequencersPage })))
 export const LearnPage = lazy(() => import('~pages/learn').then((m) => ({ default: m.LearnPage })))

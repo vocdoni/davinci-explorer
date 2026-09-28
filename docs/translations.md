@@ -144,7 +144,10 @@ numbers, chain ids and indices are identifiers and are printed as they are.
 Hex values, addresses, hashes, register names, fail-bit names, contract,
 function and event names, environment variables, commands and code, product
 names. Put them in the message as a placeholder or inside a `<code>` tag, so
-the translator keeps them. Not translated at all: `console` output, errors
+the translator keeps them. A formula goes through `Formula` with its `expr`
+prop (`<Formula expr='sha256(commitment ‖ y …)' />`): inside a `<Trans>` it
+becomes an empty `<0/>` tag, so the catalog holds the sentence and not the
+formula. Not translated at all: `console` output, errors
 that never reach the page, test names and config keys. A failure shown to
 people gets a translated sentence; the technical detail that comes with it
 (an RPC's own error text) is shown as it came.
@@ -171,9 +174,13 @@ query cache above it keep running.
   extra wiring. To test another language, `await activateLocale('es')` and
   switch back in `afterEach` (see `src/app/shell.test.tsx`).
 - `src/locales/catalogs.test.ts` checks every translation against its English.
-- Playwright runs in English. `tests/e2e/i18n.spec.ts` switches languages;
-  when you translate a page, add a test there that reads it in Spanish or
-  Catalan.
+- Playwright runs in English. `tests/e2e/i18n.spec.ts` switches languages
+  and reads the shell, the overview and the lists; each area has its own spec
+  beside it: `i18n-learn.spec.ts` (the guide and the glossary),
+  `i18n-process.spec.ts`, `i18n-transition.spec.ts` (with the vote check) and
+  `i18n-contracts.spec.ts` (with the sequencers). When you translate a page,
+  add a test to its area's spec that reads it in Spanish or Catalan, or start
+  an `i18n-<area>.spec.ts` for a new area.
 
 ## Adding a language
 

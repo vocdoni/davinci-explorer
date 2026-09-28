@@ -5,58 +5,116 @@ import { CheckMark, Explain, ProcessIdLink, ProcessPhaseBadge } from '~component
 import type { SequencerState } from '~data/queries'
 import type { SequencerEndpoint } from '~data/services'
 import { useSequencerProcessViews } from '~data/sequencer-processes'
-import type { ProcessRow } from '~indexer/selectors'
+import type { ProcessRow, SequencerRow } from '~indexer/selectors'
 import type { ChainMeta, IndexerStore } from '~indexer/types'
-import { Address, Badge, Card, CardHeader, EmptyState, Hash, KeyValue, Pagination, Skeleton, SkeletonText } from '~kit'
+import {
+  Address,
+  Badge,
+  Card,
+  CardHeader,
+  EmptyState,
+  Hash,
+  KeyValue,
+  Pagination,
+  Skeleton,
+  SkeletonText,
+  Tooltip,
+} from '~kit'
+import { cn } from '~lib/cn'
 import { formatNumber } from '~lib/format'
 import type { Hex } from '~protocol/bytes'
-import { infoChecks, settledBy, syncState, type SettlerRow } from './model'
+import { infoChecks, nodeRelease, nodeStatus, syncState, type NodeStatus } from './model'
 
 const PAGE = 10
 
+/** A node's status and role as two badges: online / offline / checking, signer / observer. */
+export function NodeBadges({
+  node,
+  size,
+  wrap = true,
+}: {
+  node: SequencerState
+  size?: 'sm' | 'md'
+  /** False in a table cell, so the cell keeps both badges on one line. */
+  wrap?: boolean
+}) {
+  const { t } = useLingui()
+  const status = nodeStatus(node)
+  const data = node.info.data
+  const label: Record<NodeStatus, string> = { online: t`Online`, offline: t`Offline`, checking: t`Checking` }
+  const hint: Record<NodeStatus, string> = {
+    online: t`Its /info answered on the last poll.`,
+    offline: t`Its /info did not answer on the last poll.`,
+    checking: t`Waiting for its /info.`,
+  }
+  return (
+    <span className={cn('inline-flex items-center gap-1.5', wrap ? 'flex-wrap' : 'whitespace-nowrap')}>
+      <Tooltip content={hint[status]}>
+        <span className='inline-flex'>
+          <Badge
+            size={size}
+            tone={status === 'online' ? 'ok' : status === 'offline' ? 'danger' : 'neutral'}
+            dot={status === 'online'}
+          >
+            {label[status]}
+          </Badge>
+        </span>
+      </Tooltip>
+      {data ? (
+        <Tooltip
+          content={
+            data.observer
+              ? t`An observer has no key: it follows every process and serves reads, but never settles.`
+              : t`A signer has a key: it proves batches and settles them on the registry.`
+          }
+        >
+          <span className='inline-flex'>
+            <Badge size={size} tone={data.observer ? 'neutral' : 'slate'}>
+              {data.observer ? t`Observer` : t`Signer`}
+            </Badge>
+          </span>
+        </Tooltip>
+      ) : null}
+    </span>
+  )
+}
+
+/** What a configured node reports about itself: status, role, counters, release, and the processes it serves. */
 export function SequencerCard({
   state,
   chain,
   store,
   rows,
-  settlerRows,
+  onchain,
 }: {
   state: SequencerState
   chain: ChainMeta
   store: IndexerStore
   rows: Map<string, ProcessRow>
-  settlerRows: SettlerRow[]
+  /** What its settling account did on chain; null when nothing. */
+  onchain: SequencerRow | null
 }) {
   const { i18n, t } = useLingui()
   const { endpoint, info, processes } = state
   const data = info.data
-  const status = info.isSuccess ? 'up' : info.isError ? 'down' : 'checking'
-  const onChain = settledBy(settlerRows, data?.sequencerAddress)
   const number = endpoint.index + 1
   const infoError = info.isError ? (info.error as Error).message : null
-  const sent = onChain?.transitions ?? 0
-  const served = onChain?.processes ?? 0
+  const sent = onchain?.transitions ?? 0
+  const served = onchain?.processes ?? 0
+  const release = data ? nodeRelease(data) : null
   const settlingHint = data?.observer
     ? t`An observer has no key: it follows and serves reads, but never settles.`
-    : onChain
+    : onchain
       ? t`sent ${plural(sent, { one: '# transition', other: '# transitions' })} on this registry, for ${plural(served, { one: '# process', other: '# processes' })}`
       : t`has not settled a transition on this registry yet`
 
   return (
     <Card flush className='overflow-hidden' data-testid={`sequencer-${endpoint.index}`}>
       <CardHeader
-        label={t`Sequencer ${number}`}
+        label={t`Node API ${number}`}
         title={<span className='font-mono text-[14px]'>{endpoint.upstream}</span>}
-        actions={
-          <>
-            {data ? (
-              <Badge tone={data.observer ? 'neutral' : 'accent'}>{data.observer ? t`Observer` : t`Signer`}</Badge>
-            ) : null}
-            <Badge tone={status === 'up' ? 'ok' : status === 'down' ? 'danger' : 'neutral'} dot={status === 'up'}>
-              {status === 'up' ? t`Up` : status === 'down' ? t`Down` : t`Checking`}
-            </Badge>
-          </>
-        }
+        description={t`What the node reports about itself through its HTTP API, polled every 30 seconds.`}
+        actions={<NodeBadges node={state} />}
       />
       <div className='p-5'>
         {infoError != null ? (
@@ -80,6 +138,26 @@ export function SequencerCard({
                       t({ message: 'none', context: 'no address' })
                     ),
                     hint: settlingHint,
+                  },
+                  {
+                    label: (
+                      <span className='inline-flex items-center gap-1'>
+                        <Trans>Release</Trans>
+                        <Explain>
+                          <Trans>
+                            The davinci-zkvm release whose program keys and ballot key the node reports. The node does
+                            not report a software version; its keys say which programs it proves with.
+                          </Trans>
+                        </Explain>
+                      </span>
+                    ),
+                    value: release ? (
+                      <span className='font-mono text-[12px] text-ghost'>{release.label}</span>
+                    ) : (
+                      <span className='text-amber'>
+                        <Trans>no release this explorer knows</Trans>
+                      </span>
+                    ),
                   },
                   {
                     label: (
