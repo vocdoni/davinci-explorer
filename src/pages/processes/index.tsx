@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { SortingState } from '@tanstack/react-table'
 import { useNavigate, useSearchParams } from 'react-router'
-import { CensusOriginBadge, Explain, KeyModeBadge, ProcessIdLink, ProcessPhaseBadge, Timestamp } from '~components'
+import { CensusOriginBadge, Explain, KeyModeBadge, ProcessPhaseBadge, Timestamp } from '~components'
+import { ProcessName } from './ProcessName'
 import { useIndexer, useNetworkStats, useProcesses } from '~data/hooks'
 import type { ProcessRow } from '~indexer/selectors'
 import {
@@ -30,9 +31,9 @@ const columns: AnyColumnDef<ProcessRow>[] = [
     id: 'id',
     header: 'Process',
     accessorKey: 'createdBlock',
-    cell: ({ row }) => <ProcessIdLink id={row.original.id} chars={8} />,
+    cell: ({ row }) => <ProcessName id={row.original.id} metadataURI={row.original.metadataURI} />,
     meta: {
-      width: '190px',
+      width: '280px',
       headerTooltip: 'Process id: organizer address, registry prefix and nonce. Sorts by creation.',
     },
   },

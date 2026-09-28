@@ -72,6 +72,8 @@ export interface ProcessRow {
   keyMode: KeyModeName | null
   censusOrigin: CensusOriginName | null
   numFields: number | null
+  /** The organizer's metadata document, as the registry stores it. */
+  metadataURI: string | null
   /** Distinct voters (slots written). */
   votersCount: number
   overwrittenVotesCount: number
@@ -96,6 +98,7 @@ export function processRow(store: IndexerStore, p: ProcessEntity): ProcessRow {
     keyMode: s?.keyMode ?? null,
     censusOrigin: s?.census.origin ?? null,
     numFields: s?.ballotMode.numFields ?? null,
+    metadataURI: s?.metadataURI || null,
     votersCount: Math.max(s?.votersCount ?? 0, last?.votersCount ?? 0),
     overwrittenVotesCount: Math.max(s?.overwrittenVotesCount ?? 0, last?.overwrittenVotesCount ?? 0),
     maxVoters: s?.maxVoters ?? null,
