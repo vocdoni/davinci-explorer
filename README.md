@@ -7,9 +7,6 @@ browser (JSON-RPC and a beacon API, optionally sequencer node APIs) and has
 no backend. [EXPLORER.md](EXPLORER.md) describes the architecture and the
 building blocks the pages use.
 
-The public instance at https://davinci-explorer-yb2p9.ondigitalocean.app
-follows the DAVINCI deployment on Gnosis Chain. It is built from `main`.
-
 DAVINCI is a voting protocol with encrypted ballots. Sequencers group the
 ballots into batches, prove each batch in a zkVM and settle it on chain with
 its data in EIP-4844 blobs; the final tally is decrypted with a proof too.
