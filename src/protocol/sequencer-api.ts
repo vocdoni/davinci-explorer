@@ -1,6 +1,7 @@
-// Client for a davinci-sequencer node's HTTP API (README "HTTP API"). Every
-// route the explorer uses is read-only. Wire conventions: camelCase fields,
-// field elements as decimal strings, bytes as 0x hex, vote ids as 0x + 16 hex.
+// Client for a davinci-sequencer node's HTTP API
+// (https://github.com/vocdoni/davinci-sequencer#http-api). Every route the
+// explorer uses is read-only. Wire conventions: camelCase fields, field
+// elements as decimal strings, bytes as 0x hex, vote ids as 0x + 16 hex.
 
 import { toBytes, type Hex } from './bytes'
 import { formatVoteId } from './blob'

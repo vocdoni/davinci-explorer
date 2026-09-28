@@ -1,7 +1,8 @@
 // Tracker proofs: a sequencer's proof that a vote id is a leaf of the state
-// tree whose root is on-chain. Port of davinci-sequencer
-// `client/src/api.rs::verify_tracker`: leaf sha256(vid_le8 ‖ 0^32 ‖ 0x01),
-// nodes sha256(l ‖ r), siblings root to leaf, path bits LSB-first.
+// tree whose root is on-chain. Port of `verify_tracker` in
+// https://github.com/vocdoni/davinci-sequencer/blob/main/client/src/api.rs:
+// leaf sha256(vid_le8 ‖ 0^32 ‖ 0x01), nodes sha256(l ‖ r), siblings root to
+// leaf, path bits LSB-first.
 
 import { sha256 } from 'viem'
 import { concatBytes, equalBytes, toBytes, type Hex } from './bytes'

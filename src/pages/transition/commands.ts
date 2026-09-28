@@ -141,7 +141,8 @@ export function recheckCommands(input: RecheckInput): Partial<Record<RecheckId, 
 
 /**
  * Builds and starts a sequencer node without a signing key: an observer that
- * replays every transition from its blobs (sequencer README "Observer mode").
+ * replays every transition from its blobs ("Observer mode" under
+ * https://github.com/vocdoni/davinci-sequencer#running-a-node).
  * The `gnosis` network is the node's default; any other chain is `custom`.
  */
 export function observerCommand(opts: {

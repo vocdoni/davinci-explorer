@@ -1,8 +1,8 @@
-// Contract ABIs. `abi/*.json` are copies of davinci-sequencer
-// `sequencer/abi/` (forge output of davinci-contracts, branch `zkvm`); refresh
-// them together. The DKG fragments are the parts of davinci-dkg's
-// DKGManager / DKGAppManager the explorer reads, from davinci-contracts
-// `src/interfaces/dkg/`.
+// Contract ABIs. `abi/*.json` are copies of the sequencer's
+// https://github.com/vocdoni/davinci-sequencer/tree/main/sequencer/abi (forge
+// output of davinci-contracts, branch `zkvm`); refresh them together. The DKG
+// fragments are the parts of davinci-dkg's DKGManager / DKGAppManager the
+// explorer reads, from davinci-contracts `src/interfaces/dkg/`.
 
 import { parseAbi, type Abi, type AbiEvent } from 'viem'
 import processRegistryJson from './abi/ProcessRegistry.json'

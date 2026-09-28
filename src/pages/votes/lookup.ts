@@ -44,7 +44,7 @@ export function statusStep(status: VoteStatus): number {
   return status === 'error' ? -1 : STATUS_STEPS.indexOf(status)
 }
 
-/** Sequencer README "HTTP API": what each status means. */
+/** What each status means (https://github.com/vocdoni/davinci-sequencer#http-api). */
 export const STATUS_INFO: Record<VoteStatus, { label: string; description: string }> = {
   pending: {
     label: 'Pending',
