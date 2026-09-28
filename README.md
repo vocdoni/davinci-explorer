@@ -7,6 +7,21 @@ browser (JSON-RPC and a beacon API, optionally sequencer node APIs) and has
 no backend. [EXPLORER.md](EXPLORER.md) describes the architecture and the
 building blocks the pages use.
 
+The public instance at https://davinci-explorer-yb2p9.ondigitalocean.app
+follows the DAVINCI deployment on Gnosis Chain. It is built from `main`.
+
+DAVINCI is a voting protocol with encrypted ballots. Sequencers group the
+ballots into batches, prove each batch in a zkVM and settle it on chain with
+its data in EIP-4844 blobs; the final tally is decrypted with a proof too.
+The explorer is one part of the stack:
+
+| Repository | What it is |
+|---|---|
+| [davinci-sequencer](https://github.com/vocdoni/davinci-sequencer) | The sequencer node: collects ballots, proves each batch and settles it on the registry. Its README describes the protocol and the node's HTTP API |
+| [davinci-zkvm](https://github.com/vocdoni/davinci-zkvm) | The ZisK guests that prove a batch and a tally, the prover service and the SDKs |
+| [davinci-contracts](https://github.com/vocdoni/davinci-contracts/tree/zkvm) (branch `zkvm`) | `ProcessRegistry`, the PLONK verifier and the DKG adapter |
+| [davinci-dkg](https://github.com/vocdoni/davinci-dkg) | Distributed key generation: the committee contracts and node that hold the key of a DKG-mode process and decrypt its tally |
+
 Stack: Vite 6, React 18, TypeScript (strict), Tailwind CSS v4, Radix
 primitives, TanStack Query / Table / Virtual, viem, react-router 7; vitest
 and Playwright for tests. The design system, kit and app shell come from the
@@ -16,7 +31,6 @@ light/dark/system theme switch.
 ## Development
 
 ```sh
-cd explorer
 pnpm install
 pnpm dev            # http://127.0.0.1:5173
 ```
@@ -115,8 +129,8 @@ deployment moves the explorer with it. `sh docker/render.test.sh` checks the
 renderer (needs `jq`).
 
 CI (`.github/workflows/explorer.yml`) runs the checks, the unit tests, the
-Playwright suite and the build on every PR and push that touches
-`explorer/`, then builds the image. Branch pushes publish
+Playwright suite and the build on every PR and push, then builds the
+image. Branch pushes publish
 `ghcr.io/vocdoni/davinci-explorer` and `vocdoni/davinci-explorer` under the
 branch name; a release tag `vX.Y.Z` publishes `:vX.Y.Z` and moves
 `:latest` (prerelease tags don't).
@@ -147,7 +161,7 @@ src/
 ├── data/                 data source, services, store hooks, on-demand hooks
 ├── indexer/              in-browser event indexer, reducers, selectors, persistence
 ├── protocol/             decoders and clients: publics, blobs, calldata, beacon, sequencer API, releases
-├── contracts/            ABIs (copied from the sequencer's sequencer/abi/)
+├── contracts/            ABIs (copied from davinci-sequencer, see below)
 ├── fixtures/             the demo network
 └── lib/                  format and URL helpers
 tests/
@@ -159,3 +173,11 @@ docker/                   render.sh (entrypoint) and its test
 Path aliases (`~app`, `~components`, `~config`, `~contracts`, `~data`,
 `~fixtures`, `~hooks`, `~indexer`, `~kit`, `~lib`, `~pages`, `~protocol`,
 `~routes`, `~theme`) are defined in `tsconfig.paths.json`.
+
+`src/contracts/abi/*.json` are copies of davinci-sequencer
+[`sequencer/abi/`](https://github.com/vocdoni/davinci-sequencer/tree/main/sequencer/abi),
+the forge output of davinci-contracts; refresh them together.
+
+## License
+
+AGPL-3.0-or-later, see [LICENSE](LICENSE).

@@ -3,9 +3,12 @@
 How the explorer is put together and what a page builds on. For the dev
 loop, the configuration and Docker, see [README.md](README.md). When this
 note and the code disagree, the code wins. The protocol is described in the
-sequencer's [README](../README.md), the contracts in davinci-contracts
-(`src/ProcessRegistry.sol`, `src/libraries/DAVINCITypes.sol`) and the guest
-in davinci-zkvm `circuit/CIRCUIT.md`.
+[davinci-sequencer README](https://github.com/vocdoni/davinci-sequencer#readme),
+the contracts in davinci-contracts
+([`src/ProcessRegistry.sol`](https://github.com/vocdoni/davinci-contracts/blob/zkvm/src/ProcessRegistry.sol),
+[`src/libraries/DAVINCITypes.sol`](https://github.com/vocdoni/davinci-contracts/blob/zkvm/src/libraries/DAVINCITypes.sol))
+and the guest in davinci-zkvm
+[`circuit/CIRCUIT.md`](https://github.com/vocdoni/davinci-zkvm/blob/main/circuit/CIRCUIT.md).
 
 ## What it is for
 
