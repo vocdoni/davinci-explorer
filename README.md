@@ -98,6 +98,14 @@ docker run --rm -p 8080:8080 \
   davinci-explorer
 ```
 
+The same variables are build args too (`docker build --build-arg
+REGISTRY_ADDRESS=0x...`): the image then carries that config in its files, for
+static hosts that build from the Dockerfile and serve `/usr/share/nginx/html`
+without running nginx. There is no proxy on such a host, so set
+`SEQUENCER_PROXY=false` and use sequencers that send CORS headers.
+`.do/davinci-explorer.yaml` deploys it that way as a DigitalOcean App Platform
+static site.
+
 `docker-compose.yml` runs it on its own (`docker compose up`, or
 `docker compose up --build` from source) on `EXPLORER_PORT` (8080); it passes
 the variables above through when they are set. With `--profile watchtower`

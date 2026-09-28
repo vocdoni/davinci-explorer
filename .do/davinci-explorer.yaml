@@ -1,0 +1,36 @@
+# DigitalOcean App Platform: the explorer as a static site, built from
+# explorer/Dockerfile on every push to main.
+#
+#   doctl apps create --spec explorer/.do/davinci-explorer.yaml
+#   doctl apps update <app id> --spec explorer/.do/davinci-explorer.yaml
+#
+# The chain settings follow explorer/public/config.json, so a commit that moves
+# the default deployment moves the site too. To point it elsewhere add
+# NETWORK_NAME, CHAIN_ID, RPC_URL, BEACON_URL, REGISTRY_ADDRESS, START_BLOCK,
+# BLOCK_EXPLORER_URL or SEQUENCER_URLS as BUILD_TIME envs. A static site has no
+# proxy, so sequencers must answer with CORS headers (SEQUENCER_PROXY=false).
+name: davinci-explorer
+region: tor
+alerts:
+  - rule: DEPLOYMENT_FAILED
+static_sites:
+  - name: davinci-explorer
+    github:
+      repo: vocdoni/davinci-sequencer
+      branch: main
+      deploy_on_push: true
+    source_dir: explorer
+    dockerfile_path: explorer/Dockerfile
+    output_dir: /usr/share/nginx/html
+    # Client-side routes: every unknown path serves the app.
+    catchall_document: index.html
+    envs:
+      - key: DKG_EXPLORER_URL
+        scope: BUILD_TIME
+        value: https://dkg.davinci.vote
+      - key: SEQUENCER_PROXY
+        scope: BUILD_TIME
+        value: "false"
+      - key: VITE_BUILD_VERSION
+        scope: BUILD_TIME
+        value: main
