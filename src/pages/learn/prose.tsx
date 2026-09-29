@@ -1,9 +1,11 @@
 // Typography for the guide: sections with anchors, paragraphs, lists, inline
-// code, links into the explorer and the "see it" pointers.
+// code, links into the explorer, the "see it" pointers and the "Technical
+// details" layer that holds the mechanism under each plain explanation.
 
-import { Fragment, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Trans } from '@lingui/react/macro'
 import { Link } from 'react-router'
+import { Disclosure } from '~components/code'
 import { HashLink } from '~components/HashLink'
 import { ChevronRightIcon, ExternalIcon } from '~kit'
 import { cn } from '~lib/cn'
@@ -14,17 +16,43 @@ const LINK =
 /**
  * A section of a topic. `id` is its anchor (`/learn/census#ballot-slots`): English,
  * the same in every language, and stable, since other pages and links point at it.
+ * `n` numbers a step of a walk-through.
  */
-export function Section({ id, title, children }: { id: string; title: ReactNode; children: ReactNode }) {
+export function Section({ id, title, n, children }: { id: string; title: ReactNode; n?: number; children: ReactNode }) {
   return (
     <section id={id} className='mt-10 scroll-mt-20 first:mt-0'>
-      <h2 className='mb-3 text-[18px] font-semibold tracking-tight text-ghost'>
+      <h2 className='mb-3 flex items-baseline gap-2.5 text-[18px] font-semibold tracking-tight text-ghost'>
+        {n != null ? (
+          <span
+            aria-hidden='true'
+            className='flex h-6 w-6 shrink-0 translate-y-[-1px] items-center justify-center self-center rounded-full border border-emerald/50 font-mono text-[12px] font-medium text-emerald'
+          >
+            {n}
+          </span>
+        ) : null}
         <HashLink id={id} className='hover:text-emerald'>
+          {n != null ? <span className='sr-only'>{n}. </span> : null}
           {title}
         </HashLink>
       </h2>
       {children}
     </section>
+  )
+}
+
+/**
+ * The mechanism under a plain explanation: closed by default, for the reader
+ * who wants the exact names, values and formulas.
+ */
+export function Details({ summary, children }: { summary?: ReactNode; children: ReactNode }) {
+  return (
+    <Disclosure
+      summary={summary ?? <Trans>Technical details</Trans>}
+      className='my-4 bg-onyx/20'
+      bodyClassName='text-[13px] [&_li]:text-[13px] [&_p]:text-[13px] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
+    >
+      {children}
+    </Disclosure>
   )
 }
 
@@ -47,12 +75,6 @@ export function OL({ children }: { children: ReactNode }) {
 /** Inline code. */
 export function C({ children }: { children: ReactNode }) {
   return <code className='rounded-sm bg-onyx px-1 py-px text-[0.88em] break-words text-silver'>{children}</code>
-}
-
-/** Text with `backtick` spans rendered as inline code. */
-export function Rich({ text }: { text: string }) {
-  const parts = text.split('`')
-  return <>{parts.map((part, i) => (i % 2 === 1 ? <C key={i}>{part}</C> : <Fragment key={i}>{part}</Fragment>))}</>
 }
 
 /** A link inside the explorer. */

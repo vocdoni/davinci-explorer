@@ -68,6 +68,17 @@ test.describe('contracts', () => {
     }
   })
 
+  test('one switch shows the technical details of every panel', async ({ page }) => {
+    await demo(page, '/contracts')
+    await expect(page.getByTestId('wiring-checks').locator('[data-formula]')).toHaveCount(0)
+    await page.locator('#parameters').getByRole('switch', { name: 'Technical details' }).click()
+    await expect(page.getByTestId('wiring-checks').locator('[data-formula]')).toHaveCount(7)
+    await expect(page.getByTestId('param-pidPrefix').getByTestId('param-detail')).toContainText(
+      'UnknownProcessIdPrefix'
+    )
+    await expect(page.locator('#dkg').getByRole('switch', { name: 'Technical details' })).toBeChecked()
+  })
+
   test('the section links scroll to their section', async ({ page }) => {
     await demo(page, '/contracts')
     await page.getByRole('navigation', { name: 'On this page' }).getByRole('link', { name: 'DKG committee' }).click()
@@ -195,7 +206,7 @@ test.describe('learn', () => {
   test('next and previous walk the guide', async ({ page }) => {
     await demo(page, '/learn/how-it-works')
     const nav = page.getByRole('navigation', { name: 'Next and previous topics' })
-    await nav.getByRole('link', { name: /Key modes/ }).click()
+    await nav.getByRole('link', { name: /Who holds the key/ }).click()
     await expect(page.getByTestId('learn-topic')).toHaveAttribute('data-topic', 'key-modes')
     await page
       .getByRole('navigation', { name: 'Next and previous topics' })
@@ -224,6 +235,15 @@ test.describe('learn', () => {
     await expect(list.getByText('Epoch', { exact: true })).toBeVisible()
     await page.getByRole('searchbox', { name: 'Filter the glossary' }).fill('no such thing at all')
     await expect(page.getByText('No term matches')).toBeVisible()
+  })
+
+  test('a section keeps its mechanism under "Technical details"', async ({ page }) => {
+    await demo(page, '/learn/blobs')
+    const section = page.locator('#built-by-the-proof-not-trusted')
+    await expect(section.locator('[data-formula]')).toHaveCount(0)
+    await section.getByText('Technical details').click()
+    await expect(section.locator('[data-formula]').first()).toBeVisible()
+    await expect(section).toContainText('point-evaluation precompile')
   })
 
   test('an unknown topic explains itself', async ({ page }) => {

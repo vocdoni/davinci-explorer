@@ -28,34 +28,37 @@ import {
 } from '~kit'
 import { formatDuration, formatNumber } from '~lib/format'
 import { paths } from '~routes/paths'
+import { Formula } from '~components/Formula'
+import { RichText } from '~components/RichText'
+import { Term } from '~components/Term'
 import { DKG_VERIFIER_LABELS, dkgExplorerLink } from './model'
-import { Code, SourceLink, SubHeading } from './parts'
+import { Code, SourceLink, SubHeading, TechnicalToggle } from './parts'
 
 const PHASES: Record<DkgEpochPhase, { label: MessageDescriptor; tone: BadgeTone; description: MessageDescriptor }> = {
   none: {
     label: msg`Not created`,
     tone: 'neutral',
-    description: msg`No epoch has been created yet.`,
+    description: msg`No epoch of the committee has been created yet.`,
   },
   'committee-selection': {
     label: msg`Committee selection`,
     tone: 'warn',
-    description: msg`The lottery is drawing the committee: eligible operators claim slots until n are filled.`,
+    description: msg`The committee is being drawn by lottery: eligible operators claim seats until all n are filled.`,
   },
   'key-assembly': {
     label: msg`Key assembly`,
     tone: 'warn',
-    description: msg`Each member submits one proof-carrying contribution that deals its shares of all 16 pool keys.`,
+    description: msg`Each member submits one contribution, with a proof, that deals its shares of all 16 pool keys.`,
   },
   live: {
     label: msg`Live`,
     tone: 'ok',
-    description: msg`finalizeEpoch stored all 16 pool keys: applications can register, submit ciphertexts and get them decrypted.`,
+    description: msg`The epoch’s keys are ready (finalizeEpoch stored all 16 pool keys): applications can register, submit encrypted values and get them decrypted.`,
   },
   aborted: {
     label: msg`Aborted`,
     tone: 'danger',
-    description: msg`The committee did not fill in time, or too few members contributed during key assembly, so the epoch serves nobody. The nodes create the next one.`,
+    description: msg`The committee did not fill in time, or too few members contributed during key assembly, so this epoch serves nobody. The nodes create the next one.`,
   },
   completed: {
     label: msg`Completed`,
@@ -99,26 +102,31 @@ export function DkgPanel({
   dkg,
   loading,
   error,
+  technical = false,
+  onTechnical,
 }: {
   chain: ChainMeta
   dkg: DkgDeployment | null | undefined
   loading: boolean
   error: string | null
+  /** Show the mechanism: contract calls, circuits, the exact rules. */
+  technical?: boolean
+  onTechnical?: (on: boolean) => void
 }) {
   const { i18n, t } = useLingui()
   const config = useRuntimeConfig()
   const r = chain.registry
   const title = t`DKG committee`
   const label = t`Threshold keys`
-  const description = t`The davinci-dkg committee that holds the election keys of DKG-mode processes and decrypts their tallies.`
+  const description = t`The group of independent operators (davinci-dkg) that holds the keys of DKG-mode processes and decrypts their final totals. No single operator knows a key.`
 
   if (r && !r.dkgAdapter) {
     return (
       <Panel title={title} label={label} description={description}>
         <Callout title={t`The DKG key modes are disabled on this registry`}>
           <Trans>
-            It was deployed without a DKG manager, so it has no adapter and <Code>newProcess</Code> in a DKG mode
-            reverts with <Code>DKGDisabled</Code>. Every process here uses a sequencer key.
+            It was deployed without a key committee, so every process here uses a sequencer key. Creating one in a DKG
+            mode is refused: there is no adapter, and <Code>newProcess</Code> reverts with <Code>DKGDisabled</Code>.
           </Trans>
         </Callout>
       </Panel>
@@ -152,14 +160,20 @@ export function DkgPanel({
   }
   const minThreshold = dkg.minThreshold
   const minCommitteeSize = dkg.minCommitteeSize
-  const maxAlpha = formatNumber((dkg.maxLotteryAlphaBps ?? 0) / 10_000)
+  // The bounds are numbers in a formula: never translated, formatted as they are.
+  const maxAlpha = String((dkg.maxLotteryAlphaBps ?? 0) / 10_000)
   return (
     <Panel
       title={title}
       label={label}
       description={description}
       actions={
-        config.dkgExplorerUrl ? <ExternalText href={config.dkgExplorerUrl}>{t`DKG explorer`}</ExternalText> : undefined
+        config.dkgExplorerUrl || onTechnical ? (
+          <div className='flex flex-wrap items-center gap-x-5 gap-y-2'>
+            {config.dkgExplorerUrl ? <ExternalText href={config.dkgExplorerUrl}>{t`DKG explorer`}</ExternalText> : null}
+            {onTechnical ? <TechnicalToggle checked={technical} onChange={onTechnical} /> : null}
+          </div>
+        ) : undefined
       }
     >
       <StatRow>
@@ -189,7 +203,7 @@ export function DkgPanel({
         />
       </StatRow>
 
-      {e ? <EpochDetails epoch={e} epochLink={epochLink} /> : null}
+      {e ? <EpochDetails epoch={e} epochLink={epochLink} technical={technical} /> : null}
 
       <div className='mt-6 grid gap-6 lg:grid-cols-2'>
         <div>
@@ -198,18 +212,31 @@ export function DkgPanel({
           </SubHeading>
           <div className='mt-2 text-[13px] leading-relaxed text-ash' data-testid='registration-epoch'>
             {dkg.registrationEpoch ? (
-              <Trans>
-                A <span className='text-silver'>DKG automatic</span> process created now takes the next free pool key of
-                epoch <Hash value={dkg.registrationEpoch} chars={8} className='align-middle' /> (the adapter’s{' '}
-                <Code>registrationEpoch()</Code>: the newest Live epoch with a free key, looking back at most 8 epochs).
-                A <span className='text-silver'>DKG locked</span> process names its epoch itself, because the
-                organizer’s proof of possession binds it; clients read the same value.
-              </Trans>
+              <>
+                <p>
+                  <Trans>
+                    A <span className='text-silver'>DKG automatic</span> process created now takes the next free{' '}
+                    <Term id='pool-key'>pool key</Term> of <Term id='epoch'>epoch</Term>{' '}
+                    <Hash value={dkg.registrationEpoch} chars={8} className='align-middle' />, the newest Live epoch
+                    with a free key (the adapter’s <Code>registrationEpoch()</Code>). A{' '}
+                    <span className='text-silver'>DKG locked</span> process names its epoch itself.
+                  </Trans>
+                </p>
+                {technical ? (
+                  <p className='mt-1.5 text-[12px]'>
+                    <Trans>
+                      <Code>registrationEpoch()</Code> returns the newest Live epoch with a free pool key, looking back
+                      at most 8 epochs. A locked process names its epoch because the organizer’s proof of possession
+                      binds it; clients read the same value.
+                    </Trans>
+                  </p>
+                ) : null}
+              </>
             ) : dkg.registrationEpochReverted ? (
               <Trans>
-                No Live epoch with a free pool key among the last 8, so <Code>registrationEpoch()</Code> reverts and
-                automatic processes revert <Code>NoLiveEpoch</Code> until a new epoch is Live. Locked processes name
-                their epoch and are unaffected.
+                None of the last 8 epochs is Live with a free pool key, so <Code>registrationEpoch()</Code> reverts and
+                new automatic processes are refused (<Code>NoLiveEpoch</Code>) until a new epoch is Live. Locked
+                processes name their epoch and are unaffected.
               </Trans>
             ) : (
               '…'
@@ -238,12 +265,17 @@ export function DkgPanel({
                   ) : (
                     '…'
                   ),
-                hint: t`or earlier, once the newest pool is nearly spent or the epoch aborted`,
+                hint: t`or earlier, once the newest epoch has nearly run out of pool keys or was aborted`,
               },
               {
                 label: t`Epoch policy bounds`,
-                value: minThreshold != null ? `t ≥ ${minThreshold}, n ≥ ${minCommitteeSize}, 1 ≤ α ≤ ${maxAlpha}` : '…',
-                hint: t`whoever creates an epoch picks t, n and α within these`,
+                value:
+                  minThreshold != null ? (
+                    <Formula expr={`t ≥ ${minThreshold}, n ≥ ${minCommitteeSize}, 1 ≤ α ≤ ${maxAlpha}`} />
+                  ) : (
+                    '…'
+                  ),
+                hint: t`whoever creates an epoch picks the threshold t, the committee size n and the lottery factor α within these`,
               },
               {
                 label: t`Inactivity window`,
@@ -259,31 +291,45 @@ export function DkgPanel({
 
       <div className='mt-6'>
         <SubHeading>
-          <Trans>Groth16 verifiers</Trans>
+          <Trans>Proof verifiers of the committee</Trans>
         </SubHeading>
         <p className='mt-1 text-[12px] leading-relaxed text-ash'>
           <Trans>
-            Every contribution, finalization, partial decryption and combine is one proof-carrying call, checked by one
-            of these; there is no dispute phase. Each verifier reports the SHA-256 of its circuit’s proving key,
-            compared here with the davinci-dkg <Code>circuits-v6</Code> release, whose files the committee’s nodes
-            download and check against the same hashes.
+            Every step the committee takes comes with a proof, checked by one of these contracts, so there is no dispute
+            phase. Each reports the fingerprint of the key its circuit is proven with, compared here with the published
+            davinci-dkg release that the committee’s nodes download and check against the same fingerprints.
           </Trans>
         </p>
+        {technical ? (
+          <p className='mt-1 text-[12px] leading-relaxed text-ash'>
+            <Trans>
+              Groth16 verifiers of every contribution, finalization, partial decryption and combine, each one
+              proof-carrying call. The fingerprint is the SHA-256 of the circuit’s proving key, compared with the{' '}
+              <Code>circuits-v6</Code> release.
+            </Trans>
+          </p>
+        ) : null}
         <ul className='mt-3 flex flex-col divide-y divide-charcoal rounded-md border border-charcoal'>
           {dkg.verifiers.map((v) => {
             const expected = DKG_CIRCUITS_V6_KEY_HASHES[v.name]
             const state = v.keyHash == null ? 'unknown' : v.keyHash === expected ? 'pass' : 'fail'
+            const labels = DKG_VERIFIER_LABELS[v.name]
             return (
               <li
                 key={v.name}
                 className='flex flex-col gap-2 p-3 md:flex-row md:items-center md:justify-between'
                 data-testid={`dkg-verifier-${v.name}`}
               >
-                <div className='flex min-w-0 items-center gap-2.5'>
-                  <CheckMark state={state} />
-                  <span className='text-[13px] text-silver'>{DKG_VERIFIER_LABELS[v.name].name}</span>
+                <div className='flex min-w-0 items-start gap-2.5'>
+                  <CheckMark state={state} className='mt-0.5' />
+                  <div className='min-w-0'>
+                    <div className='text-[13px] text-silver'>{labels.name}</div>
+                    <div className='text-[12px] leading-relaxed text-ash'>
+                      {technical ? <RichText text={i18n._(labels.detail)} /> : i18n._(labels.role)}
+                    </div>
+                  </div>
                 </div>
-                <div className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 md:justify-end'>
+                <div className='flex min-w-0 shrink-0 flex-wrap items-center gap-x-3 gap-y-1 md:justify-end'>
                   {v.keyHash ? (
                     <span className='inline-flex items-center gap-1 text-[12px] text-ash'>
                       <Trans>
@@ -306,10 +352,11 @@ export function DkgPanel({
 
       <Callout className='mt-6' title={t`What you trust in the DKG modes`}>
         <Trans>
-          A threshold of an epoch’s committee could decrypt every ballot of the processes keyed on that epoch (with the
-          organizer secret as well, in locked mode); the design trusts that threshold not to collude. A process’s key
-          belongs to one epoch’s committee and there is no resharing, so if more than n − t of its members leave before
-          the process ends, its results are lost.
+          Enough members of an epoch’s committee (its <Term id='threshold'>threshold</Term>) could together decrypt
+          every ballot of the processes keyed on that epoch, with the organizer secret as well in locked mode; the
+          design trusts them not to collude. A process’s key belongs to one epoch’s committee and cannot be moved to
+          another (there is no resharing), so if more than <Formula expr='n − t' /> of its members leave before the
+          process ends, its results are lost.
         </Trans>{' '}
         <Link
           to={paths.learn('key-modes')}
@@ -322,7 +369,15 @@ export function DkgPanel({
   )
 }
 
-function EpochDetails({ epoch: e, epochLink }: { epoch: DkgEpochView; epochLink: string | null }) {
+function EpochDetails({
+  epoch: e,
+  epochLink,
+  technical,
+}: {
+  epoch: DkgEpochView
+  epochLink: string | null
+  technical: boolean
+}) {
   const { i18n, t } = useLingui()
   const config = useRuntimeConfig()
   const nonce = e.nonce
@@ -347,7 +402,7 @@ function EpochDetails({ epoch: e, epochLink }: { epoch: DkgEpochView; epochLink:
                   {epochLink ? <ExternalText href={epochLink}>{t`DKG explorer`}</ExternalText> : null}
                 </span>
               ),
-              hint: t`the manager’s 4-byte prefix and the epoch nonce`,
+              hint: technical ? t`the manager’s 4-byte prefix and the epoch nonce` : t`the epoch’s number on the DKG`,
             },
             {
               label: t`Phase`,
@@ -358,7 +413,7 @@ function EpochDetails({ epoch: e, epochLink }: { epoch: DkgEpochView; epochLink:
             {
               label: t`Contributions accepted`,
               value: t`${contributions} of ${committeeSize}`,
-              hint: t`at least ${minValid} needed to finalize`,
+              hint: t`at least ${minValid} needed to finalize the epoch`,
             },
             {
               label: t`Applications`,
@@ -374,8 +429,8 @@ function EpochDetails({ epoch: e, epochLink }: { epoch: DkgEpochView; epochLink:
         </SubHeading>
         <p className='mt-1 text-[12px] leading-relaxed text-ash'>
           <Trans>
-            Drawn by an on-chain lottery from the registered operators, first come first served among the eligible ones.
-            Any {threshold} of them can decrypt; fewer cannot.
+            Drawn by a lottery on the chain from the registered operators, first come first served among the eligible
+            ones. Any {threshold} of them can decrypt; fewer cannot.
           </Trans>
         </p>
         {e.committee.length ? (
@@ -426,7 +481,7 @@ function Registration({ dkg, adapter }: { dkg: DkgDeployment; adapter: string | 
   if (reg.kind === 'unknown') return null
   const poolKeys = DKG_POOL_KEYS
   return (
-    <Callout className='mt-6' title={t`Anyone can register an application`} tone='ok'>
+    <Callout className='mt-6' title={t`Anyone can register an application`} tone='info'>
       {reg.reason === 'no-gate' ? (
         <Trans>
           The DKGAppManager has no registrar: any contract or account can register an application on a Live epoch, so
@@ -439,9 +494,9 @@ function Registration({ dkg, adapter }: { dkg: DkgDeployment; adapter: string | 
         </Trans>
       )}{' '}
       <Trans>
-        Each registration claims one of the epoch’s {poolKeys} pool keys. Once one key or fewer is left the contract
-        allows the next epoch early and the nodes create it; if the pool runs out first, DKG-mode process creation waits
-        for it (about one epoch setup).
+        Each registration takes one of the epoch’s {poolKeys} pool keys. Once one key or fewer is left, the contract
+        allows the next epoch early and the nodes create it; if the keys run out first, creating DKG-mode processes
+        waits for it (about one epoch setup).
       </Trans>
     </Callout>
   )

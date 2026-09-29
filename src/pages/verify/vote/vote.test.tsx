@@ -51,7 +51,7 @@ describe('VerifyVotePage', () => {
     const card = await screen.findByTestId('check-tracker')
     expect(
       await within(card).findByText(
-        'The sequencer answered with a proof for another vote, so it proves nothing about yours.'
+        'The sequencer answered with a receipt for another vote, so it proves nothing about yours.'
       )
     ).toBeInTheDocument()
     expect(card).toHaveAttribute('data-status', 'fail')
@@ -74,7 +74,7 @@ describe('VerifyVotePage', () => {
     renderAt(paths.vote(processId, formatVoteId(voteId)), { sequencers: [] })
     const settled = await screen.findByTestId('check-settled')
     await waitFor(() => expect(settled).toHaveAttribute('data-status', 'pass'), { timeout: 15_000 })
-    expect(settled).toHaveTextContent(/Your vote is in batch #\d+, settled on/)
+    expect(settled).toHaveTextContent(/Your vote is in batch #\d+, recorded on/)
     const tracker = screen.getByTestId('check-tracker')
     expect(tracker).toHaveAttribute('data-status', 'na')
     expect(tracker).toHaveTextContent('Not available: no sequencer is configured')
@@ -89,7 +89,7 @@ describe('VerifyVotePage', () => {
     renderAt(paths.vote(pid, '0x8000000000000001'), { sequencers: [] })
     const line = await screen.findByTestId('election-metadata')
     await waitFor(() => expect(line).toHaveAttribute('data-status', 'differs'))
-    expect(line).toHaveTextContent('does not match the one the organizer committed on-chain')
+    expect(line).toHaveTextContent('does not match the one the organizer recorded on the chain')
     expect(screen.getByTestId('check-election')).toHaveTextContent('unverified')
     // The vote is not at fault, but the reader should know.
     expect(screen.getByTestId('check-election')).toHaveAttribute('data-status', 'attention')

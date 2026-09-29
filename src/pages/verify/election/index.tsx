@@ -1,7 +1,8 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link, useParams } from 'react-router'
-import { KeyModeBadge, ProcessPhaseBadge, UnverifiedMark } from '~components'
+import { KeyModeBadge, ProcessPhaseBadge, Term, UnverifiedMark } from '~components'
 import { CodeBlock, Disclosure } from '~components/code'
 import { useRuntimeConfig } from '~config/config-context'
 import { useDataSource } from '~data/context'
@@ -9,7 +10,6 @@ import { useChain, useIndexer, useProcess, useStore, type ProcessView } from '~d
 import { useMetadataCheck } from '~data/queries'
 import { transitionDetail, type TransitionDetail } from '~indexer/selectors'
 import { Callout, Card, SkeletonText } from '~kit'
-import { formatNumber } from '~lib/format'
 import { publicRpc } from '~pages/contracts/model'
 import { metadataTitle } from '~pages/process/metadata'
 import { useDkgResultsChecks, useSequencerResultsChecks, type ResultsCheck } from '~pages/process/results-checks'
@@ -137,7 +137,7 @@ function ElectionFrame({
         id='redo'
         n={3}
         title={t`Redo it yourself`}
-        description={t`The same checks from a terminal, without this site: Foundry’s cast and an RPC node of your choice, or a node that replays the whole election.`}
+        description={t`The same checks from a terminal, without this site. You need an RPC node of your choice and Foundry’s cast, or a node that replays the whole election.`}
       >
         {redo}
       </FlowSection>
@@ -150,7 +150,7 @@ function Chosen({ view, title, unverified }: { view: ProcessView | null; title: 
   const { t } = useLingui()
   if (!view) return <SkeletonText lines={2} />
   const pid = view.process.id
-  const ballots = formatNumber(view.row.votersCount + view.row.overwrittenVotesCount)
+  const ballots = view.row.votersCount + view.row.overwrittenVotesCount
   return (
     <Card
       className='flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between'
@@ -170,7 +170,7 @@ function Chosen({ view, title, unverified }: { view: ProcessView | null; title: 
           <ProcessPhaseBadge phase={view.row.phase} />
           {view.row.keyMode ? <KeyModeBadge mode={view.row.keyMode} /> : null}
           <span className='text-[12px] text-ash'>
-            <Trans>{ballots} ballots settled</Trans>
+            <Plural value={ballots} one='# ballot recorded' other='# ballots recorded' />
           </span>
         </div>
       </div>
@@ -235,8 +235,8 @@ function ElectionChecks({ pid }: { pid: string }) {
   const phase = view.row.phase
   const keyMode = s?.keyMode ?? null
   const verdicts = batchVerdicts(details, {
-    onchain: t`The zkVM proof and the blob openings verified on-chain`,
-    onchainCensus: t`Proven against the census contract, which the registry asked at settlement`,
+    onchain: t`The proof and the published data were verified on the chain`,
+    onchainCensus: t`The registry asked the census contract about the list of voters`,
   })
   const loaded = s != null
 
@@ -274,14 +274,14 @@ function ElectionChecks({ pid }: { pid: string }) {
     tally,
   ]
   const decided = !all.includes('pending')
-  const count = formatNumber(verdicts.length)
+  const count = verdicts.length
 
   return (
     <ElectionFrame
       states={stepStates(true, decided)}
       hints={{
         choose: title && metadata.status !== 'differs' ? title : `${pid.slice(0, 10)}…`,
-        check: t`${count} batches`,
+        check: plural(count, { one: '# batch', other: '# batches' }),
       }}
       keyMode={keyMode}
       choose={<Chosen view={view} title={title} unverified={metadata.status === 'differs'} />}
@@ -301,7 +301,7 @@ function ElectionChecks({ pid }: { pid: string }) {
           </CheckGroup>
           <CheckGroup
             title={t`Every batch`}
-            description={t`Sequencers settle the votes in batches. Each batch had to pass the registry’s checks, starting from where the last one ended.`}
+            description={t`Sequencers record the votes in batches. Each batch had to pass the registry’s checks, starting from where the last one ended.`}
             testId='group-batches'
           >
             <BatchesCard view={view} status={batches} verdicts={verdicts} />
@@ -355,8 +355,9 @@ function ElectionRedo({ view }: { view: ProcessView }) {
         <Prose>
           <p>
             <Trans>
-              The first command prints the registry’s record of the election (status, key, census, counters, current
-              root). The second lists every batch settlement with the roots it went from and to.
+              The first command prints the registry’s record of the election: its status, key, list of voters, counts
+              and current state fingerprint (state root). The second lists every recorded batch with the fingerprints it
+              went from and to.
             </Trans>
           </p>
         </Prose>
@@ -377,8 +378,8 @@ function ElectionRedo({ view }: { view: ProcessView }) {
           <Prose>
             <p>
               <Trans>
-                Hash the document the election’s address serves and compare it with the fourteenth value of the
-                registry’s record; then list every version the organizer set, with its block.
+                Take the fingerprint (SHA-256) of the document the election’s address serves and compare it with the
+                fourteenth value of the registry’s record; then list every version the organizer set, with its block.
               </Trans>
             </p>
           </Prose>
@@ -395,9 +396,10 @@ function ElectionRedo({ view }: { view: ProcessView }) {
         <Prose>
           <p>
             <Trans>
-              A sequencer node without a signing key runs as an observer: it follows every election, downloads each
-              batch’s data, rebuilds the state on your computer and accepts a batch only if the result matches the
-              chain. That checks every batch independently of whoever settled it.
+              Run your own copy of the sequencer software without a signing key, as an{' '}
+              <Term id='observer'>observer</Term>. It follows every election, downloads each batch’s data, rebuilds the
+              state on your computer and accepts a batch only if it reaches the same fingerprint as the chain. That
+              checks every batch, whoever sent it.
             </Trans>
           </p>
         </Prose>
@@ -415,8 +417,8 @@ function ElectionRedo({ view }: { view: ProcessView }) {
         <Prose>
           <p>
             <Trans>
-              Each batch page lists the checks the registry made for it, each with the command that redoes it: the zkVM
-              proof, the blobs and their openings, the census and the counts.
+              Each batch page lists the checks the registry made for it, each with the command that redoes it: the
+              proof, the published data (blobs and their openings), the list of voters and the counts.
             </Trans>
           </p>
           <p>
@@ -437,23 +439,23 @@ function ElectionProves({ keyMode }: { keyMode: KeyModeName | null }) {
       testId='election-limits'
       proves={[
         <Trans key='rules'>
-          Every ballot counted had a valid proof, a valid signature and a voter in the census, and followed the
+          Every ballot counted had a valid proof, a valid signature and a voter on the list of voters, and followed the
           election’s ballot rules.
         </Trans>,
         <Trans key='chain'>
           No batch was skipped, replayed or forked: each one starts where the previous one ended.
         </Trans>,
         <Trans key='fixed'>
-          The rules, the key and the kind of census are fixed from the start; an updatable census list can only be
-          replaced in the open, on-chain.
+          The rules, the key and the kind of list of voters are fixed from the start; an updatable list can only be
+          replaced in the open, on the chain.
         </Trans>,
         <Trans key='result'>
           Once published, the result is the decryption of the encrypted total in the final state, nothing else.
         </Trans>,
         <Trans key='metadata'>
-          The title, the question and the option names are the document the organizer committed on-chain, when its check
-          above passes. The organizer can change it only in the open, until voting ends, and a change made while voting
-          was open is shown above: votes cast before it were cast under the previous version.
+          The title, the question and the option names are the document the organizer recorded on the chain, when its
+          check above passes. The organizer can change it only in the open, until voting ends, and a change made while
+          voting was open is shown above: votes cast before it were cast under the previous version.
         </Trans>,
       ]}
       doesNot={[
@@ -472,7 +474,7 @@ function ElectionProves({ keyMode }: { keyMode: KeyModeName | null }) {
           </Trans>
         ),
         <Trans key='census'>
-          That the census is fair. Who is on the list is the organizer’s decision; the checks only show the list was
+          That the list of voters is fair. Who is on it is the organizer’s decision; the checks only show the list was
           used as published.
         </Trans>,
         <Trans key='metadata-app'>
@@ -500,8 +502,8 @@ function OrganizerControls() {
           <li>
             <Trans>
               <code>setProcessStatus</code>: from Ready or Paused, to Paused, Ready, Canceled or Ended. Pausing stops
-              settlement but not the clock; votes can still queue at a sequencer and settle after you resume. Ending by
-              hand also shortens the duration to the time elapsed. Canceled and Results are final.
+              batches from being recorded but not the clock; votes can still queue at a sequencer and be recorded after
+              you resume. Ending by hand also shortens the duration to the time elapsed. Canceled and Results are final.
             </Trans>
           </li>
           <li>
@@ -517,7 +519,7 @@ function OrganizerControls() {
           <li>
             <Trans>
               <code>setProcessCensus</code>: only for an updatable Merkle census (origin 2), before the end. Batches
-              proven against the old root stop settling.
+              proven against the old list are no longer accepted.
             </Trans>
           </li>
           <li>
@@ -530,10 +532,10 @@ function OrganizerControls() {
         </ul>
         <p>
           <Trans>
-            Nothing settles after the end time. With a sequencer key, the node that holds the key publishes the results
-            once the process has ended; it is the only one that can. With a DKG key anyone can ask the committee to
-            decrypt, and sequencers do on their first heartbeat after the end; in locked mode the decryption waits for
-            your reveal (<code>revealProcessKey</code> on the registry). The results tab shows how the tally was
+            No batch is recorded after the end time. With a sequencer key, the node that holds the key publishes the
+            results once the process has ended; it is the only one that can. With a DKG key anyone can ask the committee
+            to decrypt, and sequencers do on their first heartbeat after the end; in locked mode the decryption waits
+            for your reveal (<code>revealProcessKey</code> on the registry). The results tab shows how the tally was
             produced.
           </Trans>
         </p>

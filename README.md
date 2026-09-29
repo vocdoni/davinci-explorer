@@ -1,23 +1,28 @@
 # DAVINCI explorer
 
-A read-only web explorer for a DAVINCI deployment: processes, state
-transitions, blobs, votes and results, with the checks an auditor, an
-organizer or a voter can run for themselves. It talks to the chain from the
-browser (JSON-RPC and a beacon API, optionally sequencer node APIs) and has
-no backend. [EXPLORER.md](EXPLORER.md) describes the architecture and the
-building blocks the pages use.
+A read-only web explorer for a DAVINCI deployment. It shows every election
+(process) on the registry, each batch of votes and the data it published,
+the votes and the results, with the checks behind each, so a voter, an
+organizer or an auditor can see for themselves that the count is right.
+Pages say in plain words what a value means and keep the mechanism, the exact
+values and the commands one step below; a guide (Learn) and a glossary
+explain the protocol. It talks to the chain from the browser (JSON-RPC and a
+beacon API, optionally sequencer node APIs) and has no backend.
+[EXPLORER.md](EXPLORER.md) describes the architecture and the building
+blocks the pages use, [docs/writing.md](docs/writing.md) how the pages
+speak.
 
 DAVINCI is a voting protocol with encrypted ballots. Sequencers group the
 ballots into batches, prove each batch in a zkVM and settle it on chain with
 its data in EIP-4844 blobs; the final tally is decrypted with a proof too.
 The explorer is one part of the stack:
 
-| Repository | What it is |
-|---|---|
-| [davinci-sequencer](https://github.com/vocdoni/davinci-sequencer) | The sequencer node: collects ballots, proves each batch and settles it on the registry. Its README describes the protocol and the node's HTTP API |
-| [davinci-zkvm](https://github.com/vocdoni/davinci-zkvm) | The ZisK guests that prove a batch and a tally, the prover service and the SDKs |
-| [davinci-contracts](https://github.com/vocdoni/davinci-contracts/tree/zkvm) (branch `zkvm`) | `ProcessRegistry`, the PLONK verifier and the DKG adapter |
-| [davinci-dkg](https://github.com/vocdoni/davinci-dkg) | Distributed key generation: the committee contracts and node that hold the key of a DKG-mode process and decrypt its tally |
+| Repository                                                                                  | What it is                                                                                                                                        |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [davinci-sequencer](https://github.com/vocdoni/davinci-sequencer)                           | The sequencer node: collects ballots, proves each batch and settles it on the registry. Its README describes the protocol and the node's HTTP API |
+| [davinci-zkvm](https://github.com/vocdoni/davinci-zkvm)                                     | The ZisK guests that prove a batch and a tally, the prover service and the SDKs                                                                   |
+| [davinci-contracts](https://github.com/vocdoni/davinci-contracts/tree/zkvm) (branch `zkvm`) | `ProcessRegistry`, the PLONK verifier and the DKG adapter                                                                                         |
+| [davinci-dkg](https://github.com/vocdoni/davinci-dkg)                                       | Distributed key generation: the committee contracts and node that hold the key of a DKG-mode process and decrypt its tally                        |
 
 Stack: Vite 6, React 18, TypeScript (strict), Tailwind CSS v4, Radix
 primitives, TanStack Query / Table / Virtual, viem, react-router 7; vitest
@@ -92,20 +97,20 @@ renders it from environment variables; a variable left unset keeps the
 default from `public/config.json`, and an optional one set to the empty
 string is removed.
 
-| Variable | Meaning | Default |
-|---|---|---|
-| `NETWORK_NAME` | Display name | `Gnosis Chain` |
-| `CHAIN_ID` | Expected chain id. The explorer checks the RPC's at boot and stops with a banner on a mismatch | `100` |
-| `RPC_URL` | JSON-RPC endpoints, comma-separated, in failover order | publicnode, BlockReq, rpc.gnosischain.com |
-| `BEACON_URL` | Beacon API for blob sidecars | `https://rpc-gbc.gnosischain.com` |
-| `REGISTRY_ADDRESS` | ProcessRegistry | the Gnosis deployment |
-| `START_BLOCK` | Registry deployment block; the log scan starts here | the Gnosis deployment |
-| `SEQUENCER_URLS` | Sequencer node APIs, comma-separated (vote status, tracker proofs, raw blobs) | none |
-| `BLOCK_EXPLORER_URL` | Block explorer for transaction and address links | `https://gnosisscan.io` |
-| `DKG_EXPLORER_URL` | davinci-dkg explorer, for DKG epoch and application links | none |
-| `BEACON_PROXY` | `true` serves the beacon same-origin at `/proxy/beacon/` | `false` |
-| `SEQUENCER_PROXY` | `true` serves sequencer *n* at `/proxy/sequencer/<n>/` (sequencer nodes send no CORS headers) | `true` |
-| `PORT` | Port nginx listens on inside the container | `8080` |
+| Variable             | Meaning                                                                                        | Default                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `NETWORK_NAME`       | Display name                                                                                   | `Gnosis Chain`                            |
+| `CHAIN_ID`           | Expected chain id. The explorer checks the RPC's at boot and stops with a banner on a mismatch | `100`                                     |
+| `RPC_URL`            | JSON-RPC endpoints, comma-separated, in failover order                                         | publicnode, BlockReq, rpc.gnosischain.com |
+| `BEACON_URL`         | Beacon API for blob sidecars                                                                   | `https://rpc-gbc.gnosischain.com`         |
+| `REGISTRY_ADDRESS`   | ProcessRegistry                                                                                | the Gnosis deployment                     |
+| `START_BLOCK`        | Registry deployment block; the log scan starts here                                            | the Gnosis deployment                     |
+| `SEQUENCER_URLS`     | Sequencer node APIs, comma-separated (vote status, tracker proofs, raw blobs)                  | none                                      |
+| `BLOCK_EXPLORER_URL` | Block explorer for transaction and address links                                               | `https://gnosisscan.io`                   |
+| `DKG_EXPLORER_URL`   | davinci-dkg explorer, for DKG epoch and application links                                      | none                                      |
+| `BEACON_PROXY`       | `true` serves the beacon same-origin at `/proxy/beacon/`                                       | `false`                                   |
+| `SEQUENCER_PROXY`    | `true` serves sequencer _n_ at `/proxy/sequencer/<n>/` (sequencer nodes send no CORS headers)  | `true`                                    |
+| `PORT`               | Port nginx listens on inside the container                                                     | `8080`                                    |
 
 The Gnosis values live only in `public/config.json`; the deployment is due to
 be replaced, and that file is the one place to change.

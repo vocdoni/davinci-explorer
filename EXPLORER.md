@@ -30,17 +30,17 @@ Each view is a folder under `src/pages/`, lazy-loaded by `src/routes/pages.tsx`.
 A piece more than one view uses goes in `src/components/`, a shared hook in
 `src/data/`.
 
-| Folder | Route |
-|---|---|
-| `pages/overview/` | `/` |
-| `pages/processes/` | `/processes?status=&keyMode=&census=&organizer=&q=` |
-| `pages/process/` | `/processes/:pid` and `/processes/:pid/:tab` (`overview`, `key`, `transitions`, `votes`, `results`, `raw`); one file per tab in `tabs/` |
-| `pages/transition/` | `/processes/:pid/transitions/:index`, and `/tx/:hash` (`tx.tsx`, resolves a hash to its transition or process) |
-| `pages/verify/` | `/verify` (the three checks), `/verify/vote?pid=&voteId=`, `/verify/election/:pid?` and `/verify/deployment`; one folder per flow. The old `/votes?pid=&voteId=` and `/votes/:pid/:voteId` redirect to the vote check, and the old `/learn/verify-*` guides to the matching flow |
-| `pages/contracts/` | `/contracts`: the addresses and parameters, as reference |
-| `pages/sequencers/` | `/sequencers` (every account that settled a transition or published results, with the configured sequencer nodes beside them) and `/sequencers/:address` (`detail.tsx`, one account) |
-| `pages/learn/` | `/learn/:topic`; `/learn` opens on the first topic |
-| `pages/kit/` | `/kit`, the design review page |
+| Folder              | Route                                                                                                                                                                                                                                                                            |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pages/overview/`   | `/`                                                                                                                                                                                                                                                                              |
+| `pages/processes/`  | `/processes?status=&keyMode=&census=&organizer=&q=`                                                                                                                                                                                                                              |
+| `pages/process/`    | `/processes/:pid` and `/processes/:pid/:tab` (`overview`, `key`, `transitions`, `votes`, `results`, `raw`); one file per tab in `tabs/`                                                                                                                                          |
+| `pages/transition/` | `/processes/:pid/transitions/:index`, and `/tx/:hash` (`tx.tsx`, resolves a hash to its transition or process)                                                                                                                                                                   |
+| `pages/verify/`     | `/verify` (the three checks), `/verify/vote?pid=&voteId=`, `/verify/election/:pid?` and `/verify/deployment`; one folder per flow. The old `/votes?pid=&voteId=` and `/votes/:pid/:voteId` redirect to the vote check, and the old `/learn/verify-*` guides to the matching flow |
+| `pages/contracts/`  | `/contracts`: the addresses and parameters, as reference; plain by default, with one "Technical details" switch on every panel for the mechanism                                                                                                                                 |
+| `pages/sequencers/` | `/sequencers` (every account that settled a transition or published results, with the configured sequencer nodes beside them) and `/sequencers/:address` (`detail.tsx`, one account)                                                                                             |
+| `pages/learn/`      | `/learn/:topic`; `/learn` opens on the first topic. Each section is plain text with its mechanism under "Technical details" (`Details` in `prose.tsx`)                                                                                                                           |
+| `pages/kit/`        | `/kit`, the design review page                                                                                                                                                                                                                                                   |
 
 The top bar always shows Sequencers, whether or not the deployment configures
 sequencer APIs: the accounts come from the registry events, and a configured
@@ -114,12 +114,12 @@ metadata documents (`fetchBytes`). Pages reach them through the hooks in
 `src/indexer/types.ts` has the full shapes. Blocks, counters and unix times
 are numbers; field elements, tallies and wei are `bigint`; hex is lowercase.
 
-| Entity | Key | Holds |
-|---|---|---|
-| `ProcessEntity` | pid (bytes31) | organizer, creation block/tx/time, `state` (the normalised `getProcess`: status, key mode, ballot mode, census, key, times, counters, root, result, `metadataURI` and `metadataHash`, DKG info) and the block it was read at, `genesisRoot`, transition keys, status / duration / max-voters / census changes, `metadataHistory` (below), `results` (`ProcessResultsSet`), `decryptionRequest` (`ResultsDecryptionRequested`), event indices |
-| `TransitionEntity` | `pid:index` | 0-based index (the sequencer API's), block, tx, time, sender, roots before and after, process totals after, `newVoters` and `overwrites` of this batch, `nBlobs` |
-| `TxDetails` | tx hash | from, status, gas, blob gas, `fee` (gas·price + blob gas·blob price), `blobVersionedHashes` (null when the RPC omits it), calldata size, the decoded `publicValues`, `proofBytes`, `commitments`, `ys`, `kzgProofs`; `initialCensusRoot` for `newProcess` |
-| `ChainMeta` | | chain id, network name, registry, start block, head block and time, block time, `registry` (immutables: program vks, `rootCVadcopFinal`, `ballotVKHash`, `ziskVerifier` and its runtime code hash, `dkgAdapter` → DKG manager and app manager, `chainID`, `pidPrefix`, `processCount`) |
+| Entity             | Key           | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ProcessEntity`    | pid (bytes31) | organizer, creation block/tx/time, `state` (the normalised `getProcess`: status, key mode, ballot mode, census, key, times, counters, root, result, `metadataURI` and `metadataHash`, DKG info) and the block it was read at, `genesisRoot`, transition keys, status / duration / max-voters / census changes, `metadataHistory` (below), `results` (`ProcessResultsSet`), `decryptionRequest` (`ResultsDecryptionRequested`), event indices |
+| `TransitionEntity` | `pid:index`   | 0-based index (the sequencer API's), block, tx, time, sender, roots before and after, process totals after, `newVoters` and `overwrites` of this batch, `nBlobs`                                                                                                                                                                                                                                                                             |
+| `TxDetails`        | tx hash       | from, status, gas, blob gas, `fee` (gas·price + blob gas·blob price), `blobVersionedHashes` (null when the RPC omits it), calldata size, the decoded `publicValues`, `proofBytes`, `commitments`, `ys`, `kzgProofs`; `initialCensusRoot` for `newProcess`                                                                                                                                                                                    |
+| `ChainMeta`        |               | chain id, network name, registry, start block, head block and time, block time, `registry` (immutables: program vks, `rootCVadcopFinal`, `ballotVKHash`, `ziskVerifier` and its runtime code hash, `dkgAdapter` → DKG manager and app manager, `chainID`, `pidPrefix`, `processCount`)                                                                                                                                                       |
 
 `metadataHistory` is every `ProcessMetadataUpdated`, oldest first: the
 document set at creation, then each `setProcessMetadata`. A `MetadataVersion`
@@ -141,35 +141,35 @@ ends it or posts results. `processPhase` (below) combines status and clock:
 Store hooks (`~data/hooks`), all memoised on the store snapshot, all safe to
 call with `undefined` (they return `null` or `[]`):
 
-| Hook | Returns |
-|---|---|
-| `useIndexer()` | `{ status, kind, loading, scanning, headBlock, lastBlock, progress, refresh, clearCache }`; `status.chainMismatch`, `status.errors`, `status.skippedTx` |
-| `useChain()` / `useChainNow()` | `ChainMeta`; the head block's unix time (use it as "now") |
-| `useNetworkStats()` | processes by status / phase / key mode / census origin, organizers, voters, overwrites, ballots, transitions, blobs, processes with results, last activity |
-| `useProcesses(filter)` | `ProcessRow[]`, newest first; `filter = { status (a status or a phase), keyMode, censusOrigin, organizer, query }` |
-| `useProcess(pid)` | `{ process, row, transitions, rootChain }`; also asks for a fresh `getProcess` |
-| `useTransitions(pid)` | `TransitionRow[]` in index order, with gas, fee and `continuous` (root continuity) |
-| `useTransition(pid, index)` | `TransitionDetail`: entity, row, process, previous/next, `tx`, decoded `publics`, and `checks` (below); asks for the tx details first |
-| `useTransitionByTx(hash)` | the transition a transaction settled |
-| `useActivityFeed(limit, pid?)` | `FeedEntry[]`, newest first, each with a label and an `href` |
-| `useVotesPerDay(days)` | `DayBucket[]` (UTC days, oldest first): ballots, new voters, overwrites, transitions |
-| `useReleaseCheck()` | the deployment's pins against the known releases (`release`, `closest`, per-pin `checks`, `complete`) |
-| `useStoreSearch(query)` | `SearchHit[]` the store knows about |
+| Hook                           | Returns                                                                                                                                                    |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useIndexer()`                 | `{ status, kind, loading, scanning, headBlock, lastBlock, progress, refresh, clearCache }`; `status.chainMismatch`, `status.errors`, `status.skippedTx`    |
+| `useChain()` / `useChainNow()` | `ChainMeta`; the head block's unix time (use it as "now")                                                                                                  |
+| `useNetworkStats()`            | processes by status / phase / key mode / census origin, organizers, voters, overwrites, ballots, transitions, blobs, processes with results, last activity |
+| `useProcesses(filter)`         | `ProcessRow[]`, newest first; `filter = { status (a status or a phase), keyMode, censusOrigin, organizer, query }`                                         |
+| `useProcess(pid)`              | `{ process, row, transitions, rootChain }`; also asks for a fresh `getProcess`                                                                             |
+| `useTransitions(pid)`          | `TransitionRow[]` in index order, with gas, fee and `continuous` (root continuity)                                                                         |
+| `useTransition(pid, index)`    | `TransitionDetail`: entity, row, process, previous/next, `tx`, decoded `publics`, and `checks` (below); asks for the tx details first                      |
+| `useTransitionByTx(hash)`      | the transition a transaction settled                                                                                                                       |
+| `useActivityFeed(limit, pid?)` | `FeedEntry[]`, newest first, each with a label and an `href`                                                                                               |
+| `useVotesPerDay(days)`         | `DayBucket[]` (UTC days, oldest first): ballots, new voters, overwrites, transitions                                                                       |
+| `useReleaseCheck()`            | the deployment's pins against the known releases (`release`, `closest`, per-pin `checks`, `complete`)                                                      |
+| `useStoreSearch(query)`        | `SearchHit[]` the store knows about                                                                                                                        |
 
 On-demand hooks (`~data/queries`, TanStack Query; `data`, `isLoading`,
 `error` as usual):
 
-| Hook | Returns |
-|---|---|
-| `useTransitionBlobs(pid, index)` | the blobs (`FetchedBlob[]`: bytes, versioned hash, commitment, how it was bound, source) and `decoded` (`TransitionData`: vote ids, slot updates, accumulator) or `decodeError`. Beacon first, then each sequencer; `attempts` lists what failed. Waits for the settlement transaction, the block's exact time and the process's field count |
-| `useVoteInclusion(pid, voteId)` | searches the process's transitions newest first for the blob that lists the vote id: `{ state, transitionIndex, checked, total, errors }`; a transition whose transaction the indexer skipped is an entry in `errors` |
-| `useVoteStatus(pid, voteId)` | per configured sequencer: `pending` → `aggregated` → `processed` → `settled`, or `error` (polls until final) |
-| `useTrackerProof(pid, voteId)` | the first tracker proof a sequencer serves, checked in the browser: `valid` (the path from the requested vote id's leaf reaches its root; an answer naming another vote id or process is invalid and sets `otherVote`) and `rootOnChain` (that root is one the registry held for the process); `null` when no sequencer knows the vote |
-| `useSequencers()` | per configured sequencer: its `/info` and process list, polled |
-| `useDkgApplication(pid)` | DKG-mode processes: epoch, aid, pool index and key, organizer key and whether its secret was revealed, the application key, and each submitted ciphertext's combine state |
-| `useMetadataCheck(uri, hash)` | a process's metadata document checked against its on-chain hash (below): `{ status, uri, committed, served, error, doc }` |
-| `useDeploymentDetails()` (`~data/deployment`) | the reads the indexer doesn't make: the verifier's root, the DKG manager's immutables, verifiers and cadence, the newest epoch, the adapter and app-manager links, DKG registry counts |
-| `useSequencerProcessViews(...)` (`~data/sequencer-processes`) | each configured sequencer's `GET /processes/{pid}`, one page at a time |
+| Hook                                                          | Returns                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useTransitionBlobs(pid, index)`                              | the blobs (`FetchedBlob[]`: bytes, versioned hash, commitment, how it was bound, source) and `decoded` (`TransitionData`: vote ids, slot updates, accumulator) or `decodeError`. Beacon first, then each sequencer; `attempts` lists what failed. Waits for the settlement transaction, the block's exact time and the process's field count |
+| `useVoteInclusion(pid, voteId)`                               | searches the process's transitions newest first for the blob that lists the vote id: `{ state, transitionIndex, checked, total, errors }`; a transition whose transaction the indexer skipped is an entry in `errors`                                                                                                                        |
+| `useVoteStatus(pid, voteId)`                                  | per configured sequencer: `pending` → `aggregated` → `processed` → `settled`, or `error` (polls until final)                                                                                                                                                                                                                                 |
+| `useTrackerProof(pid, voteId)`                                | the first tracker proof a sequencer serves, checked in the browser: `valid` (the path from the requested vote id's leaf reaches its root; an answer naming another vote id or process is invalid and sets `otherVote`) and `rootOnChain` (that root is one the registry held for the process); `null` when no sequencer knows the vote       |
+| `useSequencers()`                                             | per configured sequencer: its `/info` and process list, polled                                                                                                                                                                                                                                                                               |
+| `useDkgApplication(pid)`                                      | DKG-mode processes: epoch, aid, pool index and key, organizer key and whether its secret was revealed, the application key, and each submitted ciphertext's combine state                                                                                                                                                                    |
+| `useMetadataCheck(uri, hash)`                                 | a process's metadata document checked against its on-chain hash (below): `{ status, uri, committed, served, error, doc }`                                                                                                                                                                                                                    |
+| `useDeploymentDetails()` (`~data/deployment`)                 | the reads the indexer doesn't make: the verifier's root, the DKG manager's immutables, verifiers and cadence, the newest epoch, the adapter and app-manager links, DKG registry counts                                                                                                                                                       |
+| `useSequencerProcessViews(...)` (`~data/sequencer-processes`) | each configured sequencer's `GET /processes/{pid}`, one page at a time                                                                                                                                                                                                                                                                       |
 
 ## The metadata check
 
@@ -183,13 +183,13 @@ gateway as the links), hashes them in the browser (`readServedDocument` in
 page shows is the text that was checked. The committed hash is part of the
 query key: a new version at the same URI is downloaded again.
 
-| `status` | Meaning |
-|---|---|
-| `matches` | the bytes hash to the current `metadataHash` |
-| `differs` | they hash to something else; `doc` is still what was served |
-| `unreachable` | the download failed (`error`: an HTTP status, a network or CORS error) |
-| `not-browsable` | not an http(s) or ipfs URI, so a browser cannot fetch it |
-| `loading` | the process is not read yet, or the download is running |
+| `status`        | Meaning                                                                |
+| --------------- | ---------------------------------------------------------------------- |
+| `matches`       | the bytes hash to the current `metadataHash`                           |
+| `differs`       | they hash to something else; `doc` is still what was served            |
+| `unreachable`   | the download failed (`error`: an HTTP status, a network or CORS error) |
+| `not-browsable` | not an http(s) or ipfs URI, so a browser cannot fetch it               |
+| `loading`       | the process is not read yet, or the download is running                |
 
 Only `matches` makes the document's text the organizer's, and only then does
 the process's ballot panel show the kind of ballot the organizer declared
@@ -326,17 +326,18 @@ and the reading aids of [docs/writing.md](docs/writing.md):
   underline; hover or keyboard focus shows the glossary's short definition,
   a click opens the entry, and on a touch screen the first tap shows the
   definition. The glossary is data in `src/content/glossary.ts` (`GLOSSARY`,
-  each entry with a `short` and a full `text`; `GlossaryId`, `glossaryEntry`,
+  each entry with a plain `short`, a full `text` and, when the definition
+  refers to an expression, a `formula`; `GlossaryId`, `glossaryEntry`,
   `glossaryHref`, `readGlossary`, `filterGlossary`), which the Learn glossary
-  page renders too.
+  page renders too, the short definition first.
 - `Formula` (`<Formula expr='sha256(a ‖ b)' />`): an expression in the mono
   font, each kind of token in its own colour, `||` as ‖, `2^63` as a
   superscript; `block` sets it on its own line.
 - `InShort`, the plain lead of a long page; `NumberedList`, steps or rules
   in order; `RichText`, translated text whose `backtick` spans are
   identifiers. Link to a section
-of the page with `HashLink`, never a plain `href="#id"`: the router's scroll
-restoration sends a plain fragment link to the top of the page.
+  of the page with `HashLink`, never a plain `href="#id"`: the router's scroll
+  restoration sends a plain fragment link to the top of the page.
 
 ## Text and languages
 

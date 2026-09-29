@@ -119,8 +119,8 @@ export function LookupForm({ initialPid, initialVote }: { initialPid: string; in
               {latest
                 ? exampleFailed
                   ? t`The newest batch’s data could not be read, so there is no example to show.`
-                  : t`No vote id at hand? This fills in a vote from the newest settled batch.`
-                : t`No batch has settled yet, so there is no example.`}
+                  : t`No vote id at hand? This fills in a vote from the newest recorded batch.`
+                : t`No batch has been recorded yet, so there is no example.`}
             </span>
           </div>
           <Button type='submit' variant='primary' size='lg' className='justify-center'>

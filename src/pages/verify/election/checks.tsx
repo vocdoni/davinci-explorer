@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
-import { CensusOriginBadge, CheckMark, KeyModeBadge, Timestamp, UnverifiedMark } from '~components'
+import { CensusOriginBadge, CheckMark, KeyModeBadge, Term, Timestamp, UnverifiedMark } from '~components'
 import { Formula } from '~components/Formula'
 import type { ProcessView } from '~data/hooks'
 import type { MetadataCheck } from '~data/queries'
@@ -58,13 +58,14 @@ export function CensusCard({
         <>
           {origin === 'merkle-static' ? (
             <Trans>
-              A fixed list of voters, published by the organizer. Its fingerprint (the census root) was written on-chain
-              when the election was created and cannot change.
+              A fixed list of voters, published by the organizer. Its fingerprint (the{' '}
+              <Term id='census-root'>census root</Term>) was recorded on the chain when the election was created and
+              cannot change.
             </Trans>
           ) : origin === 'merkle-dynamic' ? (
             <Trans>
-              A list of voters the organizer may replace while the election is open. Each replacement is recorded
-              on-chain, and a batch counts only if it used the list in force.
+              A list of voters the organizer may replace while the election is open. Each replacement is recorded on the
+              chain, and a batch counts only if it used the list in force.
             </Trans>
           ) : origin === 'onchain-dynamic' ? (
             <Trans>
@@ -73,11 +74,11 @@ export function CensusCard({
             </Trans>
           ) : origin === 'csp' ? (
             <Trans>
-              Voters are let in by a credential service provider, which signs for each voter. The provider’s address is
-              fixed on-chain.
+              Voters are let in by a credential service (a <Term id='csp'>CSP</Term>), which signs for each voter. The
+              service’s address is fixed on the chain.
             </Trans>
           ) : (
-            <Trans>A census kind the registry does not accept.</Trans>
+            <Trans>A kind of list the registry does not accept.</Trans>
           )}{' '}
           {batches > 0 ? (
             status === 'pass' ? (
@@ -97,9 +98,9 @@ export function CensusCard({
           <p>{CENSUS_ORIGIN_INFO[origin].description}</p>
           <p>
             <Trans>
-              For each batch the explorer compares the census root the proof used with the roots this election accepts.
-              It cannot for an on-chain census, where the registry asked the census contract at settlement, and for a
-              replaced list it knows only the roots it has seen replaced.
+              For each batch the explorer compares the list fingerprint the proof used (its census root) with the ones
+              this election accepts. It cannot for a list kept by a contract, where the registry asked the contract when
+              it recorded the batch, and for a replaced list it knows only the fingerprints it has seen replaced.
             </Trans>
           </p>
           <HowPart title={t`Values read`}>
@@ -118,13 +119,12 @@ export function CensusCard({
             />
           </HowPart>
           {merkle ? (
-            <HowPart title={t`Rebuild the root from the census file`}>
+            <HowPart title={t`Rebuild the fingerprint from the census file`}>
               <p>
                 <Trans>
-                  Download the census file from the address above. Each voter is one leaf, the address shifted left by
-                  88 bits with the voter’s weight in the low bits, in the file’s order. The leaves form a lean
-                  incremental Merkle tree hashed with Poseidon: a node without a right sibling moves up unchanged. The
-                  top of the tree must equal the census root.
+                  Download the census file from the address above. Each voter becomes one leaf, made of their address
+                  and their voting weight, in the file’s order. The leaves are hashed in pairs, level by level, up to a
+                  single value, which must equal the census root.
                 </Trans>
               </p>
               <div className='flex flex-col gap-1.5'>
@@ -133,8 +133,10 @@ export function CensusCard({
               </div>
               <p>
                 <Trans>
-                  The davinci-zkvm Rust SDK does it in two calls, census::census_leaf and census::LeanImt::from_leaves;
-                  lean-imt-go builds the same tree.
+                  The tree is a lean incremental Merkle tree hashed with Poseidon: the address sits 88 bits up, the
+                  weight in the low bits, and a node without a right sibling moves up unchanged. The davinci-zkvm Rust
+                  SDK builds it in two calls, <code>census::census_leaf</code> and{' '}
+                  <code>census::LeanImt::from_leaves</code>; lean-imt-go builds the same tree.
                 </Trans>
               </p>
             </HowPart>
@@ -143,8 +145,8 @@ export function CensusCard({
             <RedoCommand
               note={
                 <Trans>
-                  Ask the census contract when it recorded a root; the registry requires a block at or after the
-                  election’s creation for every batch.
+                  Ask the census contract when it recorded a list fingerprint; for every batch, the registry requires a
+                  block at or after the election’s creation.
                 </Trans>
               }
               code={`cast call ${contract} "getRootBlockNumber(uint256)(uint256)" \\\n  ${root.toString()} --rpc-url $RPC`}
@@ -197,10 +199,16 @@ export function KeyCard({
         <>
           <p>
             <Trans>
-              Voters encrypt their ballots to the election key. The key is written into the election’s starting state
-              (leaf 0x03), so it cannot change after creation, and every batch keeps the ballots encrypted under it.
+              Voters lock their ballots with this key (the <Term id='encryption-key'>election key</Term>). It was fixed
+              when the election was created, so it cannot change, and every batch keeps the ballots locked with it.
             </Trans>{' '}
             {KEY_MODE_INFO[mode].description}
+          </p>
+          <p className='text-[12px]'>
+            <Trans>
+              The key is a BabyJubJub point written into the election’s starting state as leaf 0x03, and the ballots are
+              ElGamal encryptions to it.
+            </Trans>
           </p>
           <HowPart title={t`Values read`}>
             <Compared
@@ -214,7 +222,9 @@ export function KeyCard({
                         value: app ? (
                           <span className='inline-flex items-center gap-2'>
                             <CheckMark state={matches ? 'pass' : 'fail'} />
-                            {matches ? t`converted, it is the election key` : t`converted, it is not the election key`}
+                            {matches
+                              ? t`converted to the registry’s form, it is the election key`
+                              : t`converted to the registry’s form, it is not the election key`}
                           </span>
                         ) : (
                           '…'
@@ -257,8 +267,8 @@ export function RulesCard({ view }: { view: ProcessView }) {
         <p>
           <Trans>
             The rules are part of the election’s starting state, so they cannot change. Each voter’s app proves that the
-            ballot follows them without revealing it, and the zkVM checks every one of those proofs before a batch
-            settles.
+            ballot follows them without revealing it (a <Term id='ballot-proof'>ballot proof</Term>), and every one of
+            those proofs is checked inside the batch’s proof before the batch is recorded.
           </Trans>
         </p>
       }
@@ -305,13 +315,13 @@ export function MetadataCard({
       summary={
         check.status === 'matches' ? (
           <Trans>
-            The document at its address is, byte for byte, the one whose SHA-256 the organizer committed on-chain, so
-            the title, the question and the option names are the organizer’s.
+            The document at its address is, byte for byte, the one whose fingerprint the organizer recorded on the
+            chain, so the title, the question and the option names are the organizer’s.
           </Trans>
         ) : check.status === 'differs' ? (
           <Trans>
-            Its address serves another document than the one the organizer committed on-chain. Its title, question and
-            option names may not be what voters were shown, so do not rely on them.
+            Its address serves another document than the one the organizer recorded on the chain. Its title, question
+            and option names may not be what voters were shown, so do not rely on them.
           </Trans>
         ) : check.status === 'unreachable' ? (
           <Trans>
@@ -321,7 +331,7 @@ export function MetadataCard({
         ) : check.status === 'not-browsable' ? (
           <Trans>A browser cannot fetch this address; the command below checks it from a terminal.</Trans>
         ) : (
-          <Trans>Downloading the document and hashing it…</Trans>
+          <Trans>Downloading the document and taking its fingerprint…</Trans>
         )
       }
       how={
@@ -329,9 +339,10 @@ export function MetadataCard({
           <p>
             <Trans>
               The chain knows a ballot only as numbers in fields; what each field means is in the organizer’s document.
-              When the election was created, and at every change, the registry recorded the document’s address and the
-              SHA-256 of its exact bytes. Your browser downloads the document, hashes the bytes as they came, with no
-              reformatting, and compares; the text shown on these pages is read from those same bytes.
+              When the election was created, and at every change, the registry recorded the document’s address and its{' '}
+              <Term id='metadata-hash'>fingerprint</Term> (the SHA-256 of its exact bytes). Your browser downloads the
+              document, hashes the bytes as they came, with no reformatting, and compares; the text shown on these pages
+              is read from those same bytes.
             </Trans>
           </p>
           <HowPart title={t`Values compared`}>
@@ -360,8 +371,9 @@ export function MetadataCard({
             <RedoCommand
               note={
                 <Trans>
-                  The first line hashes what the address serves; the second prints the registry’s record, whose
-                  fourteenth value is the committed hash. They must be equal (sha256sum leaves out the 0x).
+                  The first line takes the fingerprint of what the address serves; the second prints the registry’s
+                  record, whose fourteenth value is the committed one. They must be equal (<code>sha256sum</code> leaves
+                  out the 0x).
                 </Trans>
               }
               code={metadataHashCommand({ registry, processId: view.process.id, uri })}
@@ -423,9 +435,9 @@ export function MetadataHistoryCard({
         <>
           <p>
             <Trans>
-              Every change is a ProcessMetadataUpdated event on the registry, with the new address and hash. The
-              organizer may change the description while the election is Ready or Paused and before its end; after that
-              it is frozen. A change is flagged when its block is later than the start of voting.
+              Every change is an event on the registry (<code>ProcessMetadataUpdated</code>) with the new address and
+              fingerprint. The organizer may change the description while the election is Ready or Paused and before its
+              end; after that it is frozen. A change is flagged when its block is later than the start of voting.
             </Trans>
           </p>
           <RedoCommand
@@ -554,9 +566,9 @@ export function BatchesCard({
       summary={
         n === 0 ? (
           status === 'na' ? (
-            <Trans>No batch of votes was ever settled for this election.</Trans>
+            <Trans>No batch of votes was ever recorded for this election.</Trans>
           ) : (
-            <Trans>No batch of votes has been settled yet.</Trans>
+            <Trans>No batch of votes has been recorded yet.</Trans>
           )
         ) : failed > 0 ? (
           <Trans>
@@ -564,18 +576,19 @@ export function BatchesCard({
           </Trans>
         ) : (
           <Trans>
-            {passed} of {total} batches passed every check the registry makes before it accepts a batch, including its
-            zkVM proof.
+            {passed} of {total} batches passed every check the registry makes before it accepts a batch, the proof
+            itself included.
           </Trans>
         )
       }
       how={
         <p>
           <Trans>
-            For every batch, the explorer recomputes from public data what the registry checked when it accepted it: the
-            zkVM guest accepted every ballot, the batch starts from the previous state, it used the election’s census,
-            its counts add up, and its blobs are the ones the proof covers. The proof itself and the blob openings were
-            verified on-chain. Open a batch for each check, its values and the command that redoes it.
+            For every batch, the explorer redoes from public data what the registry checked when it accepted it: every
+            ballot passed the checks inside the proof, the batch starts from the previous state, it used the election’s
+            list of voters, its counts add up, and its published data is the data the proof covers. The proof itself and
+            the blob openings were checked on the chain. Open a batch for each check, its values and the command that
+            redoes it.
           </Trans>
         </p>
       }
@@ -623,9 +636,10 @@ export function ChainCard({ view, status, registry }: { view: ProcessView; statu
         <>
           <p>
             <Trans>
-              The election’s state is a Merkle tree, summed up by its root. The registry computed the first root when
-              the election was created, and accepts a batch only if it starts from the current root; the batch’s proof
-              then gives the next one. The explorer follows that chain from the settlement events.
+              The election’s state is summed up by one fingerprint (the root of its Merkle tree, its{' '}
+              <Term id='state-root'>state root</Term>). The registry computed the first one when the election was
+              created, and accepts a batch only if it starts from the current one; the batch’s proof then gives the
+              next. The explorer follows that chain from the registry’s batch events.
             </Trans>
           </p>
           <HowPart title={t`Values compared`}>
@@ -656,7 +670,7 @@ export function ChainCard({ view, status, registry }: { view: ProcessView; statu
           <RedoCommand
             note={
               <Trans>
-                List the election’s settlement events: each one’s data starts with the root before and the root after,
+                List the election’s batch events: each one’s data starts with the fingerprint before and the one after,
                 so each line must start where the previous one ended.
               </Trans>
             }

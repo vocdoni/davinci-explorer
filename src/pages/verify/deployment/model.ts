@@ -8,13 +8,16 @@ import type { CheckState } from '~indexer/selectors'
 import type { PinName, ReleaseMatch } from '~protocol/releases'
 import { combine, fromCheckState, type VerifyStatus } from '../status'
 
-/** What each pin is for someone who has never heard of a verification key. */
+/**
+ * What each pin is for someone who has never heard of a verification key: one
+ * sentence under the pin's plain name (`PIN_LABELS`).
+ */
 export const PIN_PLAIN: Record<PinName, MessageDescriptor> = {
-  batchProgramVK: msg`The program that checks every batch of votes`,
-  resultsProgramVK: msg`The program that checks every result`,
-  rootCVadcopFinal: msg`The setup the proofs are made with`,
-  ziskVerifierCodeHash: msg`The contract that verifies every proof`,
-  ballotVKHash: msg`The key every ballot proof is checked against`,
+  batchProgramVK: msg`The program that checks every batch of votes. This value is its fingerprint.`,
+  resultsProgramVK: msg`The program that checks every result of an election with a sequencer key.`,
+  rootCVadcopFinal: msg`The setup the proofs are made with, shared by both programs.`,
+  ziskVerifierCodeHash: msg`The contract that verifies every proof, known by the fingerprint of its code.`,
+  ballotVKHash: msg`The key every voter’s ballot proof is checked against.`,
 }
 
 export function pinState(ok: boolean | null): CheckState {

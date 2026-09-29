@@ -14,7 +14,7 @@ export const WHO_CAN_DECRYPT: Record<KeyModeName, MessageDescriptor> = {
 
 /** How the result is produced, by key mode. */
 export const HOW_RESULT: Record<KeyModeName, MessageDescriptor> = {
-  sequencer: msg`After the vote ends, the key holder decrypts the encrypted total and proves with the zkVM results program that the published numbers are its decryption. The registry checks that proof before it stores them.`,
+  sequencer: msg`After the vote ends, the key holder decrypts the encrypted total and proves, with the published results program, that the numbers it publishes are that decryption. The registry checks the proof before it stores them.`,
   'dkg-automatic': msg`After the vote ends, the encrypted total goes to the committee. A threshold of members decrypt it, each with a proof the DKG contracts check, and the registry stores the numbers they agree on.`,
   'dkg-locked': msg`After the vote ends, the encrypted total goes to the committee, which can decrypt it once the organizer reveals their secret. Each member’s part comes with a proof the DKG contracts check, and the registry stores the numbers they agree on.`,
 }

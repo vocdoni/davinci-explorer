@@ -128,6 +128,31 @@ describe('LearnPage', () => {
     })
   }
 
+  it('shows each glossary entry plain first, then the full definition and its formula', () => {
+    renderLearn('/learn/glossary')
+    const entry = document.getElementById('term-vote-id')!
+    const [short, full] = within(entry).getAllByRole('definition')
+    expect(short).toHaveTextContent('The number your voting app shows when you vote')
+    expect(full).toHaveTextContent('computes it, as below')
+    expect(full!.querySelector('[data-formula]')).toHaveTextContent(
+      'voteId = 2^63 + (Poseidon(processId, address, k) mod 2^63)'
+    )
+  })
+
+  it('numbers the walk-through in the topic list and in its sections', () => {
+    renderLearn('/learn/how-it-works')
+    const nav = screen.getByRole('navigation', { name: 'Guide topics' })
+    expect(within(nav).getByRole('link', { name: 'How DAVINCI works' })).toHaveTextContent('1How DAVINCI works')
+    expect(screen.getByRole('heading', { level: 2, name: '1. A process is created' })).toBeInTheDocument()
+  })
+
+  it('keeps the mechanism of each section behind "Technical details"', () => {
+    renderLearn('/learn/how-it-works')
+    const article = screen.getByTestId('learn-topic')
+    expect(article).not.toHaveTextContent('BabyJubJub')
+    expect(within(article).getAllByText('Technical details').length).toBeGreaterThanOrEqual(6)
+  })
+
   it('explains an unknown topic', () => {
     renderLearn('/learn/nope')
     expect(screen.getByText('No such topic')).toBeInTheDocument()

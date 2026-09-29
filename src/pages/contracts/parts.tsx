@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useRuntimeConfig } from '~config/config-context'
-import { ExternalIcon, Tooltip } from '~kit'
+import { ExternalIcon, Toggle, Tooltip } from '~kit'
 import { cn } from '~lib/cn'
 import { explorerCodeUrl } from '~lib/explorer'
 
@@ -70,4 +70,18 @@ export function Segmented<T extends string>({
       ))}
     </div>
   )
+}
+
+/**
+ * The page's "Technical details" switch, repeated on each panel so it is at
+ * hand wherever the reader lands; all of them share one state.
+ */
+export function TechnicalToggle({ checked, onChange }: { checked: boolean; onChange: (on: boolean) => void }) {
+  const { t } = useLingui()
+  return <Toggle checked={checked} onChange={onChange} label={t`Technical details`} />
+}
+
+/** Identifier beside a plain label: `batchProgramVK`, `ZiskVerifier`. */
+export function Ident({ children }: { children: ReactNode }) {
+  return <code className='rounded-sm bg-onyx px-1 py-px font-mono text-[11px] text-pewter'>{children}</code>
 }

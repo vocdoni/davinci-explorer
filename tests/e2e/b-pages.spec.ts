@@ -33,7 +33,7 @@ test.describe('transition page', () => {
       await expect(publics.getByText(name, { exact: true })).toBeVisible()
     }
     await expect(publics).toContainText('every bit clear')
-    await publics.getByText('What the guest checked: 19 fail bits').click()
+    await publics.getByText('What each bit means: 19 groups of checks').click()
     await expect(publics).toContainText('FAIL_REFRESH')
 
     await expect(page.getByTestId('proof')).toContainText('768 B')
@@ -42,7 +42,7 @@ test.describe('transition page', () => {
     const verify = page.getByTestId('verify')
     await expect(verify.locator('[data-testid^="check-"]')).toHaveCount(11)
     const plonk = verify.getByTestId('check-plonk')
-    await plonk.getByText('Recheck it').click()
+    await plonk.getByText('How this is checked').click()
     await expect(plonk.locator('pre')).toContainText('cast call')
     await expect(plonk.locator('pre')).toContainText('verifySnarkProof(bytes32,bytes32,bytes,bytes)')
     expect(errors).toEqual([])
@@ -172,7 +172,7 @@ test.describe('vote check', () => {
     await expect(text).toContainText('What this proves, and what it doesn’t')
     await text.getByText('Voting again, and the silent refreshes').click()
     await expect(text).toContainText('a revote stays deniable')
-    await text.getByText('Why the ballot on-chain is not the one you sent').click()
+    await text.getByText('Why the ballot on the chain is not the one you sent').click()
     await expect(text).toContainText('re-encrypts it')
   })
 })

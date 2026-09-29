@@ -1,11 +1,12 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
-import { Explain } from '~components'
+import { Explain, Formula, Term } from '~components'
 import { CodeBlock, Disclosure } from '~components/code'
 import { useChain, useReleaseCheck } from '~data/hooks'
 import type { TransitionDetail } from '~indexer/selectors'
 import { Address, Badge, Hash, KeyValue, Panel, Skeleton, Tooltip } from '~kit'
 import { formatBytes } from '~lib/format'
+import { PIN_LABELS } from '~protocol/releases'
 import { paths } from '~routes/paths'
 
 const byteLength = (hex: string | null | undefined) => (hex ? (hex.length - 2) / 2 : null)
@@ -53,7 +54,14 @@ export function ProofPanel({ detail }: { detail: TransitionDetail }) {
     <Panel
       label={t`Validity`}
       title={t`The proof`}
-      description={t`One ZisK PLONK proof covers the whole batch: every ballot proof, signature, census proof, state-tree update, re-encryption and the blob layout. Its size does not depend on the number of votes.`}
+      description={
+        <Trans>
+          One proof covers the whole batch: every vote’s checks, how the ballots were stored and the data it published.
+          It is the same size however many votes the batch has. Technically it is a ZisK{' '}
+          <Term id='plonk-proof'>PLONK proof</Term> over every ballot proof, signature, census proof, state update,
+          re-encryption and the blob layout.
+        </Trans>
+      }
     >
       <div className='flex flex-col gap-4' data-testid='proof'>
         <KeyValue
@@ -64,7 +72,7 @@ export function ProofPanel({ detail }: { detail: TransitionDetail }) {
                 <span className='inline-flex items-center gap-1'>
                   <Trans>Proof size</Trans>
                   <Explain>
-                    <Trans>proofBytes: the PLONK proof, ABI-encoded as 24 words.</Trans>
+                    <Trans>The proof as sent (proofBytes): a PLONK proof, ABI-encoded as 24 words.</Trans>
                   </Explain>
                 </span>
               ),
@@ -76,7 +84,7 @@ export function ProofPanel({ detail }: { detail: TransitionDetail }) {
                 <span className='inline-flex items-center gap-1'>
                   <Trans>Public values</Trans>
                   <Explain>
-                    <Trans>publicValues: the 64 registers above, 8 bytes each.</Trans>
+                    <Trans>What the proof makes public (publicValues): the 64 registers above, 8 bytes each.</Trans>
                   </Explain>
                 </span>
               ),
@@ -86,11 +94,11 @@ export function ProofPanel({ detail }: { detail: TransitionDetail }) {
             {
               label: (
                 <span className='inline-flex items-center gap-1'>
-                  <Trans>Program vk</Trans>
+                  {PIN_LABELS.batchProgramVK}
                   <Explain>
                     <Trans>
-                      batchProgramVK, a registry immutable. It identifies the exact vote-batch guest program; a change
-                      to the guest changes it, and that takes a new registry.
+                      The fingerprint of the exact program that checks each batch (batchProgramVK, its program vk). It
+                      is fixed in the registry: a change to the program changes it, and that takes a new registry.
                     </Trans>
                   </Explain>
                 </span>
@@ -107,11 +115,11 @@ export function ProofPanel({ detail }: { detail: TransitionDetail }) {
             {
               label: (
                 <span className='inline-flex items-center gap-1'>
-                  <Trans>Setup root</Trans>
+                  {PIN_LABELS.rootCVadcopFinal}
                   <Explain>
                     <Trans>
-                      rootCVadcopFinal: the ZisK setup root, a registry immutable. It moves only with the ZisK proving
-                      setup, not with the guest.
+                      The fingerprint of the ZisK proving setup (rootCVadcopFinal), fixed in the registry. It changes
+                      only with a new ZisK setup, not with the program.
                     </Trans>
                   </Explain>
                 </span>
@@ -130,14 +138,16 @@ export function ProofPanel({ detail }: { detail: TransitionDetail }) {
                 <span className='inline-flex items-center gap-1'>
                   <Trans>Verifier</Trans>
                   <Explain>
-                    <Trans>The ZiskVerifier contract the registry calls; its address is a registry immutable.</Trans>
+                    <Trans>
+                      The contract that checks the proof (ZiskVerifier). Its address is fixed in the registry.
+                    </Trans>
                   </Explain>
                 </span>
               ),
               value: registry ? <Address value={registry.ziskVerifier} /> : pending,
             },
             {
-              label: t`Pins`,
+              label: t`Releases`,
               value: (
                 <Link to={paths.contracts()} className='text-silver hover:text-emerald'>
                   <Trans>Compare with the known releases</Trans>
@@ -147,11 +157,19 @@ export function ProofPanel({ detail }: { detail: TransitionDetail }) {
           ]}
         />
         <div className='flex flex-col gap-2'>
-          <p className='text-[13px] leading-relaxed text-ash'>
+          <p className='text-[13px] leading-relaxed text-silver'>
             <Trans>
-              The registry makes this call inside submitStateTransition and reverts with InvalidProof if it fails. The
-              verifier's public input is sha256(programVK ‖ publicValues ‖ rootCVadcopFinal), so a proof of another
-              program or another setup does not verify, and neither does a proof whose public values were changed.
+              Before accepting the batch, the registry asks the verifier contract to check the proof, and refuses the
+              batch if the check fails. The verifier folds the program, the setup and the public values into the one
+              value the proof must match, so a proof of another program or another setup does not verify, and neither
+              does a proof whose public values were changed:
+            </Trans>
+          </p>
+          <Formula block expr='publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)' />
+          <p className='text-[12px] leading-relaxed text-ash'>
+            <Trans>
+              The call, made inside <code>submitStateTransition</code>, which reverts with <code>InvalidProof</code>{' '}
+              when it fails:
             </Trans>
           </p>
           <CodeBlock
@@ -160,7 +178,7 @@ export function ProofPanel({ detail }: { detail: TransitionDetail }) {
           />
         </div>
         {tx?.proofBytes ? (
-          <Disclosure summary={t`proofBytes as sent`}>
+          <Disclosure summary={t`The proof as sent (proofBytes)`}>
             <CodeBlock code={tx.proofBytes} wrap label={t`Copy proofBytes`} maxHeight={240} />
           </Disclosure>
         ) : null}

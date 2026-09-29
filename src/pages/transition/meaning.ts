@@ -1,5 +1,6 @@
-// Page copy for the publics: the guest's fail bits and the registers, in the
-// words of davinci-zkvm `circuit/CIRCUIT.md` §3 and §11. The text is `msg`
+// Page copy for the publics: the guest's fail bits in the words of davinci-zkvm
+// `circuit/CIRCUIT.md` §11 (the technical layer under the plain `BATCH_FAIL_BITS`
+// descriptions), and notes on how the registers of §3 are encoded and read. The text is `msg`
 // descriptors, translated where it is rendered (`i18n._`).
 
 import type { MessageDescriptor } from '@lingui/core'
@@ -100,12 +101,12 @@ export const REGISTER_CHECK: Partial<Record<number, TransitionCheck['id']>> = {
 
 /** Extra notes on how a register is encoded or read, beyond the shared description. */
 export const REGISTER_NOTES: Partial<Record<number, MessageDescriptor>> = {
-  2: msg`Eight registers whose little-endian bytes, concatenated, are the raw root digest the registry stores.`,
-  10: msg`Same encoding as the root before.`,
-  20: msg`Read byte-reversed, as a big-endian integer: that is how the registry stores a census root.`,
-  28: msg`Zero when the guest failed its blob-count check.`,
-  37: msg`Registers 46 to 63 are zero too: a ZisK proof carries 64 registers and this guest writes 46.`,
-  42: msg`The guest cannot see the whole tree, so the registry pins this one to its own count.`,
+  2: msg`Spread over eight registers: their little-endian bytes, joined, are the fingerprint exactly as the registry stores it.`,
+  10: msg`Stored the same way as the state before.`,
+  20: msg`Read with its bytes reversed, as a big-endian integer: that is how the registry stores a census root.`,
+  28: msg`Zero when the proven program failed its blob-count check.`,
+  37: msg`Registers 46 to 63 are zero too: a ZisK proof carries 64 registers and this program writes 46.`,
+  42: msg`The proven program cannot see the whole state, so the registry pins this one to its own count.`,
 }
 
 export const READ_BY_LABEL: Record<
@@ -114,14 +115,14 @@ export const READ_BY_LABEL: Record<
 > = {
   contract: {
     label: msg`Registry`,
-    hint: msg`submitStateTransition reads it and refuses the batch if it is wrong.`,
+    hint: msg`The registry reads it and refuses the batch if it is wrong (in submitStateTransition).`,
   },
   fold: {
-    label: msg`Fold guest`,
-    hint: msg`In chained mode the aggregator guest checks it while folding batches into one proof.`,
+    label: msg`Fold program`,
+    hint: msg`In chained mode, the program that folds many batches into one proof (the aggregator guest) checks it.`,
   },
   diagnostic: {
     label: msg`Nobody`,
-    hint: msg`A diagnostic: nothing on-chain reads it.`,
+    hint: msg`Nothing on the chain reads it: it helps diagnose a failure.`,
   },
 }

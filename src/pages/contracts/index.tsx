@@ -1,9 +1,11 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, useLocation } from 'react-router'
 import { HashLink } from '~components/HashLink'
+import { InShort } from '~components/InShort'
+import { Term } from '~components/Term'
 import { useRuntimeConfig } from '~config/config-context'
 import { useDeploymentDetails } from '~data/deployment'
 import { useChain, useReleaseCheck } from '~data/hooks'
@@ -33,6 +35,8 @@ export function ContractsPage() {
   const match = useReleaseCheck()
   const details = useDeploymentDetails()
   const { hash } = useLocation()
+  // One switch for the page: every panel shows its mechanism, or none does.
+  const [technical, setTechnical] = useState(false)
 
   const rows = useMemo(() => contractRows(chain, details.data), [chain, details.data])
   const checks = useMemo(() => wiringChecks(chain, details.data, config.chainId), [chain, details.data, config.chainId])
@@ -52,13 +56,36 @@ export function ContractsPage() {
         size='page'
         label={t`Contracts`}
         title={t`Contracts and parameters`}
-        description={t`What this deployment is made of and what it is pinned to: the contract addresses, the parameters they hold and the verification keys every proof is checked against.`}
+        description={t`The contracts this deployment runs on, the values they were deployed with, and whether those values match the published release.`}
         actions={
           <Link to={paths.verifyDeployment()} className={buttonClasses('ghost', 'md')}>
             <Trans>Check it yourself</Trans>
           </Link>
         }
       />
+
+      <InShort>
+        <ul>
+          <li>
+            <Trans>
+              The <Term id='registry'>registry</Term> is the contract that holds every process. It accepts a batch of
+              votes or a result only with a valid proof.
+            </Trans>
+          </li>
+          <li>
+            <Trans>
+              It was deployed with fixed <Term id='fingerprint'>fingerprints</Term> of the programs allowed to make
+              those proofs, and of the setup they are made with: its pins. They cannot change afterwards.
+            </Trans>
+          </li>
+          <li>
+            <Trans>
+              This page compares the pins with the published releases, and checks that the contracts point at each other
+              as they should.
+            </Trans>
+          </li>
+        </ul>
+      </InShort>
 
       <Callout
         tone={verdict.tone}
@@ -78,8 +105,8 @@ export function ContractsPage() {
         <span data-testid='release-summary'>{i18n._(verdict.text)}</span>{' '}
         {match.release ? (
           <Trans>
-            Every transition and every sequencer-key tally on this registry is verified against the released guests, the
-            released ZisK setup and the released verifier code.
+            Every batch and every count decrypted by a sequencer on this registry is checked against the released
+            programs, the released proving setup and the released verifier code.
           </Trans>
         ) : null}
       </Callout>
@@ -96,13 +123,13 @@ export function ContractsPage() {
       </nav>
 
       <section id='addresses' className='scroll-mt-20'>
-        <AddressesPanel rows={rows} checks={checks} />
+        <AddressesPanel rows={rows} checks={checks} technical={technical} onTechnical={setTechnical} />
       </section>
       <section id='parameters' className='scroll-mt-20'>
-        <ParametersPanel chain={chain} details={details.data} />
+        <ParametersPanel chain={chain} details={details.data} technical={technical} onTechnical={setTechnical} />
       </section>
       <section id='release' className='scroll-mt-20'>
-        <ReleasePanel match={match} />
+        <ReleasePanel match={match} technical={technical} onTechnical={setTechnical} />
       </section>
       <section id='dkg' className='scroll-mt-20'>
         <DkgPanel
@@ -110,6 +137,8 @@ export function ContractsPage() {
           dkg={details.data?.dkg}
           loading={details.isLoading || !ready}
           error={details.error ? (details.error as Error).message : null}
+          technical={technical}
+          onTechnical={setTechnical}
         />
       </section>
     </Stack>

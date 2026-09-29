@@ -44,7 +44,7 @@ import { NodeBadges, SequencerCard } from './SequencerCard'
 
 const DAYS = 30
 
-/** One sequencer: what it settled and published on chain, and what its node reports when one is configured. */
+/** One sequencer: what it recorded and published on chain, and what its node reports when one is configured. */
 export function SequencerPage() {
   const { t } = useLingui()
   const { address: key } = useParams()
@@ -107,27 +107,27 @@ export function SequencerPage() {
           r ? (
             nResults > 0 ? (
               <Trans>
-                Settled <Plural value={nTransitions} one='# batch' other='# batches' /> with{' '}
+                Recorded <Plural value={nTransitions} one='# batch' other='# batches' /> with{' '}
                 <Plural value={nBallots} one='# ballot' other='# ballots' /> for{' '}
                 <Plural value={nProcesses} one='# process' other='# processes' />, and published the results of{' '}
                 <Plural value={nResults} one='# process' other='# processes' />.
               </Trans>
             ) : (
               <Trans>
-                Settled <Plural value={nTransitions} one='# batch' other='# batches' /> with{' '}
+                Recorded <Plural value={nTransitions} one='# batch' other='# batches' /> with{' '}
                 <Plural value={nBallots} one='# ballot' other='# ballots' /> for{' '}
                 <Plural value={nProcesses} one='# process' other='# processes' />.
               </Trans>
             )
           ) : node?.info.data?.observer ? (
             <Trans>
-              An observer: a configured sequencer node without a key. It follows every process and serves reads, but
-              never settles.
+              An observer: a configured sequencer node without a key. It follows every process and answers questions
+              about it, but never records a batch.
             </Trans>
           ) : address ? (
-            <Trans>A configured sequencer node whose account has not settled a batch nor published results yet.</Trans>
+            <Trans>A configured sequencer node whose account has not recorded a batch nor published results yet.</Trans>
           ) : (
-            <Trans>A configured sequencer node that has not said which account it settles from.</Trans>
+            <Trans>A configured sequencer node that has not said which account it sends batches from.</Trans>
           )
         }
         actions={node && r ? <NodeBadges node={node} /> : null}
@@ -136,12 +136,12 @@ export function SequencerPage() {
       {r ? (
         <>
           <StatRow>
-            <StatCell label={t`Transitions`} value={formatNumber(r.transitions)} mono hint={t`batches settled`} />
+            <StatCell label={t`Transitions`} value={formatNumber(r.transitions)} mono hint={t`batches recorded`} />
             <StatCell
               label={t`Ballots`}
               value={formatNumber(r.ballots)}
               mono
-              hint={t`${plural(overwrites, { one: 'including # overwrite', other: 'including # overwrites' })}`}
+              hint={t`${plural(overwrites, { one: 'including # changed vote', other: 'including # changed votes' })}`}
             />
             <StatCell label={t`Processes`} value={formatNumber(r.processes)} mono hint={t`with a batch or a result`} />
             <StatCell label={t`Blobs`} value={formatNumber(r.blobs)} mono hint={t`published with its batches`} />
@@ -245,15 +245,15 @@ function ActivityPanel({ days }: { days: ReturnType<typeof sequencerActivity> })
   const total = formatNumber(days.reduce((n, d) => n + d.ballots, 0))
   return (
     <Panel
-      title={t`Ballots it settled per day`}
+      title={t`Ballots it recorded per day`}
       label={t`Last ${DAYS} days, UTC`}
-      description={t`New votes and overwrites in the batches this account settled, by the day each batch landed.`}
+      description={t`New votes and changed votes in the batches this account recorded, by the day each batch landed.`}
       actions={<span className='font-mono text-[12px] text-ash tnum'>{t`${total} in total`}</span>}
     >
       {empty ? (
         <EmptyState
           compact
-          title={t`Nothing settled in the last ${DAYS} days`}
+          title={t`Nothing recorded in the last ${DAYS} days`}
           description={t`Its earlier batches are in the table below.`}
         />
       ) : (
@@ -262,7 +262,7 @@ function ActivityPanel({ days }: { days: ReturnType<typeof sequencerActivity> })
           height={180}
           series={[
             { key: 'newVoters', label: t`new voters`, color: CHART_COLORS.emerald },
-            { key: 'overwrites', label: t`overwrites`, color: CHART_COLORS.slate },
+            { key: 'overwrites', label: t`changed votes`, color: CHART_COLORS.slate },
           ]}
         />
       )}
@@ -303,11 +303,11 @@ function TransitionsPanel({ rows, processes }: { rows: TransitionRow[]; processe
             #{row.original.index}
           </Link>
         ),
-        meta: { width: '96px', headerTooltip: t`Position among the process’s transitions, from 0.` },
+        meta: { width: '96px', headerTooltip: t`The batch’s number within its process, from 0.` },
       },
       {
         id: 'time',
-        header: t`Settled`,
+        header: t`Recorded`,
         cell: ({ row }) => <Timestamp value={row.original.timestamp} className='text-[12px]' />,
         meta: { width: '120px' },
       },
@@ -315,7 +315,7 @@ function TransitionsPanel({ rows, processes }: { rows: TransitionRow[]; processe
         id: 'ballots',
         header: t`Ballots`,
         cell: ({ row }) => formatNumber(row.original.votes),
-        meta: { numeric: true, width: '84px', headerTooltip: t`New votes plus overwrites of an earlier vote.` },
+        meta: { numeric: true, width: '84px', headerTooltip: t`New votes plus votes that changed an earlier one.` },
       },
       {
         id: 'blobs',
@@ -345,9 +345,9 @@ function TransitionsPanel({ rows, processes }: { rows: TransitionRow[]; processe
   const count = rows.length
   return (
     <Panel
-      title={t`Transitions it settled`}
-      label={t`Settled batches`}
-      description={t`Newest first. Open one for its public values, its blobs and every check the registry ran.`}
+      title={t`Batches it recorded`}
+      label={t`State transitions`}
+      description={t`Newest first. Open one for what its proof says, the data it published and every check the registry made.`}
       actions={
         <span className='font-mono text-[12px] text-ash tnum'>
           <Plural value={count} one='# transition' other='# transitions' />
@@ -364,8 +364,8 @@ function TransitionsPanel({ rows, processes }: { rows: TransitionRow[]; processe
           empty={
             <EmptyState
               compact
-              title={t`No transition settled`}
-              description={t`This account has not settled a batch on this registry.`}
+              title={t`No batch recorded`}
+              description={t`This account has not recorded a batch on this registry.`}
             />
           }
         />
@@ -385,7 +385,7 @@ function ResultsPanel({ rows, processes }: { rows: SequencerResult[]; processes:
     <Panel
       title={t`Results it published`}
       label={t`Tallies`}
-      description={t`Each is a process’s final tally, proven and accepted by the registry.`}
+      description={t`Each is a process’s final count, proven and accepted by the registry.`}
       bodyClassName='p-0'
     >
       <ul className='divide-y divide-charcoal/60' data-testid='sequencer-results'>

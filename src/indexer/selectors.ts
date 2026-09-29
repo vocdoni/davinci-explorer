@@ -268,9 +268,13 @@ export interface TransitionCheck {
     | 'blob-hashes'
     | 'blobs-digest'
     | 'voters'
+  /** What is checked, as a plain statement. */
   label: string
   state: CheckState
+  /** What was compared, in plain words (the values, or why it is not decided yet). */
   detail: string
+  /** The rule as an expression, for `Formula`; never translated. */
+  formula?: string
 }
 
 export interface TransitionDetail {
@@ -285,8 +289,15 @@ export interface TransitionDetail {
   checks: TransitionCheck[]
 }
 
-function check(id: TransitionCheck['id'], label: string, ok: boolean | null, detail: string): TransitionCheck {
-  return { id, label, state: ok == null ? 'unknown' : ok ? 'pass' : 'fail', detail }
+function check(
+  id: TransitionCheck['id'],
+  label: string,
+  ok: boolean | null,
+  detail: string,
+  formula?: string
+): TransitionCheck {
+  const state = ok == null ? 'unknown' : ok ? 'pass' : 'fail'
+  return formula ? { id, label, state, detail, formula } : { id, label, state, detail }
 }
 
 /**
@@ -322,28 +333,37 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
   checks.push(
     check(
       'guest-ok',
-      t`The zkVM guest accepted the batch`,
+      t`The batch passed every check inside the proof`,
       publics ? publicsPassed(publics) : null,
-      publics ? t`ok = ${ok}, fail mask = ${failMask}` : t`Waiting for the calldata`
+      publics
+        ? publicsPassed(publics)
+          ? t`The proof reports that no check failed.`
+          : t`The proof reports a failed check.`
+        : t`Waiting for the transaction’s data.`,
+      publics ? `ok = ${ok}, fail_mask = ${failMask}` : undefined
     )
   )
   const previousIndex = previous?.index ?? 0
   checks.push(
     check(
       'root-continuity',
-      t`Starts from the previous root`,
+      t`It starts where the previous batch ended`,
       expectedBefore == null
         ? null
         : expectedBefore === tr.rootBefore && (!publics || publics.rootBefore === tr.rootBefore),
-      previous ? t`transition #${previousIndex} ended at this root` : t`the genesis root of the process`
+      previous
+        ? t`Batch #${previousIndex} ended at the state this one starts from.`
+        : t`The first batch starts from the election’s starting state.`,
+      previous ? `RootHashBefore = rootAfter(#${previousIndex})` : 'RootHashBefore = genesisRoot'
     )
   )
   checks.push(
     check(
       'root-after',
-      t`The proven root is the new root`,
+      t`The new state is the one that was proven`,
       publics ? publics.rootAfter === tr.rootAfter : null,
-      t`publics register 10..17 against the event`
+      t`The state the proof ends at, against the one the registry stored.`,
+      'RootHashAfter = newStateRoot'
     )
   )
   const census = p.state?.census
@@ -361,14 +381,16 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
         ? null
         : false
   }
+  const onchainCensus = census?.origin === 'onchain-dynamic'
   checks.push(
     check(
       'census-root',
-      t`Proven against the process census`,
+      t`The voters were checked against this election’s list`,
       censusOk,
-      census?.origin === 'onchain-dynamic'
-        ? t`On-chain census: the registry asked the census contract whether it held this root`
-        : t`publics register 20..27 against the census root`
+      onchainCensus
+        ? t`The explorer cannot redo this one: the registry asked the census contract when it recorded the batch.`
+        : t`The list the proof used, against the one the election accepts.`,
+      onchainCensus ? 'createdBlock ≤ getRootBlockNumber(CensusRoot) ≤ block' : 'CensusRoot = census.censusRoot'
     )
   )
   const occupiedExpected = previous ? previous.votersCount : 0
@@ -376,9 +398,10 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
   checks.push(
     check(
       'occupied-before',
-      t`Slots written before the batch match the registry`,
+      t`The number of earlier voters matches the registry`,
       publics ? publics.occupiedBefore === occupiedExpected : null,
-      t`occupied_before = ${occupiedBefore}, registry votersCount = ${occupiedExpected}`
+      t`Voters before this batch, as the proof and the registry count them.`,
+      `OccupiedBefore = ${occupiedBefore}, votersCount = ${occupiedExpected}`
     )
   )
   const newVoters = tr.newVoters
@@ -386,12 +409,13 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
   checks.push(
     check(
       'voters',
-      t`Vote counts match the event`,
+      t`The vote counts match what the registry recorded`,
       publics ? publics.voters - publics.overwrites === newVoters && publics.overwrites === overwrites : null,
       t`${plural(newVoters, { one: '# new voter', other: '# new voters' })}, ${plural(overwrites, {
-        one: '# overwrite',
-        other: '# overwrites',
-      })}`
+        one: '# changed vote',
+        other: '# changed votes',
+      })}.`,
+      'VotersCount − OverwrittenVotesCount = newVoters'
     )
   )
   // Null when the RPC left the field out: nothing to compare, not a mismatch.
@@ -400,27 +424,30 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
   checks.push(
     check(
       'blob-count',
-      t`One blob per published chunk`,
+      t`The transaction carries every data blob the proof counts`,
       hashes ? hashes.length === nBlobs && (!publics || publics.nBlobs === nBlobs) : null,
-      plural(nBlobs, { one: '# blob', other: '# blobs' })
+      t`${plural(nBlobs, { one: '# blob', other: '# blobs' })}.`,
+      'NBlobs = nBlobs = count(blobVersionedHashes)'
     )
   )
   checks.push(
     check(
       'blob-hashes',
-      t`Each commitment is the blob the transaction carries`,
+      t`The published data is the data this transaction carries`,
       tx && hashes && tx.commitments.length > 0
         ? tx.commitments.length === hashes.length && tx.commitments.every((c, i) => versionedHash(c) === hashes[i])
         : null,
-      t`versioned hash = 0x01 ‖ sha256(commitment)[1..]`
+      t`Each blob’s commitment in the call, against the blob hashes of the transaction.`,
+      'versionedHash = 0x01 ‖ sha256(commitment)[1..]'
     )
   )
   checks.push(
     check(
       'blobs-digest',
-      t`The proof commits to these blobs`,
+      t`The proof covers exactly this published data`,
       tx && publics && tx.commitments.length > 0 ? blobsDigest(tx.commitments, tx.ys) === publics.blobsDigest : null,
-      t`sha256(commitment ‖ evaluation …) against publics register 28..35`
+      t`One fingerprint over every blob, recomputed here, against the one in the proof.`,
+      'sha256(commitment₀ ‖ y₀ ‖ commitment₁ ‖ y₁ ‖ …) = BlobsDigest'
     )
   )
 

@@ -3,7 +3,7 @@ import { plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { SortingState } from '@tanstack/react-table'
 import { Link, useNavigate, useParams } from 'react-router'
-import { NativeAmount, Timestamp } from '~components'
+import { NativeAmount, Term, Timestamp } from '~components'
 import { useIndexer, useStore } from '~data/hooks'
 import { useSequencers } from '~data/queries'
 import { useMeasuredWidth } from '~hooks/use-measured-width'
@@ -47,7 +47,7 @@ export function SequencersPage() {
   return address ? <SequencerPage /> : <SequencerList />
 }
 
-/** Every account that settled transitions or published results, with what each configured node reports. */
+/** Every account that recorded batches or published results, with what each configured node reports. */
 function SequencerList() {
   const { t } = useLingui()
   const store = useStore()
@@ -88,8 +88,14 @@ function SequencerList() {
       <SectionHeader
         size='page'
         label={t`Sequencers`}
-        title={t`Who settles the votes`}
-        description={t`A sequencer collects the encrypted ballots, proves them in batches and records each batch on the registry, which checks the proof before accepting it. Anyone can run one: the registry takes a batch from any account, as long as its proof is valid.`}
+        title={t`Who records the votes`}
+        description={
+          <Trans>
+            A <Term id='sequencer'>sequencer</Term> collects the encrypted ballots, proves them in batches and records
+            each batch on the registry, which checks the proof before accepting it. Anyone can run one: the registry
+            takes a batch from any account, as long as its proof is valid.
+          </Trans>
+        }
       />
 
       <SettlementDetails />
@@ -111,14 +117,14 @@ function SequencerList() {
           value={formatNumber(totals.transitions)}
           mono
           loading={loading}
-          hint={t`batches settled`}
+          hint={t`batches recorded`}
         />
         <StatCell
           label={t`Ballots`}
           value={formatNumber(totals.ballots)}
           mono
           loading={loading}
-          hint={t`${plural(overwrites, { one: 'including # overwrite', other: 'including # overwrites' })}`}
+          hint={t`${plural(overwrites, { one: 'including # changed vote', other: 'including # changed votes' })}`}
         />
         <StatCell
           label={t`Fees paid`}
@@ -135,8 +141,8 @@ function SequencerList() {
           </h2>
           <p className='mt-1 text-[13px] leading-relaxed text-ash'>
             <Trans>
-              One row per account that settled a batch or published results on this registry, read from the chain, and
-              one per configured sequencer API whose account has not. Open one for its transitions and what its node
+              One row per account that recorded a batch or published results on this registry, read from the chain, and
+              one per configured sequencer API whose account has not. Open one for its batches and what its node
               reports.
             </Trans>
           </p>
@@ -152,8 +158,9 @@ function SequencerList() {
           <p className='border-t border-charcoal px-5 py-3 text-[12px] leading-relaxed text-ash'>
             <Trans>
               No sequencer API is configured, so everything here comes from the chain. A node’s API adds what only it
-              knows: whether it is online, its role and counters, a vote’s status before it settles, tracker proofs and
-              blobs the beacon has pruned. List node URLs in <code>SEQUENCER_URLS</code> to add them.
+              knows: whether it is online, its role and counters, a vote’s status before it is recorded, receipts for
+              votes (tracker proofs) and data the beacon no longer serves. List node URLs in <code>SEQUENCER_URLS</code>{' '}
+              to add them.
             </Trans>
           </p>
         ) : null}
@@ -254,28 +261,28 @@ function SequencerTable({ rows, loading, showNodes }: { rows: Row[]; loading: bo
         cell: ({ row }) => <NodeCell row={row.original} wrap={false} />,
         meta: {
           width: '170px',
-          headerTooltip: t`What a configured sequencer API reports: whether it answers, and whether it settles (signer) or only follows (observer).`,
+          headerTooltip: t`What a configured sequencer API reports: whether it answers, and whether it records batches (signer) or only follows (observer).`,
         },
       },
       num(
         'transitions',
         t`Transitions`,
         (r) => r.onchain?.transitions ?? 0,
-        t`State transitions it settled: each is one batch of ballots, proven and accepted by the registry.`
+        t`Batches of votes it recorded, each proven and accepted by the registry (state transitions).`
       ),
       num(
         'ballots',
         t`Ballots`,
         (r) => r.onchain?.ballots ?? 0,
-        t`Votes in those batches: new votes plus overwrites of an earlier vote.`
+        t`Votes in those batches: new votes plus votes that changed an earlier one.`
       ),
       num(
         'processes',
         t`Processes`,
         (r) => r.onchain?.processes ?? 0,
-        t`Processes it settled a batch or published results for.`
+        t`Processes it recorded a batch or published results for.`
       ),
-      num('blobs', t`Blobs`, (r) => r.onchain?.blobs ?? 0, t`The EIP-4844 blobs its transitions carried.`, '76px'),
+      num('blobs', t`Blobs`, (r) => r.onchain?.blobs ?? 0, t`Data blobs its batches published (EIP-4844).`, '76px'),
       {
         id: 'fees',
         header: t`Fees paid`,
@@ -291,7 +298,7 @@ function SequencerTable({ rows, loading, showNodes }: { rows: Row[]; loading: bo
           numeric: true,
           width: '140px',
           headerWrap: true,
-          headerTooltip: t`Execution and blob gas of its settlement and results transactions. Reverted transactions leave no registry event and are not counted.`,
+          headerTooltip: t`Execution and blob gas of the transactions that recorded its batches and results. Failed transactions leave no registry event and are not counted.`,
         },
       },
       num('results', t`Results`, (r) => r.onchain?.results ?? 0, t`Process results it published.`, '84px'),
@@ -310,7 +317,7 @@ function SequencerTable({ rows, loading, showNodes }: { rows: Row[]; loading: bo
             ariaLabel={t`Transitions per day over the last ${DAYS} days`}
           />
         ),
-        meta: { align: 'right', width: '112px', headerWrap: true, headerTooltip: t`Transitions settled per UTC day.` },
+        meta: { align: 'right', width: '112px', headerWrap: true, headerTooltip: t`Batches recorded per UTC day.` },
       },
     ]
   }, [t])
@@ -337,7 +344,7 @@ function NoSequencer() {
   return (
     <EmptyState
       title={t`No sequencer yet`}
-      description={t`Once a sequencer settles the first batch of a process, its account shows up here.`}
+      description={t`Once a sequencer records the first batch of a process, its account shows up here.`}
     />
   )
 }

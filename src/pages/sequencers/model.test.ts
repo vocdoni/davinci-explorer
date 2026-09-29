@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { i18n } from '@lingui/core'
 import { demoFixture } from '~fixtures/demo'
 import type { SequencerInfo, SequencerProcess } from '~protocol/sequencer-api'
 import type { SequencerState } from '~data/queries'
 import { sequencerRows } from '~indexer/selectors'
-import { KNOWN_RELEASES } from '~protocol/releases'
+import { KNOWN_RELEASES, PIN_LABELS } from '~protocol/releases'
 import { findSequencerEntry, infoChecks, nodeRelease, nodeStatus, sequencerEntries, syncState } from './model'
 
 const fixture = demoFixture()
@@ -114,13 +113,15 @@ describe('infoChecks', () => {
   it('passes for a node of this deployment', () => {
     const checks = infoChecks(info, store.chain)
     expect(checks.every((c) => c.state === 'pass')).toBe(true)
-    expect(checks.map((c) => i18n._(c.label))).toEqual([
+    // The pins are named as on every other page.
+    expect(checks.map((c) => c.label)).toEqual([
       'Chain id',
       'Registry',
-      'Ballot VK hash',
-      'Vote-batch program vk',
-      'Results program vk',
+      PIN_LABELS.ballotVKHash,
+      PIN_LABELS.batchProgramVK,
+      PIN_LABELS.resultsProgramVK,
     ])
+    expect(checks.map((c) => c.pin ?? null)).toEqual([null, null, 'ballotVKHash', 'batchProgramVK', 'resultsProgramVK'])
   })
 
   it('fails the fields of another deployment', () => {

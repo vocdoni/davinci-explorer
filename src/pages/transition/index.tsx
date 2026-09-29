@@ -2,7 +2,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, useParams } from 'react-router'
-import { HashLink, MissingEntity, ProcessIdLink } from '~components'
+import { HashLink, MissingEntity, ProcessIdLink, Term } from '~components'
 import { useChainNow, useTransition, useTransitions } from '~data/hooks'
 import { useTransitionBlobs } from '~data/queries'
 import { buttonClasses, ChevronLeftIcon, ChevronRightIcon, SectionHeader, Stack } from '~kit'
@@ -11,20 +11,20 @@ import { paths } from '~routes/paths'
 import { BlobsPanel } from './BlobsPanel'
 import { ProofPanel } from './ProofPanel'
 import { PublicsPanel } from './PublicsPanel'
-import { TransitionSummary } from './Summary'
+import { TransitionInShort, TransitionSummary } from './Summary'
 import { VerifyPanel } from './VerifyPanel'
 
 const SECTIONS: Array<[string, MessageDescriptor]> = [
-  ['publics', msg`Public values`],
-  ['blobs', msg`Blobs`],
-  ['proof', msg`Proof`],
-  ['verify', msg`Verify it yourself`],
+  ['publics', msg`What the proof says`],
+  ['blobs', msg`The published data`],
+  ['proof', msg`The proof`],
+  ['verify', msg`What the registry checked`],
 ]
 
 /**
- * One settled batch: its facts, the proof's public values, the blobs that
- * carry its data, the proof, and every check the registry ran with the
- * commands to rerun it.
+ * One settled batch: what it recorded in a few sentences, its facts, the
+ * proof's public values, the blobs that carry its data, the proof, and every
+ * check the registry ran with the commands to rerun it.
  */
 export function TransitionPage() {
   const { i18n, t } = useLingui()
@@ -65,8 +65,9 @@ export function TransitionPage() {
         title={t`Transition #${index}`}
         description={
           <Trans>
-            One batch of ballots for process <ProcessIdLink id={process.id} chars={8} />, proven by the zkVM and settled
-            on the registry: its public values, the blobs carrying its data and the checks the registry ran.
+            A <Term id='batch'>batch</Term> of votes for process <ProcessIdLink id={process.id} chars={8} />, proven and
+            recorded on the chain (a state transition). Below: what its proof says, the data it published, the proof
+            itself and every check the registry made before accepting it.
           </Trans>
         }
         actions={
@@ -76,6 +77,7 @@ export function TransitionPage() {
           </>
         }
       />
+      <TransitionInShort detail={detail} />
       <TransitionSummary detail={detail} blobs={blobs} now={now} total={all.length} />
       <nav aria-label={t`Sections`} className='-mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px]'>
         {SECTIONS.map(([id, label]) => (

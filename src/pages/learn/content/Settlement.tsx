@@ -1,138 +1,199 @@
 import { Trans, useLingui } from '@lingui/react/macro'
+import { Formula } from '~components/Formula'
+import { InShort } from '~components/InShort'
+import { NumberedList } from '~components/NumberedList'
 import { paths } from '~routes/paths'
 import type { LearnExamples } from '../examples'
-import { A, C, OL, P, Section, SeeIt, SimpleTable, Term, UL } from '../prose'
+import { A, C, Details, OL, P, Section, SeeIt, SimpleTable, Term, UL } from '../prose'
 
 export function Settlement({ ex }: { ex: LearnExamples }) {
   const { t } = useLingui()
   const active = ex.active
   return (
     <>
+      <InShort className='mb-8'>
+        <Trans>
+          The registry accepts a batch only if the process is open, the proof is valid and says every check passed, the
+          batch starts from the latest state, its voters were checked against the right census, the voter limit holds
+          and the published data matches the proof. If any check fails the transaction is refused and nothing changes.
+        </Trans>
+      </InShort>
+
       <Section id='the-call' title={t`The call`}>
         <P>
           <Trans>
-            A sequencer settles a batch with{' '}
-            <C>submitStateTransition(processId, publicValues, proofBytes, commitments, ys, kzgProofs)</C>, sent as a
-            blob transaction that carries exactly the transition’s blobs, in order. Anyone may send it; the checks below
-            decide whether it lands.
+            A sequencer sends a batch to the registry in one transaction, which also carries the batch’s blobs. Anyone
+            may send it; the checks below decide whether it is accepted (whether the batch settles).
           </Trans>
         </P>
+        <Details>
+          <Formula
+            block
+            expr='submitStateTransition(processId, publicValues, proofBytes, commitments, ys, kzgProofs)'
+            className='mb-2'
+          />
+          <P>
+            <Trans>It is sent as a blob transaction that carries exactly the transition’s blobs, in order.</Trans>
+          </P>
+        </Details>
       </Section>
 
       <Section id='the-checks-in-order' title={t`The checks, in order`}>
-        <OL>
-          <li>
-            <Trans>The process exists, is Ready and is inside its voting window.</Trans>
-          </li>
-          <li>
-            <Trans>
-              <C>publicValues</C> is 512 bytes, the guest’s <C>ok</C> is 1 and its <C>fail_mask</C> is 0.
-            </Trans>
-          </li>
-          <li>
-            <Trans>
-              The state root before the batch equals the process’s <C>latestStateRoot</C>. This is root continuity: a
-              batch built on an old root, such as the loser of a race, reverts here.
-            </Trans>
-          </li>
-          <li>
-            <Trans>
-              The census root matches. For origins 1, 2 and 4 it equals the stored root; for an on-chain census the
-              census contract’s <C>getRootBlockNumber(root)</C> must be non-zero, at most the current block and at least
-              the process’s creation block.
-            </Trans>
-          </li>
-          <li>
-            <Trans>
-              <C>occupied_before</C> equals <C>votersCount</C>, the number of distinct ballot slots written so far. The
-              guest cannot see the tree, so the registry pins it.
-            </Trans>
-          </li>
-          <li>
-            <Trans>
-              The batch does not take the process past its maximum number of voters:{' '}
-              <C>votersCount + votes − overwrites ≤ maxVoters</C>.
-            </Trans>
-          </li>
-          <li>
-            <Trans>
-              There is at least one blob, the three blob arrays have <C>n_blobs</C> entries each, the transaction
-              carries no blob past them, and <C>sha256(commitment₀ ‖ y₀ ‖ …)</C> equals the blob digest in the public
-              values.
-            </Trans>
-          </li>
-          <li>
-            <Trans>
-              The verifier accepts the PLONK proof:{' '}
-              <C>verifySnarkProof(batchProgramVK, rootCVadcopFinal, publicValues, proofBytes)</C>. It hashes the{' '}
-              <Term id='program-vk'>program vk</Term>, the public values and the setup root together, so a proof of
-              another program or made under another setup fails.
-            </Trans>
-          </li>
-          <li>
-            <Trans>
-              Every blob opens to its <C>y</C> at <C>z = sha256(process id ‖ root before ‖ commitment) mod r</C>,
-              checked with the point-evaluation precompile against the transaction’s blob hashes.
-            </Trans>
-          </li>
-        </OL>
-        <P>
-          <Trans>
-            On success <C>latestStateRoot</C> becomes the root after, <C>votersCount</C> grows by{' '}
-            <C>votes − overwrites</C>, <C>overwrittenVotesCount</C> by the overwrites and <C>batchNumber</C> by one, and
-            the registry emits <C>ProcessStateTransitioned</C>.
-          </Trans>
-        </P>
-      </Section>
-
-      <Section id='the-public-values-it-reads' title={t`The public values it reads`}>
-        <P>
-          <Trans>
-            The <Term id='public-values'>public values</Term> are the guest’s 64 output registers, each written as an
-            8-byte little-endian word. A 256-bit value spans 8 registers.
-          </Trans>
-        </P>
-        <SimpleTable
-          head={[t`Registers`, t`Value`]}
-          rows={[
-            ['0', <C key='ok'>ok</C>],
-            ['1', <C key='fm'>fail_mask</C>],
-            ['2–9', t`State root before`],
-            ['10–17', t`State root after`],
-            ['18', t`Votes in the batch`],
-            ['19', t`Overwrites among them`],
-            ['20–27', t`Census root`],
-            ['28–35', t`Blob digest`],
-            ['36', <C key='nb'>n_blobs</C>],
-            ['42', <C key='ob'>occupied_before</C>],
+        <NumberedList
+          className='my-4 [&_li]:text-[14px]'
+          items={[
+            <Trans key='1'>The process exists, is open and is inside its voting window.</Trans>,
+            <Trans key='2'>The proof’s public values have the right size and say every check passed.</Trans>,
+            <Trans key='3'>
+              The batch starts from the process’s latest state. A batch built on an older state, such as the loser of a
+              race between two sequencers, is refused here.
+            </Trans>,
+            <Trans key='4'>The voters were checked against a census the process accepts.</Trans>,
+            <Trans key='5'>
+              The number of voters before the batch matches the registry’s own count. The proof cannot see the whole
+              state, so the registry supplies it.
+            </Trans>,
+            <Trans key='6'>The batch does not take the process past its maximum number of voters.</Trans>,
+            <Trans key='7'>
+              The published data matches the proof: the right number of blobs, and a fingerprint of them equal to the
+              one in the proof.
+            </Trans>,
+            <Trans key='8'>
+              The proof itself is valid, and was made by the released batch program under the released proving setup.
+            </Trans>,
+            <Trans key='9'>Each blob really contains the data the proof computed.</Trans>,
           ]}
         />
+        <P>
+          <Trans>
+            When every check passes, the process moves to its new state, its counts of voters, changed votes and batches
+            go up, and the registry announces the new state in an event.
+          </Trans>
+        </P>
+        <Details summary={<Trans>The exact checks</Trans>}>
+          <OL>
+            <li>
+              <Trans>The process exists, is Ready and is inside its voting window.</Trans>
+            </li>
+            <li>
+              <Trans>
+                <C>publicValues</C> is 512 bytes, the guest’s <C>ok</C> is 1 and its <C>fail_mask</C> is 0.
+              </Trans>
+            </li>
+            <li>
+              <Trans>
+                The state root before the batch equals the process’s <C>latestStateRoot</C> (root continuity).
+              </Trans>
+            </li>
+            <li>
+              <Trans>
+                The census root matches. For origins 1, 2 and 4 it equals the stored root; for an on-chain census the
+                census contract’s <C>getRootBlockNumber(root)</C> must be non-zero, at most the current block and at
+                least the process’s creation block.
+              </Trans>
+            </li>
+            <li>
+              <Trans>
+                <C>occupied_before</C> equals <C>votersCount</C>, the number of distinct ballot slots written so far.
+                The guest cannot see the tree, so the registry pins it.
+              </Trans>
+            </li>
+            <li>
+              <Formula expr='votersCount + votes − overwrites ≤ maxVoters' />
+            </li>
+            <li>
+              <Trans>
+                There is at least one blob, the three blob arrays have <C>n_blobs</C> entries each, the transaction
+                carries no blob past them, and <Formula expr='sha256(commitment₀ ‖ y₀ ‖ …)' /> equals the blob digest in
+                the public values.
+              </Trans>
+            </li>
+            <li>
+              <Trans>
+                The verifier accepts the PLONK proof,{' '}
+                <Formula expr='verifySnarkProof(batchProgramVK, rootCVadcopFinal, publicValues, proofBytes)' />. It
+                hashes the <Term id='program-vk'>program vk</Term>, the public values and the setup root together,{' '}
+                <Formula expr='sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)' />, so a proof of another program or
+                made under another setup fails.
+              </Trans>
+            </li>
+            <li>
+              <Trans>
+                Every blob opens to its <Formula expr='y' /> at{' '}
+                <Formula expr='z = sha256(processId ‖ rootBefore ‖ commitment) mod r' />, checked with the
+                point-evaluation precompile against the transaction’s blob hashes.
+              </Trans>
+            </li>
+          </OL>
+          <P>
+            <Trans>
+              On success <C>latestStateRoot</C> becomes the root after, <C>votersCount</C> grows by{' '}
+              <Formula expr='votes − overwrites' />, <C>overwrittenVotesCount</C> by the overwrites and{' '}
+              <C>batchNumber</C> by one, and the registry emits <C>ProcessStateTransitioned</C>.
+            </Trans>
+          </P>
+        </Details>
+      </Section>
+
+      <Section id='the-public-values-it-reads' title={t`What the registry reads from the proof`}>
+        <P>
+          <Trans>
+            A proof makes a short list of numbers public, its <Term id='public-values'>public values</Term>. They say
+            whether every check passed and give the fingerprints of the state before and after, the number of votes and
+            of changed votes, the fingerprint of the census used, a fingerprint of the published data with the number of
+            blobs, and how many voters had voted before the batch.
+          </Trans>
+        </P>
+        <Details>
+          <P>
+            <Trans>
+              The public values are the guest’s 64 output registers, each written as an 8-byte little-endian word. A
+              256-bit value spans 8 registers.
+            </Trans>
+          </P>
+          <SimpleTable
+            head={[t`Registers`, t`Value`]}
+            rows={[
+              ['0', <C key='ok'>ok</C>],
+              ['1', <C key='fm'>fail_mask</C>],
+              ['2–9', t`State root before`],
+              ['10–17', t`State root after`],
+              ['18', t`Votes in the batch`],
+              ['19', t`Overwrites among them`],
+              ['20–27', t`Census root`],
+              ['28–35', t`Blob digest`],
+              ['36', <C key='nb'>n_blobs</C>],
+              ['42', <C key='ob'>occupied_before</C>],
+            ]}
+          />
+        </Details>
       </Section>
 
       <Section
         id='what-the-guest-proves-and-what-is-left-to-the-registry'
-        title={t`What the guest proves, and what is left to the registry`}
+        title={t`What the proof covers, and what the registry adds`}
       >
         <P>
           <Trans>
-            The guest proves a transition from whatever root and census it is given. The registry adds what only the
-            chain knows: the process’s last root, its census root, its count of voters, and every blob against its
-            versioned hash. Together they make each transition a valid step from the previous one.
+            The proof shows that a batch was processed correctly from whatever starting state and census it was given.
+            The registry adds what only the chain knows: the process’s latest state, its census, its count of voters,
+            and the fingerprints of the blobs the transaction carries. Together they make each batch a valid step from
+            the previous one.
           </Trans>
         </P>
         <UL>
           <li>
             <Trans>
-              The explorer recomputes most of these from public data: the guest’s verdict, root continuity, the census
-              root, <C>occupied_before</C>, the vote counts, the blob count, the versioned hashes and the blob digest.
-              It does not recompute the census root of an on-chain census (origin 3), and for an updated origin-2 census
-              it only checks the root against the roots it has seen.
+              The explorer recomputes most of these checks from public data: the proof’s verdict, the chain of states,
+              the census root, <C>occupied_before</C>, the vote counts, the blob count, the versioned hashes and the
+              blob digest. It does not recompute the census root of a census kept by a contract (origin 3), and for an
+              updated list (origin 2) it only checks the root against the roots it has seen.
             </Trans>
           </li>
           <li>
             <Trans>
-              The PLONK proof and the KZG openings are verified on chain; the explorer shows the program vk and setup
-              root they were checked against.
+              The proof itself and the blob openings (the PLONK proof and the KZG openings) are verified on chain; the
+              explorer shows the program fingerprint and the setup root they were checked against.
             </Trans>
           </li>
         </UL>

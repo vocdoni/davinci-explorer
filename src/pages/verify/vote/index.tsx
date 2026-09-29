@@ -3,6 +3,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, useSearchParams } from 'react-router'
 import { CodeBlock, Disclosure } from '~components/code'
 import { Formula } from '~components/Formula'
+import { Term } from '~components/Term'
 import { useRuntimeConfig } from '~config/config-context'
 import { useChain, useIndexer, useProcess, useTransition, type ProcessView } from '~data/hooks'
 import { useMetadataCheck, useTrackerProof, useTransitionBlobs, useVoteInclusion, useVoteStatus } from '~data/queries'
@@ -71,7 +72,7 @@ export function VerifyVotePage() {
         checks={
           <p className='rounded-md border border-dashed border-charcoal p-5 text-[14px] text-ash'>
             <Trans>
-              Enter your vote above. Five checks then run in your browser: the election, the batch that carried your
+              Enter your vote above. Five checks then run in your browser: the election, the batch that recorded your
               vote, that batch’s checks, the result and a sequencer’s receipt.
             </Trans>
           </p>
@@ -127,7 +128,7 @@ function VoteFrame({
         id='redo'
         n={3}
         title={t`Redo it yourself`}
-        description={t`The same checks from a terminal, without this site: Foundry’s cast, curl and an RPC node of your choice.`}
+        description={t`The same checks from a terminal, without this site. You need an RPC node of your choice, Foundry’s cast and curl.`}
       >
         {redo}
       </FlowSection>
@@ -166,8 +167,8 @@ function VoteChecks({ pid, voteId, choose }: { pid: string; voteId: bigint; choo
   const settled = settledOutcome(known, inclusion, view?.transitions.length ?? 0, reported)
   const checks = detail
     ? batchChecks(detail, {
-        onchain: t`The zkVM proof and the blob openings verified on-chain`,
-        onchainCensus: t`Proven against the census contract, which the registry asked at settlement`,
+        onchain: t`The proof and the published data were verified on the chain`,
+        onchainCensus: t`The registry asked the census contract about the list of voters`,
       })
     : null
   const batch = batchOutcome(settled, checks ? checks.map((c) => c.state) : null)
@@ -306,7 +307,7 @@ function VoteRedo({
             <p>
               <Trans>
                 Any RPC node of this chain gives the same answers. Use your own, or a provider you pick, rather than the
-                one this site reads from.
+                one this site reads from. The commands below read its address from <code>$RPC</code>.
               </Trans>
             </p>
           </Prose>
@@ -317,14 +318,14 @@ function VoteRedo({
   ]
   if (tx) {
     steps.push({
-      title: t`Read the batch that carried your vote`,
+      title: t`Read the batch that recorded your vote`,
       body: (
         <>
           <Prose>
             <p>
               <Trans>
-                The receipt shows the batch was accepted (status 1) and the new state root; the transaction lists the
-                hashes of the blobs that carry your vote id.
+                The receipt shows the batch was accepted (status 1) and the new state fingerprint (state root); the
+                transaction lists the fingerprints of the data blobs that carry your vote id (their versioned hashes).
               </Trans>
             </p>
           </Prose>
@@ -354,9 +355,9 @@ function VoteRedo({
         <Prose>
           <p>
             <Trans>
-              A sequencer node without a signing key runs as an observer: it downloads every batch’s data, rebuilds the
-              election’s state on your computer and checks each batch against the chain. Your vote id is then in your
-              own copy of the state.
+              Run your own copy of the sequencer software without a signing key, as an observer. It downloads every
+              batch’s data, rebuilds the election’s state on your computer and checks each batch against the chain. Your
+              vote id is then in your own copy of the state.
             </Trans>
           </p>
         </Prose>
@@ -390,12 +391,12 @@ function VoteProves({ keyMode }: { keyMode: KeyModeName | null }) {
       testId='vote-explainers'
       proves={[
         <Trans key='valid'>
-          Your ballot was accepted: its proof, its signature and your place in the census passed every check, and it was
-          added to the encrypted total.
+          Your ballot was accepted: its proof, its signature and your place on the list of voters passed every check,
+          and it was added to the encrypted total.
         </Trans>,
         <Trans key='kept'>
-          It is kept: its vote id is in the election’s state under a root the registry holds, and later batches can only
-          add to that state.
+          It is kept: your vote id is part of the election’s state that the registry recorded, and later batches can
+          only build on that state.
         </Trans>,
         <Trans key='counted'>
           Once the result is out, the result is the decryption of a total that includes your ballot.
@@ -427,23 +428,29 @@ function VoteProves({ keyMode }: { keyMode: KeyModeName | null }) {
         </Trans>,
       ]}
     >
-      <Disclosure summary={t`Why the ballot on-chain is not the one you sent`}>
+      <Disclosure summary={t`Why the ballot on the chain is not the one you sent`}>
         <Prose>
           <p>
             <Trans>
-              Before storing a ballot the sequencer re-encrypts it: it adds an encryption of zero under the election key
-              to every ciphertext. The vote inside does not change, and the zkVM proof checks that the stored ballot is
-              exactly that re-encryption of the ballot your proof covers.
+              Before storing your ballot, the sequencer re-encrypts it: the ballot looks completely different, but the
+              vote inside does not change. The proof checks that the stored ballot is exactly a{' '}
+              <Term id='re-encryption'>re-encryption</Term> of the ballot your own proof covers.
             </Trans>
           </p>
           <p>
             <Trans>
-              The randomness comes from a secret seed the sequencer draws for each batch and never writes down, and no
-              scalar is used twice. The prover deletes its copy only when it runs without DAVINCI_KEEP_INPUTS=1, an
-              operator setting nothing on chain shows. Without the batch seed, nobody can match the ciphertext you sent
-              to the stored one, so you cannot prove which ballot your slot holds. It does not hide whose slot it is:
-              the sequencer that sealed the batch knows the seed, and with a Merkle census the slot follows from your
+              That is what keeps your vote private even from you: nobody can match the ballot you sent to the stored
+              one, so you cannot prove which ballot your slot holds. It does not hide whose slot it is, though: the
+              sequencer that sealed the batch could match them, and with a Merkle census the slot follows from your
               address.
+            </Trans>
+          </p>
+          <p className='text-[13px]'>
+            <Trans>
+              Technically, the sequencer adds an encryption of zero under the election key to every encrypted value. The
+              randomness comes from a secret seed it draws for each batch and never writes down, and no scalar is used
+              twice. The prover deletes its copy of the seed only when it runs without{' '}
+              <code>DAVINCI_KEEP_INPUTS=1</code>, an operator setting nothing on the chain shows.
             </Trans>
           </p>
         </Prose>
@@ -453,22 +460,23 @@ function VoteProves({ keyMode }: { keyMode: KeyModeName | null }) {
           <p>
             <Trans>
               You can vote again while the process is open. The new ballot replaces the old one in your slot, and the
-              tally subtracts the old ballot and adds the new one.
+              count subtracts the old ballot and adds the new one.
             </Trans>
           </p>
           <p>
             <Trans>
-              Every batch also re-encrypts a random sample of occupied slots it did not write, and adds an encryption of
-              zero to the tally for each, which changes no count. In the blob an overwrite and a refresh look the same:
-              a slot whose ciphertexts changed. Nobody watching the chain can tell whether you voted again or your slot
-              was only refreshed, so a revote stays deniable.
+              Every batch also re-encrypts a random sample of other ballots it did not change (a{' '}
+              <Term id='silent-refresh'>silent refresh</Term>), and adds an encryption of zero to the count for each,
+              which changes nothing. In the published data a changed vote and a refresh look the same: a slot whose
+              encrypted values changed. Nobody watching the chain can tell whether you voted again or your slot was only
+              refreshed, so a revote stays deniable.
             </Trans>
           </p>
           <p>
             <Trans>
-              What stays public is how many overwrites each batch had, and the first time a slot appears, since
-              refreshes only touch slots already written. With a Merkle census the slot follows from your address, so
-              that you voted, and when, is public too.
+              What stays public is how many votes each batch changed, and the first time a slot appears, since refreshes
+              only touch slots already written. With a Merkle census the slot follows from your address, so that you
+              voted, and when, is public too.
             </Trans>
           </p>
           <p>
@@ -482,17 +490,19 @@ function VoteProves({ keyMode }: { keyMode: KeyModeName | null }) {
         <Prose>
           <p>
             <Trans>
-              The vote id comes from the app you voted with: 2^63 plus the low 63 bits of a Poseidon hash of the
-              election, your address and the ballot’s secret randomness k. A new ballot gets a new vote id.
+              Your voting app makes the <Term id='vote-id'>vote id</Term> from the election, your address and a secret
+              random number of your ballot (k), so a new ballot gets a new vote id. It is a Poseidon hash cut to 63
+              bits, in the upper half of the 64-bit range:
             </Trans>
           </p>
           <Formula block expr='voteId = 2^63 + (Poseidon(processId, address, k) mod 2^63)' />
           <p>
             <Trans>
-              The list of vote ids a batch added is read from its blobs. A blob from the beacon is tied to the
-              transaction by its versioned hash. One from a sequencer’s archive is tied by position only, not checked
-              against the transaction’s blob hashes; the settlement check says which. In a small batch the new vote ids
-              and the slots they wrote can still be matched, since both lists are public.
+              The list of vote ids a batch added is read from its published data (its blobs). A blob from the beacon is
+              tied to the transaction by its versioned hash. One from a sequencer’s archive is tied by position only,
+              not checked against the transaction’s blob hashes; the check “Your vote was recorded on the chain” says
+              which. In a small batch the new vote ids and the slots they wrote can still be matched, since both lists
+              are public.
             </Trans>
           </p>
         </Prose>

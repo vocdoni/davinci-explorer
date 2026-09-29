@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { demoDeploymentDetails } from '~data/deployment'
 import { demoFixture } from '~fixtures/demo'
 import { activateLocale } from '~i18n/i18n'
@@ -30,7 +30,7 @@ describe('ContractsPage', () => {
       expect(screen.getByTestId(`pin-${pin}`)).toHaveAttribute('data-state', 'pass')
     }
     expect(screen.getByTestId('pin-batchProgramVK')).toHaveTextContent(
-      'What a mismatch would mean. Transitions would be proven by a program other than the released vote-batch guest'
+      'What a mismatch would mean. Batches of votes would be checked by a program other than the released one'
     )
     await waitFor(() => expect(screen.getByTestId('contract-row-dkg-registry')).toHaveTextContent('0x'))
     expect(within(screen.getByTestId('wiring-checks')).getByText('7 of 7 consistent')).toBeInTheDocument()
@@ -47,6 +47,35 @@ describe('ContractsPage', () => {
     const date = formatDate(release.date)
     expect(date).not.toBe(release.date)
     expect(page).toHaveTextContent(date)
+  })
+
+  it('keeps the mechanism behind one switch that every panel shares', async () => {
+    renderWithProviders(<ContractsPage />, { route: '/contracts' })
+    await waitFor(() => expect(screen.getByTestId('contract-row-dkg-registry')).toHaveTextContent('0x'))
+    // Plain by default: no formulas, no contract calls.
+    expect(screen.getByTestId('wiring-checks').querySelector('[data-formula]')).toBeNull()
+    expect(screen.queryAllByTestId('param-detail')).toHaveLength(0)
+    expect(screen.getByTestId('contract-row-verifier')).not.toHaveTextContent('verifySnarkProof')
+
+    const switches = screen.getAllByRole('switch', { name: 'Technical details' })
+    expect(switches.length).toBeGreaterThanOrEqual(4)
+    fireEvent.click(switches[0]!)
+    for (const s of screen.getAllByRole('switch', { name: 'Technical details' })) {
+      expect(s).toHaveAttribute('aria-checked', 'true')
+    }
+    expect(screen.getByTestId('wiring-checks').querySelectorAll('[data-formula]')).toHaveLength(7)
+    expect(screen.getByTestId('contract-row-verifier')).toHaveTextContent('verifySnarkProof')
+    expect(within(screen.getByTestId('param-pidPrefix')).getByTestId('param-detail')).toHaveTextContent(
+      'keccak256(chainID ‖ registry)'
+    )
+    expect(screen.getByTestId('pin-batchProgramVK')).toHaveTextContent('registry.batchProgramVK()')
+  })
+
+  it('names each pin in plain words, with its identifier beside', () => {
+    renderWithProviders(<ContractsPage />, { route: '/contracts' })
+    const pin = screen.getByTestId('pin-batchProgramVK')
+    expect(pin).toHaveTextContent('Vote-batch program')
+    expect(within(pin).getByText('batchProgramVK').tagName).toBe('CODE')
   })
 
   it('sends the reader to the deployment check to verify it', () => {

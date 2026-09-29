@@ -30,23 +30,30 @@ const allPins = {
 }
 
 describe('the explanations', () => {
-  it('explain every pin in whole sentences, with the code names kept', () => {
+  it('explain every pin in whole sentences, plain first, with the code names kept below', () => {
     for (const pin of PIN_NAMES) {
       const d = PIN_DETAILS[pin]
-      for (const text of [d.what, d.why, d.mismatch].map((m) => i18n._(m))) {
+      for (const text of [d.what, d.why, d.detail, d.mismatch].map((m) => i18n._(m))) {
         expect(text.length).toBeGreaterThan(20)
         expect(text.trim().endsWith('.')).toBe(true)
       }
       // The mismatch stands alone after "It differs." or "What a mismatch would mean."
       expect(i18n._(d.mismatch)).toMatch(/^[A-Z]/)
+      // The plain layer names no code; the technical one does, in backticks or as a formula.
+      expect(i18n._(d.what)).not.toMatch(/`|‖/)
+      expect(i18n._(d.detail).split('`').length % 2).toBe(1)
     }
-    expect(i18n._(PIN_DETAILS.batchProgramVK.why)).toContain('submitStateTransition')
+    expect(i18n._(PIN_DETAILS.batchProgramVK.detail)).toContain('submitStateTransition')
+    expect(PIN_DETAILS.rootCVadcopFinal.formula).toBe(
+      'publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)'
+    )
     expect(PIN_DETAILS.ziskVerifierCodeHash.source).toBe('keccak256(eth_getCode(ziskVerifier))')
   })
 
   it('keep the DKG verifier contract names out of the translated text', () => {
     expect(DKG_VERIFIER_LABELS.finalize.name).toBe('FinalizeVerifier')
-    expect(i18n._(DKG_VERIFIER_LABELS.finalize.role)).toContain('finalizeEpoch')
+    expect(i18n._(DKG_VERIFIER_LABELS.finalize.role)).not.toContain('finalizeEpoch')
+    expect(i18n._(DKG_VERIFIER_LABELS.finalize.detail)).toContain('finalizeEpoch')
   })
 })
 
@@ -135,9 +142,17 @@ describe('wiringChecks', () => {
     expect(checks.map((c) => c.state)).toEqual(checks.map(() => 'pass'))
     expect(checks).toHaveLength(7)
     const detail = Object.fromEntries(checks.map((c) => [c.id, i18n._(c.detail)]))
-    expect(detail['chain-id']).toBe(`registry chainID() = ${chain.chainId}, configured chain ${chain.chainId}`)
-    expect(detail['pid-prefix']).toMatch(/^on chain 0x[0-9a-f]{8}, recomputed 0x[0-9a-f]{8}$/)
-    expect(detail['dkg-chain']).toBe(`CHAIN_ID() = ${chain.chainId}, configured chain ${chain.chainId}`)
+    expect(detail['chain-id']).toBe(
+      `The registry says chain ${chain.chainId}; this explorer is set up for chain ${chain.chainId}.`
+    )
+    expect(detail['pid-prefix']).toMatch(/: on chain 0x[0-9a-f]{8}, recomputed 0x[0-9a-f]{8}\.$/)
+    expect(detail['dkg-chain']).toBe(
+      `The DKG manager says chain ${chain.chainId}; this explorer is set up for chain ${chain.chainId}.`
+    )
+    // The exact relation is code, beside the plain label.
+    const formula = Object.fromEntries(checks.map((c) => [c.id, c.formula]))
+    expect(formula['pid-prefix']).toBe('keccak256(chainID ‖ registry)')
+    expect(formula['verifier-root']).toBe('verifier.getRootCVadcopFinal() = registry.rootCVadcopFinal()')
   })
 
   it('flags a verifier on another setup and an adapter of another registry', () => {
@@ -165,7 +180,7 @@ describe('wiringChecks', () => {
     const checks = wiringChecks({ ...chain, registry: null }, undefined, chain.chainId)
     expect(checks.every((c) => c.state === 'unknown')).toBe(true)
     const detail = Object.fromEntries(checks.map((c) => [c.id, i18n._(c.detail)]))
-    expect(detail['chain-id']).toBe(`registry chainID() = …, configured chain ${chain.chainId}`)
+    expect(detail['chain-id']).toBe(`The registry says chain …; this explorer is set up for chain ${chain.chainId}.`)
     expect(detail['pid-prefix']).toBe('not read yet')
   })
 })

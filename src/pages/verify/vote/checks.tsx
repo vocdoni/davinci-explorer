@@ -6,7 +6,7 @@ import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { Link } from 'react-router'
-import { CheckMark, ProcessPhaseBadge, TxLink, UnverifiedMark } from '~components'
+import { CheckMark, ProcessPhaseBadge, Term, TxLink, UnverifiedMark } from '~components'
 import { CodeBlock, Disclosure } from '~components/code'
 import { Formula } from '~components/Formula'
 import type { ProcessView } from '~data/hooks'
@@ -56,25 +56,25 @@ function MetadataLine({ view, metadata }: { view: ProcessView; metadata: Metadat
         {metadata.status === 'matches' ? (
           changed ? (
             <Trans>
-              Its description is the one the organizer committed on-chain, but the organizer changed it while voting was
-              open: if you voted before the change, you voted under the previous version.
+              Its description is the one the organizer recorded on the chain, but the organizer changed it while voting
+              was open: if you voted before the change, you voted under the previous version.
             </Trans>
           ) : (
-            <Trans>Its description (title, question and options) is the one the organizer committed on-chain.</Trans>
+            <Trans>Its description (title, question and options) is the one the organizer recorded on the chain.</Trans>
           )
         ) : metadata.status === 'differs' ? (
           <Trans>
-            Its description does not match the one the organizer committed on-chain, so its title and option names may
-            not be what you were shown.
+            Its description does not match the one the organizer recorded on the chain, so its title and option names
+            may not be what you were shown.
           </Trans>
         ) : metadata.status === 'unreachable' ? (
           <Trans>
-            Its description could not be downloaded, so it was not compared with the one committed on-chain.
+            Its description could not be downloaded, so it was not compared with the one recorded on the chain.
           </Trans>
         ) : metadata.status === 'not-browsable' ? (
           <Trans>Its description is at an address a browser cannot fetch, so it was not checked here.</Trans>
         ) : (
-          <Trans>Checking its description against the one committed on-chain…</Trans>
+          <Trans>Checking its description against the one recorded on the chain…</Trans>
         )}
       </span>
     </p>
@@ -142,8 +142,8 @@ export function ElectionCard({
         <>
           <p>
             <Trans>
-              Every election is created on the ProcessRegistry contract, which keeps its rules, its census, its
-              encryption key and its current state. The explorer reads it with <code>getProcess</code>.
+              Every election lives on the registry contract (<code>ProcessRegistry</code>), which keeps its rules, its
+              list of voters, its key and its current state. The explorer reads it with <code>getProcess</code>.
             </Trans>
           </p>
           <HowPart title={t`Values read`}>
@@ -169,9 +169,9 @@ export function ElectionCard({
             <RedoCommand
               note={
                 <Trans>
-                  The second command prints the registry’s record of the election. The first hashes what its
-                  description’s address serves, which must equal the record’s fourteenth value (sha256sum leaves out the
-                  0x).
+                  The second command prints the registry’s record of the election. The first takes the fingerprint
+                  (SHA-256) of what the description’s address serves, which must equal the record’s fourteenth value (
+                  <code>sha256sum</code> leaves out the 0x).
                 </Trans>
               }
               code={metadataHashCommand({ registry, processId: pid, uri })}
@@ -235,7 +235,7 @@ export function SettledCard({
             <Link to={paths.transition(pid, found.index)} className={LINK}>
               batch #{index}
             </Link>
-            , settled on {when}.
+            , recorded on {when}.
           </Trans>
         ) : found ? (
           <Trans>
@@ -253,25 +253,25 @@ export function SettledCard({
     case 'no-batches':
       summary = (
         <Trans>
-          No batch of votes has been settled for this election yet. Your vote shows up here once its batch is.
+          No batch of votes has been recorded for this election yet. Your vote shows up here once its batch is.
         </Trans>
       )
       break
     case 'reading':
-      summary = <Trans>Looking through the election’s settled batches for your vote id, newest first…</Trans>
+      summary = <Trans>Looking through the election’s recorded batches for your vote id, newest first…</Trans>
       break
     case 'waiting':
       summary = (
         <Trans>
           A sequencer has your vote and is working on the batch that carries it. It shows up here once that batch is
-          settled on-chain.
+          recorded on the chain.
         </Trans>
       )
       break
     case 'refused':
       summary = (
         <Trans>
-          A sequencer refused this vote, so it will not be settled. The reason is below; you can vote again while the
+          A sequencer refused this vote, so it will not be recorded. The reason is below; you can vote again while the
           election is open.
         </Trans>
       )
@@ -280,16 +280,16 @@ export function SettledCard({
       summary = (
         <Trans>
           The data of this election’s batches is no longer available, so the explorer cannot look for your vote id in
-          it. The tracker proof below does not need that data.
+          it. The sequencer’s receipt below does not need that data.
         </Trans>
       )
       break
     case 'not-found':
       summary = (
         <Trans>
-          Your vote id is not in any of the <Plural value={searched} one='# settled batch' other='# settled batches' />{' '}
-          of this election. It may still be waiting at a sequencer, it may belong to another election, or the id may
-          have a typo.
+          Your vote id is not in any of the{' '}
+          <Plural value={searched} one='# recorded batch' other='# recorded batches' /> of this election. It may still
+          be waiting at a sequencer, it may belong to another election, or the id may have a typo.
         </Trans>
       )
       break
@@ -299,7 +299,7 @@ export function SettledCard({
     <CheckCard
       id='settled'
       status={settled.status}
-      title={t`Your vote was settled on-chain`}
+      title={t`Your vote was recorded on the chain`}
       statusLabel={
         settled.reason === 'not-found'
           ? t`Not found`
@@ -314,10 +314,10 @@ export function SettledCard({
         <>
           <p>
             <Trans>
-              Every batch of votes a sequencer settles publishes the vote ids it added, in data attached to its
-              transaction (EIP-4844 blobs). The explorer downloads this election’s batches, newest first, and looks for
-              your vote id. Being listed means the batch put the vote id into the election’s state, and the zkVM proof
-              the registry verified covers that.
+              Every batch a sequencer records publishes the vote ids it added, in data attached to its transaction
+              (EIP-4844 <Term id='blob'>blobs</Term>). The explorer downloads this election’s batches, newest first, and
+              looks for your vote id. Being listed means the batch put your vote id into the election’s state, and the
+              proof the registry checked covers that.
             </Trans>
           </p>
           {found ? (
@@ -327,7 +327,7 @@ export function SettledCard({
                   { label: t`Batch`, value: batchLink },
                   { label: t`Block`, value: <BlockCell block={found.block} /> },
                   { label: t`Transaction`, value: found.tx ? <TxLink hash={found.tx} chars={8} /> : '—' },
-                  { label: t`State root after`, value: <Hash value={found.rootAfter} chars={10} /> },
+                  { label: t`State after (state root)`, value: <Hash value={found.rootAfter} chars={10} /> },
                   {
                     label: t`Batch size`,
                     value: (
@@ -364,8 +364,8 @@ export function SettledCard({
             <HowPart title={t`What the sequencers say`}>
               <p>
                 <Trans>
-                  Before a vote is settled, only a sequencer knows where it stands: queued, in a batch being proved, or
-                  settled.
+                  Before a vote is recorded, only a sequencer knows where it stands: queued, in a batch being proved, or
+                  recorded.
                 </Trans>
               </p>
               <SequencerStatus statuses={statuses} />
@@ -384,8 +384,8 @@ export function SettledCard({
             <RedoCommand
               note={
                 <Trans>
-                  The transaction lists one versioned hash per blob; a beacon node serves the blob with that hash for
-                  about two weeks after the block.
+                  The transaction lists one fingerprint (versioned hash) per blob; a beacon node serves the blob with
+                  that hash for about two weeks after the block.
                 </Trans>
               }
               code={`cast tx ${found.tx} blobVersionedHashes --rpc-url $RPC`}
@@ -450,7 +450,7 @@ export function BatchCard({
       summary={
         !found ? (
           status === 'pending' ? (
-            <Trans>This check runs once your vote is found in a settled batch.</Trans>
+            <Trans>This check runs once your vote is found in a recorded batch.</Trans>
           ) : (
             <Trans>There is no batch to check.</Trans>
           )
@@ -459,7 +459,7 @@ export function BatchCard({
             <Link to={paths.transition(pid, found.index)} className={LINK}>
               Batch #{index}
             </Link>{' '}
-            passed all {total} checks the registry makes before it accepts a batch of votes, including its zkVM proof.
+            passed all {total} checks the registry makes before it accepts a batch of votes, the proof itself included.
           </Trans>
         ) : status === 'fail' ? (
           <Trans>
@@ -483,10 +483,11 @@ export function BatchCard({
           <>
             <p>
               <Trans>
-                Before it accepts a batch, the registry checks that the zkVM guest accepted every ballot in it, that it
-                starts from the election’s current state, that its voters were in the census, that its counts add up and
-                that its blobs are the ones the proof covers; then it verifies the proof itself. A single failure would
-                have undone the whole transaction. The explorer recomputes each check from public data.
+                Before accepting a batch, the registry checks that every ballot in it passed the checks inside the
+                proof, that it starts from the election’s current state, that its voters were on the list, that its
+                counts add up and that its published data is the data the proof covers; then it checks the proof itself.
+                A single failure would have undone the whole transaction. The explorer redoes each check from public
+                data.
               </Trans>
             </p>
             {checks ? (
@@ -510,7 +511,7 @@ export function BatchCard({
             </p>
             {found.tx ? (
               <RedoCommand
-                note={<Trans>A settled batch’s transaction succeeded: the receipt says status 1.</Trans>}
+                note={<Trans>A recorded batch’s transaction went through: the receipt says status 1.</Trans>}
                 code={`cast receipt ${found.tx} --rpc-url $RPC`}
               />
             ) : null}
@@ -553,9 +554,9 @@ export function ResultCard({
       summary={
         reason === 'blocked' ? (
           status === 'pending' ? (
-            <Trans>This check runs once your vote is found in a settled batch.</Trans>
+            <Trans>This check runs once your vote is found in a recorded batch.</Trans>
           ) : (
-            <Trans>There is no settled vote to follow into the result.</Trans>
+            <Trans>There is no recorded vote to follow into the result.</Trans>
           )
         ) : reason === 'canceled' ? (
           <Trans>The election was canceled, so no result will be published.</Trans>
@@ -571,14 +572,14 @@ export function ResultCard({
               <Link to={to} className={LINK}>
                 The result
               </Link>
-              , published on {when}, counts every settled batch, yours included.
+              , published on {when}, counts every recorded batch, yours included.
             </Trans>
           ) : (
             <Trans>
               <Link to={to} className={LINK}>
                 The result
               </Link>{' '}
-              counts every settled batch, yours included.
+              counts every recorded batch, yours included.
             </Trans>
           )
         ) : status === 'fail' ? (
@@ -618,8 +619,9 @@ export function ResultCard({
                 <span>
                   <Plural
                     value={later}
-                    one='Your batch and the # batch after it chain up to the final state root'
-                    other='Your batch and the # batches after it chain up to the final state root'
+                    _0='Your batch is the last one: the final state is the one it ended at'
+                    one='From your batch to the final state, the # batch after it starts where yours ended'
+                    other='From your batch to the final state, each of the # batches after it starts where the last one ended'
                   />
                 </span>
               </li>
@@ -696,35 +698,37 @@ export function TrackerCard({
       summary={
         reason === 'no-sequencer' ? (
           <Trans>
-            Not available: no sequencer is configured in this explorer. The on-chain check above does the same job from
-            the batches’ data.
+            Not available: no sequencer is configured in this explorer. The check above, on the chain, does the same job
+            from the batches’ data.
           </Trans>
         ) : reason === 'loading' ? (
-          <Trans>Asking the sequencers for the tracker proof of your vote…</Trans>
+          <Trans>Asking the sequencers for a receipt of your vote…</Trans>
         ) : reason === 'unavailable' ? (
           <Trans>The sequencers could not be asked: {error}</Trans>
         ) : reason === 'unknown-vote' ? (
           <Trans>
-            No configured sequencer has this vote in its copy of the state yet. They do once its batch settles.
+            No configured sequencer has this vote in its copy of the state yet. They do once its batch is recorded.
           </Trans>
         ) : data?.otherVote ? (
-          <Trans>The sequencer answered with a proof for another vote, so it proves nothing about yours.</Trans>
+          <Trans>The sequencer answered with a receipt for another vote, so it proves nothing about yours.</Trans>
         ) : status === 'pass' ? (
           at ? (
             <Trans>
-              Your browser rebuilt the sequencer’s proof: your vote id is in the state the election had after{' '}
+              Your browser checked the sequencer’s receipt: your vote id is in the state the election had after{' '}
               <Link to={paths.transition(pid, at.index)} className={LINK}>
                 batch #{atIndex}
               </Link>
-              , a state the registry holds.
+              , a state the registry recorded.
             </Trans>
           ) : (
-            <Trans>Your browser rebuilt the sequencer’s proof: your vote id is in a state the registry holds.</Trans>
+            <Trans>
+              Your browser checked the sequencer’s receipt: your vote id is in a state the registry recorded.
+            </Trans>
           )
         ) : data && !data.valid ? (
-          <Trans>The sequencer’s proof does not add up: its path does not reach the root it names.</Trans>
+          <Trans>The sequencer’s receipt does not add up: its path does not reach the state it names.</Trans>
         ) : (
-          <Trans>The sequencer’s proof leads to a state the registry never held for this election.</Trans>
+          <Trans>The sequencer’s receipt leads to a state the registry never recorded for this election.</Trans>
         )
       }
       how={
@@ -732,9 +736,9 @@ export function TrackerCard({
           <>
             <p>
               <Trans>
-                A tracker proof is a sequencer’s receipt: the path from your vote id to the root of the election’s state
-                tree. Your browser hashes the path up and checks that it ends at a root the registry has held. The leaf
-                and each level are:
+                The receipt (a <Term id='tracker-proof'>tracker proof</Term>) is a path from your vote id up to the
+                fingerprint of the election’s whole state (the root of its state tree). Your browser hashes the path up
+                and checks that it ends at a fingerprint the registry has recorded. The leaf and each level are:
               </Trans>
             </p>
             <div className='flex flex-col gap-1.5'>
@@ -744,7 +748,7 @@ export function TrackerCard({
             <p>
               <Trans>
                 The 32 zero bytes are the leaf’s value, and the bits of the vote id say which side each level takes, the
-                lowest bit at the root. A settled vote has such a path because the batch that carried it added its vote
+                lowest bit at the root. A recorded vote has such a path because the batch that carried it added its vote
                 id to the tree.
               </Trans>
             </p>
@@ -800,7 +804,7 @@ export function TrackerCard({
                     ]}
                   />
                 </HowPart>
-                <Disclosure summary={t`The proof as served`}>
+                <Disclosure summary={t`The receipt as served`}>
                   <CodeBlock
                     code={JSON.stringify(
                       {
@@ -819,8 +823,8 @@ export function TrackerCard({
                 <RedoCommand
                   note={
                     <Trans>
-                      The route is in the sequencer’s README; davinci_client::api::verify_tracker checks the answer
-                      against the registry.
+                      The route is in the sequencer’s README; <code>davinci_client::api::verify_tracker</code> checks
+                      the answer against the registry.
                     </Trans>
                   }
                   code={`curl ${data.sequencer.upstream.replace(/\/+$/, '')}/votes/${pid}/voteId/${formatVoteId(voteId)}/proof`}

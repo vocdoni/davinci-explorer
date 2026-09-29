@@ -16,7 +16,7 @@ function errorText(err: Error): { tone: BadgeTone; label: MessageDescriptor; tex
       : {
           tone: 'neutral',
           label: msg`Unknown vote`,
-          text: msg`This node has no such vote: it never received it and has not seen its vote id settle.`,
+          text: msg`This node has no such vote: it never received it, and has not seen a batch record its vote id.`,
         }
   }
   return { tone: 'warn', label: msg`Unreachable`, text: err.message }

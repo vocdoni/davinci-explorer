@@ -28,7 +28,7 @@ export function TxPage() {
       <Stack data-testid='page-tx'>
         <SectionHeader size='page' label={t`Transaction`} title={t`Looking for this transaction`} />
         <p className='text-[13px] text-ash'>
-          <Trans>The indexer is still reading the registry's events.</Trans>
+          <Trans>The explorer is still reading the registry’s history.</Trans>
         </p>
         <SkeletonText lines={4} className='max-w-2xl' />
       </Stack>
@@ -47,7 +47,7 @@ export function TxPage() {
         <>
           <EmptyState
             title={t`No event of this registry came from this transaction`}
-            description={t`The explorer knows the transactions that emitted a ProcessRegistry event here: a process creation, a settled transition, results, a decryption request, or a status, census, duration or max-voters change. This one did none of them, or it happened on another network or registry.`}
+            description={t`The explorer knows the transactions that changed something on this registry: creating a process, recording a batch of votes, publishing results, asking for a decryption, or changing a process’s status, list of voters, duration or voter limit (each emits a ProcessRegistry event). This one did none of them, or it happened on another network or registry.`}
             action={
               external ? (
                 <ButtonLink href={external} external variant='ghost' size='sm'>
@@ -58,11 +58,11 @@ export function TxPage() {
           />
           <Callout title={t`Looking for something else?`}>
             <Trans>
-              A vote id goes to the{' '}
+              To check a vote, take its vote id to the{' '}
               <Link to={paths.votes()} className='text-silver hover:text-emerald'>
-                vote lookup
+                vote check
               </Link>
-              ; the registry and verifier are on the{' '}
+              ; the registry and the verifier are on the{' '}
               <Link to={paths.contracts()} className='text-silver hover:text-emerald'>
                 contracts page
               </Link>
@@ -73,7 +73,7 @@ export function TxPage() {
       ) : (
         <EmptyState
           title={t`A transaction hash is 0x followed by 64 hex digits`}
-          description={t`Paste the hash of a settlement, a process creation or a results transaction.`}
+          description={t`Paste the hash of a transaction that recorded a batch of votes, created a process or published results.`}
         />
       )}
     </Stack>

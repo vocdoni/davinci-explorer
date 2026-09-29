@@ -49,29 +49,29 @@ Use the plain word on first mention and the technical one in brackets when
 the reader will meet it again (in a label, a command, a table header). After
 that either is fine, but stay consistent within a page.
 
-| Technical | Plain |
-|---|---|
-| hash, digest, root (of a tree) | fingerprint |
-| state root | the fingerprint of the process's state |
-| genesis root | the starting fingerprint, before any vote |
-| state transition | a batch of votes; "settled batch" once on chain |
-| settle, settlement | record on chain (the registry accepts the batch) |
-| registry, `ProcessRegistry` | the registry, the voting contract |
-| ciphertext, plaintext | encrypted value, decrypted value |
-| accumulator | the encrypted running total |
-| tally | the count, the results |
-| census | the list of voters |
-| census root | the fingerprint of the list of voters |
-| overwrite | a changed vote (a revote) |
-| silent refresh | a fresh encryption of a ballot nobody changed |
-| key mode | who holds the key |
-| election key, encryption key | the key voters encrypt their ballots to |
-| program vk | the program's fingerprint |
-| public values, publics | what the proof makes public |
-| fail mask | the failed checks (zero when none failed) |
-| guest | the proven program |
-| blob | data blob (published data) |
-| on-chain | on the chain, recorded on chain |
+| Technical                      | Plain                                            |
+| ------------------------------ | ------------------------------------------------ |
+| hash, digest, root (of a tree) | fingerprint                                      |
+| state root                     | the fingerprint of the process's state           |
+| genesis root                   | the starting fingerprint, before any vote        |
+| state transition               | a batch of votes; "settled batch" once on chain  |
+| settle, settlement             | record on chain (the registry accepts the batch) |
+| registry, `ProcessRegistry`    | the registry, the voting contract                |
+| ciphertext, plaintext          | encrypted value, decrypted value                 |
+| accumulator                    | the encrypted running total                      |
+| tally                          | the count, the results                           |
+| census                         | the list of voters                               |
+| census root                    | the fingerprint of the list of voters            |
+| overwrite                      | a changed vote (a revote)                        |
+| silent refresh                 | a fresh encryption of a ballot nobody changed    |
+| key mode                       | who holds the key                                |
+| election key, encryption key   | the key voters encrypt their ballots to          |
+| program vk                     | the program's fingerprint                        |
+| public values, publics         | what the proof makes public                      |
+| fail mask                      | the failed checks (zero when none failed)        |
+| guest                          | the proven program                               |
+| blob                           | data blob (published data)                       |
+| on-chain                       | on the chain, recorded on chain                  |
 
 Names from the code (`votersCount`, `submitStateTransition`, `leaf 0x04`)
 stay exact and in `<code>`, and are never translated.
@@ -83,7 +83,7 @@ stay exact and in `<code>`, and are never translated.
 ```tsx
 import { Term } from '~components/Term'
 
-<Trans>
+;<Trans>
   Your <Term id='vote-id'>vote id</Term> is in the blob of this batch.
 </Trans>
 ```
@@ -100,13 +100,17 @@ entry. `id` is typed (`GlossaryId`), so a missing entry fails the type check.
   its `short` (one or two plain sentences, under 200 characters, what a
   reader needs in the middle of a sentence) and its `text` (the full
   definition, mechanism included).
+- `short` names no cryptography: no curve, hash or proof-system names, no
+  register numbers. Those go in `text`, and an expression the definition
+  refers to goes in `formula`, which the glossary page shows with `Formula`
+  under the text. The glossary page shows `short` first and `text` below it,
+  so `text` continues the definition rather than repeating it.
 
 ### `Formula`: an expression
 
 ```tsx
 <Trans>
-  The digest is <Formula expr='sha256(commitment₀ ‖ y₀ ‖ …)' />, and a vote id is at least{' '}
-  <Formula expr='2^63' />.
+  The digest is <Formula expr='sha256(commitment₀ ‖ y₀ ‖ …)' />, and a vote id is at least <Formula expr='2^63' />.
 </Trans>
 ```
 
@@ -131,12 +135,12 @@ long panel. It carries the accent bar, not a status colour.
 
 ### Callout tones
 
-| Tone | Meaning | Icon |
-|---|---|---|
-| `info` | context the reader should know | info |
-| `ok` | something was verified | check |
+| Tone           | Meaning                             | Icon    |
+| -------------- | ----------------------------------- | ------- |
+| `info`         | context the reader should know      | info    |
+| `ok`           | something was verified              | check   |
 | `warn` (amber) | attention: nothing failed, but look | warning |
-| `danger` | a failure | cross |
+| `danger`       | a failure                           | cross   |
 
 Checks use the same four states: `CheckMark` (`pass`, `fail`, `unknown`) and
 the Verify flows' `VerifyStatus` (`pass`, `fail`, `attention`, `pending`,
@@ -153,6 +157,22 @@ the Verify flows' `VerifyStatus` (`pass`, `fail`, `attention`, `pending`,
 - An `Explain` glyph (the info icon) holds one or two sentences about a
   label; longer text belongs in a disclosure.
 - `NumberedList` for steps and rules in order.
+- A page where every row has a mechanism (the contracts page: each
+  contract, each pinned value, each wiring check) uses one "Technical
+  details" switch, repeated on each panel and shared by all of them, rather
+  than a disclosure per row. A table of such rows keeps the layers apart in
+  its fields: `what` and `why` plain, `detail` technical, `formula` code
+  (`PIN_DETAILS` in `pages/contracts/model.ts`).
+
+### The guide
+
+The Learn topics are written for a curious voter first. Each topic opens
+with an `InShort`; each section explains in plain paragraphs what happens and
+why, and ends with `Details` (`pages/learn/prose.tsx`, a "Technical details"
+disclosure) holding the mechanism for an auditor: contract calls, curve and
+proof-system names, register numbers, formulas. Every fact the plain text
+leaves out is in the section's `Details`. A walk-through numbers its sections
+(`<Section n={1}>`), and the topic list numbers them the same way.
 
 ## Before and after
 

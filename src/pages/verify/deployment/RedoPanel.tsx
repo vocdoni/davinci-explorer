@@ -63,6 +63,12 @@ export function RedoPanel({ chain, rpc, match }: { chain: ChainMeta; rpc: string
               ]}
             />
           </div>
+          <p className='mt-2 text-[14px] leading-relaxed text-silver'>
+            <Trans>
+              One script builds the contracts from their published source and checks that the code at these addresses is
+              that build, and that the registry holds the values you give it.
+            </Trans>
+          </p>
           <p className='mt-2 text-[13px] leading-relaxed text-ash'>
             <Trans>
               davinci-contracts ships <Code>script/verify_deployment.py</Code>. It needs Python 3, Foundry’s{' '}
@@ -149,6 +155,12 @@ export function RedoPanel({ chain, rpc, match }: { chain: ChainMeta; rpc: string
               <Trans>Rebuild the pins from source</Trans>
             </span>
           </Heading>
+          <p className='mt-2 text-[14px] leading-relaxed text-silver'>
+            <Trans>
+              Each value the release check compares can be rebuilt from the published source, so you need not take this
+              explorer’s release table on trust.
+            </Trans>
+          </p>
           <dl className='mt-3 flex flex-col gap-4 text-[13px] leading-relaxed'>
             <div>
               <dt className='font-medium text-silver'>

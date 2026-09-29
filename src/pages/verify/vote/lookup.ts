@@ -52,7 +52,7 @@ export function statusStep(status: VoteStatus): number {
 export const STATUS_INFO: Record<VoteStatus, { label: MessageDescriptor; description: MessageDescriptor }> = {
   pending: {
     label: msg`Pending`,
-    description: msg`Queued at the sequencer, waiting for a batch. A batch that loses a settlement race puts its votes back here.`,
+    description: msg`Queued at the sequencer, waiting for a batch. A batch that another node beats to the chain puts its votes back here.`,
   },
   aggregated: {
     label: msg`Aggregated`,
@@ -60,14 +60,14 @@ export const STATUS_INFO: Record<VoteStatus, { label: MessageDescriptor; descrip
   },
   processed: {
     label: msg`Processed`,
-    description: msg`The batch proof is checked; the settlement is on its way.`,
+    description: msg`The batch’s proof is ready; the transaction that records it is on its way.`,
   },
   settled: {
     label: msg`Settled`,
-    description: msg`On-chain: the batch carrying the vote settled on the registry.`,
+    description: msg`On the chain: the batch carrying the vote is recorded on the registry.`,
   },
   error: {
     label: msg`Error`,
-    description: msg`The vote will not settle: a guest check failed, the process closed, the settlement reverted or the prover refused the batch.`,
+    description: msg`The vote will not be recorded: a check inside the proof failed, the process closed, the transaction failed or the prover refused the batch.`,
   },
 }

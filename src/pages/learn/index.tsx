@@ -50,19 +50,28 @@ function TopicNav({ current }: { current: string }) {
         <div key={g.id}>
           <div className='label-caps mb-1.5 text-[11px] text-pewter'>{i18n._(g.label)}</div>
           <ul className='flex flex-col'>
-            {TOPICS.filter((topic) => topic.group === g.id).map((topic) => (
+            {TOPICS.filter((topic) => topic.group === g.id).map((topic, i) => (
               <li key={topic.slug}>
                 <Link
                   to={paths.learn(topic.slug)}
                   aria-current={topic.slug === current ? 'page' : undefined}
                   className={cn(
-                    '-ml-3 block border-l-2 py-1 pl-3 text-[13px] transition-colors',
+                    '-ml-3 flex gap-2 border-l-2 py-1 pl-3 text-[13px] leading-snug transition-colors',
                     topic.slug === current
                       ? 'border-emerald text-emerald'
                       : 'border-transparent text-ash hover:border-charcoal hover:text-ghost'
                   )}
                 >
-                  {i18n._(topic.title)}
+                  {/* The walk-through reads in order; the reference does not. */}
+                  {g.id === 'protocol' ? (
+                    <span
+                      aria-hidden='true'
+                      className='w-3 shrink-0 text-right font-mono text-[11px] leading-[1.45] opacity-70'
+                    >
+                      {i + 1}
+                    </span>
+                  ) : null}
+                  <span className='min-w-0'>{i18n._(topic.title)}</span>
                 </Link>
               </li>
             ))}

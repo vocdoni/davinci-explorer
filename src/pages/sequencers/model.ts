@@ -2,13 +2,12 @@
 // selectors) matched with the configured sequencer APIs, and whether a node's
 // /info describes this deployment.
 
-import type { MessageDescriptor } from '@lingui/core'
-import { msg } from '@lingui/core/macro'
+import { t } from '@lingui/core/macro'
 import type { Address, Hex } from 'viem'
 import type { SequencerState } from '~data/queries'
 import type { CheckState, SequencerRow } from '~indexer/selectors'
 import type { ChainMeta } from '~indexer/types'
-import { KNOWN_RELEASES, type KnownRelease } from '~protocol/releases'
+import { KNOWN_RELEASES, PIN_LABELS, type KnownRelease, type PinName } from '~protocol/releases'
 import type { SequencerInfo, SequencerProcess } from '~protocol/sequencer-api'
 
 /** One sequencer: an account the chain knows, a configured node, or both. */
@@ -88,20 +87,28 @@ export function nodeRelease(info: SequencerInfo, releases: KnownRelease[] = KNOW
 
 export interface InfoCheck {
   id: string
-  /** Render with `i18n._`. */
-  label: MessageDescriptor
+  /** In the active language: build the checks while rendering. Pins use `PIN_LABELS`, as every page does. */
+  label: string
+  /** The pin's own name (`batchProgramVK`), for a pin. */
+  pin?: PinName
   state: CheckState
 }
 
-/** Whether the node's /info names this chain, this registry and the registry's pins. */
+/** Whether the node's /info names this chain, this registry and the registry's pins. Call it while rendering. */
 export function infoChecks(info: SequencerInfo, chain: ChainMeta): InfoCheck[] {
   const r = chain.registry
+  const pin = (id: string, name: PinName, reported: string | null | undefined, onchain: string | null | undefined) => ({
+    id,
+    label: PIN_LABELS[name],
+    pin: name,
+    state: same(reported, onchain),
+  })
   return [
-    { id: 'chain', label: msg`Chain id`, state: info.chainId === chain.chainId ? 'pass' : 'fail' },
-    { id: 'registry', label: msg`Registry`, state: same(info.processRegistry, chain.registryAddress) },
-    { id: 'ballot-vk', label: msg`Ballot VK hash`, state: same(info.ballotVkHash, r?.ballotVKHash) },
-    { id: 'batch-vk', label: msg`Vote-batch program vk`, state: same(info.batchProgramVk, r?.batchProgramVK) },
-    { id: 'results-vk', label: msg`Results program vk`, state: same(info.resultsProgramVk, r?.resultsProgramVK) },
+    { id: 'chain', label: t`Chain id`, state: info.chainId === chain.chainId ? 'pass' : 'fail' },
+    { id: 'registry', label: t`Registry`, state: same(info.processRegistry, chain.registryAddress) },
+    pin('ballot-vk', 'ballotVKHash', info.ballotVkHash, r?.ballotVKHash),
+    pin('batch-vk', 'batchProgramVK', info.batchProgramVk, r?.batchProgramVK),
+    pin('results-vk', 'resultsProgramVK', info.resultsProgramVk, r?.resultsProgramVK),
   ]
 }
 

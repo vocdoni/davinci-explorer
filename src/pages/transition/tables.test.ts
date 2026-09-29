@@ -36,10 +36,16 @@ describe('checkCopy', () => {
   it('says what the registry enforced and how to recheck it, for every check', () => {
     for (const id of CHECK_ORDER) {
       const copy = checkCopy(id, 'merkle-static')
+      expect(i18n._(copy.meaning).length).toBeGreaterThan(40)
       expect(i18n._(copy.enforced).length).toBeGreaterThan(40)
       expect(i18n._(copy.recheck).length).toBeGreaterThan(20)
+      // Expressions live in the formula fields, never in the translated text.
+      for (const text of [copy.meaning, copy.enforced, copy.recheck].map((d) => i18n._(d))) {
+        expect(text).not.toMatch(/\|\||‖|sha256\(/)
+      }
     }
-    expect(i18n._(ONCHAIN_LABELS.plonk)).toBe('The PLONK proof verifies under the pinned keys')
+    expect(checkCopy('blobs-digest', null).formula).toContain('sha256(')
+    expect(i18n._(ONCHAIN_LABELS.plonk)).toBe('The proof itself is valid')
   })
 
   it('asks the census contract for an on-chain census', () => {

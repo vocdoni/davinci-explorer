@@ -2,7 +2,17 @@ import type { ReactNode } from 'react'
 import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
-import { Explain, NativeAmount, ProcessIdLink, ProcessPhaseBadge, Timestamp, TxLink } from '~components'
+import {
+  Explain,
+  HashLink,
+  InShort,
+  NativeAmount,
+  ProcessIdLink,
+  ProcessPhaseBadge,
+  Term,
+  Timestamp,
+  TxLink,
+} from '~components'
 import type { DecodedTransitionBlobs } from '~data/queries'
 import type { TransitionDetail } from '~indexer/selectors'
 import { processPhase } from '~indexer/selectors'
@@ -85,7 +95,7 @@ export function TransitionSummary({
     {
       label: (
         <Label
-          explain={t`Transitions are numbered from 0 in the order they settled, as the sequencer API numbers them.`}
+          explain={t`Batches are numbered from 0 in the order they were recorded, as the sequencer API numbers them.`}
         >
           {t`Position`}
         </Label>
@@ -109,23 +119,23 @@ export function TransitionSummary({
     {
       label: (
         <Label
-          explain={t`Settlement is permissionless: any sequencer may send a proven batch, and the registry checks it the same way whoever sends it.`}
+          explain={t`Anyone may send a proven batch, and the registry checks it the same way whoever sends it. The account links to everything it recorded.`}
         >
-          {t`Settled by`}
+          {t`Sent by`}
         </Label>
       ),
       value: <Address value={tr.sender} to={paths.sequencer(tr.sender)} />,
     },
     {
-      label: <Label explain={t`The status the settlement transaction ended with.`}>{t`Status`}</Label>,
+      label: <Label explain={t`Whether the transaction that recorded the batch went through.`}>{t`Status`}</Label>,
       value: tx ? (tx.status === 'success' ? t`Success` : t`Reverted`) : pending,
     },
     {
       label: (
         <Label
-          explain={t`The state tree's root before this batch: the process root the registry held, which the proof had to start from.`}
+          explain={t`The fingerprint of the election’s state before this batch (its state root). The batch had to start from the one the registry held.`}
         >
-          {t`Root before`}
+          {t`State before`}
         </Label>
       ),
       value: <Hash value={tr.rootBefore} chars={10} />,
@@ -133,9 +143,9 @@ export function TransitionSummary({
     {
       label: (
         <Label
-          explain={t`The root after this batch. The registry stored it as the process root; the next transition starts here.`}
+          explain={t`The fingerprint of the state after this batch. The registry stored it, and the next batch starts from it.`}
         >
-          {t`Root after`}
+          {t`State after`}
         </Label>
       ),
       value: <Hash value={tr.rootAfter} chars={10} />,
@@ -143,27 +153,31 @@ export function TransitionSummary({
     {
       label: (
         <Label
-          explain={t`New voters wrote a slot for the first time; overwrites replaced an earlier vote of the same voter. A first write is public, since refreshes only touch occupied slots; which occupied slots were overwritten and which were only refreshed is not.`}
+          explain={t`A new voter voted for the first time; a changed vote (an overwrite) replaced a voter’s earlier vote. A first vote is public, since refreshes only touch slots already written; which of those were changed and which only refreshed is not.`}
         >
           {t`Votes`}
         </Label>
       ),
       value: t`${plural(newVoters, { one: '# new voter', other: '# new voters' })} · ${plural(overwrites, {
-        one: '# overwrite',
-        other: '# overwrites',
-      })}`,
-    },
-    {
-      label: <Label explain={t`The process counters the registry emitted after this batch.`}>{t`Totals after`}</Label>,
-      value: t`${plural(voters, { one: '# voter', other: '# voters' })} · ${plural(overwritten, {
-        one: '# overwrite',
-        other: '# overwrites',
+        one: '# changed vote',
+        other: '# changed votes',
       })}`,
     },
     {
       label: (
         <Label
-          explain={t`EIP-4844 blobs attached to the transaction. They carry the data to rebuild the state and cost blob gas, not calldata.`}
+          explain={t`The election’s counts after this batch, as the registry recorded them.`}
+        >{t`Totals after`}</Label>
+      ),
+      value: t`${plural(voters, { one: '# voter', other: '# voters' })} · ${plural(overwritten, {
+        one: '# changed vote',
+        other: '# changed votes',
+      })}`,
+    },
+    {
+      label: (
+        <Label
+          explain={t`Data blobs attached to the transaction (EIP-4844). They carry what anyone needs to rebuild the state, and are paid for in blob gas rather than as call data.`}
         >
           {t`Blobs`}
         </Label>
@@ -173,7 +187,7 @@ export function TransitionSummary({
     },
     {
       label: (
-        <Label explain={t`Execution gas: the PLONK verification, the checks and the storage writes.`}>
+        <Label explain={t`Execution gas: checking the proof, the other checks and the storage writes.`}>
           {t`Gas used`}
         </Label>
       ),
@@ -181,7 +195,7 @@ export function TransitionSummary({
       mono: true,
     },
     {
-      label: <Label explain={t`Execution fee plus blob fee, paid by the sender.`}>{t`Fee`}</Label>,
+      label: <Label explain={t`What the sender paid: the execution fee plus the blob fee.`}>{t`Fee`}</Label>,
       value: tx ? <NativeAmount wei={tx.fee} /> : pending,
       hint:
         execFee != null ? (
@@ -199,7 +213,7 @@ export function TransitionSummary({
     {
       label: (
         <Label
-          explain={t`submitStateTransition calldata: the process id, 512 bytes of public values, the 768-byte proof and one commitment, evaluation and KZG proof per blob.`}
+          explain={t`What the transaction sent to the registry (submitStateTransition): the process id, 512 bytes of public values, the 768-byte proof, and per blob a commitment, an evaluation and a KZG proof.`}
         >
           {t`Calldata`}
         </Label>
@@ -219,23 +233,79 @@ export function TransitionSummary({
       <p className='text-[13px] text-silver'>
         <Plural value={ballots} one='# ballot' other='# ballots' /> ·{' '}
         <Plural value={nBlobs} one='# blob' other='# blobs' /> ·{' '}
-        <a href='#verify' className={`${tone} hover:underline`}>
+        <HashLink id='verify' className={`${tone} hover:underline`}>
           <Trans>
             {passedText}/{checksText} checks passed
           </Trans>
-        </a>{' '}
+        </HashLink>{' '}
         · <BlobsLine blobs={blobs} />
       </p>
       <KeyValue items={items} columns={2} className='mt-3' />
       <p className='mt-3 text-[12px] text-ash'>
         <Trans>
-          All transitions of this process are on its{' '}
+          Every batch of this election is on its{' '}
           <Link to={paths.process(process.id, 'transitions')} className='text-silver hover:text-emerald'>
             transitions tab
           </Link>
-          , with the chain of roots from genesis.
+          , each starting where the one before ended.
         </Trans>
       </p>
     </Card>
+  )
+}
+
+/** The batch in a few plain sentences: what it recorded, whether it passed, where its data is. */
+export function TransitionInShort({ detail }: { detail: TransitionDetail }) {
+  const { transition: tr, row, checks } = detail
+  const failed = checks.filter((c) => c.state === 'fail').length
+  const passed = checks.filter((c) => c.state === 'pass').length
+  const total = checks.length
+  const index = tr.index
+  const newVoters = tr.newVoters
+  const overwrites = tr.overwrites
+  const nBlobs = tr.nBlobs
+  return (
+    <InShort>
+      <ul data-testid='transition-in-short'>
+        <li>
+          {overwrites > 0 ? (
+            <Trans>
+              Batch #{index} recorded <Plural value={row.votes} one='# vote' other='# votes' /> for this election:{' '}
+              <Plural value={newVoters} one='# new voter' other='# new voters' /> and{' '}
+              <Plural value={overwrites} one='# changed vote' other='# changed votes' />.
+            </Trans>
+          ) : (
+            <Trans>
+              Batch #{index} recorded <Plural value={row.votes} one='# vote' other='# votes' /> for this election, all
+              from new voters.
+            </Trans>
+          )}
+        </li>
+        <li>
+          {failed > 0 ? (
+            <Trans>
+              <Plural value={failed} one='# check fails' other='# checks fail' /> here: compare the values under “What
+              the registry checked”.
+            </Trans>
+          ) : passed === total ? (
+            <Trans>
+              The registry accepted it after checking its proof, and the {total} checks the explorer can redo pass here
+              too.
+            </Trans>
+          ) : (
+            <Trans>
+              The registry accepted it after checking its proof. {passed} of the {total} checks the explorer can redo
+              pass here; the rest wait for data, or only the chain could decide them.
+            </Trans>
+          )}
+        </li>
+        <li>
+          <Trans>
+            Its data is published in <Plural value={nBlobs} one='# blob' other='# blobs' />, so anyone can rebuild the
+            election’s <Term id='state-root'>state</Term> from it without trusting whoever sent it.
+          </Trans>
+        </li>
+      </ul>
+    </InShort>
   )
 }

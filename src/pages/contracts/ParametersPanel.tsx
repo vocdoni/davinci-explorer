@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { Formula } from '~components/Formula'
+import { RichText } from '~components/RichText'
 import { useNetworkStats } from '~data/hooks'
 import type { DeploymentDetails } from '~data/deployment'
 import type { ChainMeta } from '~indexer/types'
@@ -7,20 +9,37 @@ import { Address, Hash, Panel, Skeleton, Toggle } from '~kit'
 import { formatNumber } from '~lib/format'
 import { PIN_LABELS } from '~protocol/releases'
 import { PIN_DETAILS } from './model'
-import { Code } from './parts'
+import { Code, TechnicalToggle } from './parts'
 
 interface Param {
   id: string
   title: string
-  /** How the value is read: code, never translated. */
+  /** How the value is read: code, never translated, shown with `Formula`. */
   source: string
   value: ReactNode
+  /** What it is, in everyday words. */
   what: ReactNode
+  /** Why it matters, in everyday words. */
   why: ReactNode
+  /** The mechanism and the exact names, shown with the technical details. */
+  detail?: ReactNode
+  /** The relation `detail` refers to. Code, never translated. */
+  formula?: string
   hint?: ReactNode
 }
 
-export function ParametersPanel({ chain, details }: { chain: ChainMeta; details: DeploymentDetails | undefined }) {
+export function ParametersPanel({
+  chain,
+  details,
+  technical = false,
+  onTechnical,
+}: {
+  chain: ChainMeta
+  details: DeploymentDetails | undefined
+  /** Show each value's mechanism. */
+  technical?: boolean
+  onTechnical?: (on: boolean) => void
+}) {
   const { i18n, t } = useLingui()
   const [full, setFull] = useState(false)
   const stats = useNetworkStats()
@@ -36,6 +55,8 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
     value: hash(r?.[id]),
     what: i18n._(PIN_DETAILS[id].what),
     why: i18n._(PIN_DETAILS[id].why),
+    detail: <RichText text={i18n._(PIN_DETAILS[id].detail)} />,
+    formula: PIN_DETAILS[id].formula,
   })
   const indexed = formatNumber(stats.processes)
 
@@ -47,10 +68,16 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
     {
       id: 'ziskVerifier',
       title: t`Proof verifier`,
-      source: 'registry ziskVerifier()',
+      source: 'registry.ziskVerifier()',
       value: r ? <Address value={r.ziskVerifier} chars={6} /> : loading,
-      what: t`The ZisK PLONK verifier contract the registry calls. It is fixed at deployment.`,
-      why: t`Every transition and every sequencer-key tally is accepted or refused by this contract, so its code has to be the released one (next row).`,
+      what: t`The contract the registry asks whether a proof is valid. It is fixed when the registry is deployed.`,
+      why: t`Every batch and every count decrypted by a sequencer is accepted or refused by this contract, so its code has to be the released one (next row).`,
+      detail: (
+        <Trans>
+          The ZisK PLONK verifier. The registry calls its <Code>verifySnarkProof</Code> with the program vk, the setup
+          root, the public values and the proof.
+        </Trans>
+      ),
     },
     {
       id: 'ziskVerifierCodeHash',
@@ -59,48 +86,53 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
       value: r ? hash(r.ziskVerifierCodeHash) : loading,
       what: i18n._(PIN_DETAILS.ziskVerifierCodeHash.what),
       why: i18n._(PIN_DETAILS.ziskVerifierCodeHash.why),
+      detail: <RichText text={i18n._(PIN_DETAILS.ziskVerifierCodeHash.detail)} />,
     },
     {
       id: 'verifierRootC',
-      title: t`Verifier’s own setup root`,
-      source: 'verifier getRootCVadcopFinal()',
+      title: t`Setup the verifier was built for`,
+      source: 'verifier.getRootCVadcopFinal()',
       value: details ? hash(details.verifierRootC) : loading,
-      what: t`The setup root compiled into the verifier contract.`,
-      why: t`A sequencer refuses to start unless the verifier answers with the pinned root, so the registry’s copy and the verifier’s must agree.`,
+      what: t`The proving setup compiled into the verifier contract.`,
+      why: t`It must be the same as the registry’s own copy (the proving setup above): a sequencer refuses to start otherwise.`,
+      detail: (
+        <Trans>
+          A sequencer checks at boot that it equals the registry’s <Code>rootCVadcopFinal</Code>.
+        </Trans>
+      ),
     },
     {
       id: 'chainID',
       title: t`Chain id`,
-      source: 'registry chainID()',
+      source: 'registry.chainID()',
       value: r ? <span className='font-mono tnum text-ghost'>{r.chainID}</span> : loading,
-      what: t`The chain the registry was deployed for, a constructor argument.`,
-      why: t`It is folded into every process id through the prefix below, and sequencers refuse to start unless it equals the chain’s own id.`,
+      what: t`The chain the registry was deployed for.`,
+      why: t`It is part of every process id, through the prefix below, and sequencers refuse to start unless it equals the chain’s own id.`,
+      detail: <Trans>A constructor argument of the registry.</Trans>,
     },
     {
       id: 'pidPrefix',
       title: t`Process id prefix`,
-      source: 'registry pidPrefix()',
+      source: 'registry.pidPrefix()',
       value: r ? (
         <span className='font-mono tnum text-ghost'>0x{r.pidPrefix.toString(16).padStart(8, '0')}</span>
       ) : (
         loading
       ),
-      what: (
+      what: t`A 4-byte code that stands for this registry on this chain.`,
+      why: t`Every process id carries it, right after the organizer’s address, so an id made for another registry or chain is refused.`,
+      detail: (
         <Trans>
-          The low 4 bytes of <Code>keccak256(chainID ‖ registry)</Code>.
+          The last 4 bytes of the hash below, in bytes 20 to 23 of every process id. An id with another prefix reverts
+          with <Code>UnknownProcessIdPrefix</Code>.
         </Trans>
       ),
-      why: (
-        <Trans>
-          Every process id carries it in bytes 20 to 23, after the organizer address, so an id from another registry or
-          chain reverts with <Code>UnknownProcessIdPrefix</Code>.
-        </Trans>
-      ),
+      formula: 'keccak256(chainID ‖ registry)',
     },
     {
       id: 'processCount',
       title: t`Processes created`,
-      source: 'registry processCount()',
+      source: 'registry.processCount()',
       value: r ? <span className='font-mono tnum text-ghost'>{formatNumber(r.processCount)}</span> : loading,
       hint: r ? t`${indexed} indexed by this explorer` : null,
       what: t`How many processes this registry has created.`,
@@ -109,7 +141,7 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
     {
       id: 'dkgAdapter',
       title: t`DKG adapter`,
-      source: 'registry dkgAdapter()',
+      source: 'registry.dkgAdapter()',
       value: r ? (
         r.dkgAdapter ? (
           <Address value={r.dkgAdapter} chars={6} />
@@ -119,12 +151,13 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
       ) : (
         loading
       ),
-      what: t`The registry’s link to davinci-dkg, created by its constructor when a DKG manager was given.`,
-      why: (
+      what: t`The registry’s link to the key committee (davinci-dkg). It exists only when the registry was deployed with one.`,
+      why: t`Without it the committee key modes are off. With it, it is the only address allowed to hand these processes’ encrypted totals to the committee.`,
+      detail: (
         <Trans>
-          Zero means the DKG key modes are disabled and <Code>newProcess</Code> in a DKG mode reverts{' '}
-          <Code>DKGDisabled</Code>. Otherwise it is the only address allowed to submit ciphertexts to the committee for
-          these processes.
+          Created by the registry’s constructor when a DKG manager was given. When it is zero, <Code>newProcess</Code>{' '}
+          in a DKG mode reverts with <Code>DKGDisabled</Code>; otherwise it is the only ciphertext submitter for these
+          processes.
         </Trans>
       ),
     },
@@ -134,8 +167,13 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
     <Panel
       title={t`Pinned values`}
       label={t`Registry parameters`}
-      description={t`What the registry was deployed with. None of these can change: a new guest or a new ZisK setup needs a new registry.`}
-      actions={<Toggle checked={full} onChange={setFull} label={t`Full values`} />}
+      description={t`What the registry was deployed with. None of these can change: a new program or a new proving setup needs a new registry.`}
+      actions={
+        <div className='flex flex-wrap items-center gap-x-5 gap-y-2'>
+          <Toggle checked={full} onChange={setFull} label={t`Full values`} />
+          {onTechnical ? <TechnicalToggle checked={technical} onChange={onTechnical} /> : null}
+        </div>
+      }
     >
       <ul className='-my-3 divide-y divide-charcoal'>
         {params.map((p) => (
@@ -146,7 +184,9 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
           >
             <div className='min-w-0'>
               <div className='text-[13px] font-semibold text-ghost'>{p.title}</div>
-              <div className='mt-0.5 font-mono text-[11px] text-ash'>{p.source}</div>
+              <div className='mt-0.5 text-[12px]'>
+                <Formula expr={p.source} />
+              </div>
               <div className='mt-2 min-w-0'>{p.value}</div>
               {p.hint ? <div className='mt-1 text-[11px] text-ash'>{p.hint}</div> : null}
             </div>
@@ -155,7 +195,7 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
                 <span className='text-pewter'>
                   <Trans>What it is.</Trans>
                 </span>{' '}
-                {p.what}
+                <span className='text-silver'>{p.what}</span>
               </p>
               <p className='mt-1'>
                 <span className='text-pewter'>
@@ -163,6 +203,15 @@ export function ParametersPanel({ chain, details }: { chain: ChainMeta; details:
                 </span>{' '}
                 {p.why}
               </p>
+              {technical && (p.detail || p.formula) ? (
+                <div
+                  className='mt-2 border-l-2 border-charcoal pl-3 [&_code]:text-[0.88em] [&_code]:text-pewter'
+                  data-testid='param-detail'
+                >
+                  {p.detail ? <p>{p.detail}</p> : null}
+                  {p.formula ? <Formula block expr={p.formula} className='mt-1.5' /> : null}
+                </div>
+              ) : null}
             </div>
           </li>
         ))}

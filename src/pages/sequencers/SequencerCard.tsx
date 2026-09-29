@@ -43,9 +43,9 @@ export function NodeBadges({
   const data = node.info.data
   const label: Record<NodeStatus, string> = { online: t`Online`, offline: t`Offline`, checking: t`Checking` }
   const hint: Record<NodeStatus, string> = {
-    online: t`Its /info answered on the last poll.`,
-    offline: t`Its /info did not answer on the last poll.`,
-    checking: t`Waiting for its /info.`,
+    online: t`The node answered on the last check (its /info).`,
+    offline: t`The node did not answer on the last check (its /info).`,
+    checking: t`Waiting for the node to answer (its /info).`,
   }
   return (
     <span className={cn('inline-flex items-center gap-1.5', wrap ? 'flex-wrap' : 'whitespace-nowrap')}>
@@ -64,8 +64,8 @@ export function NodeBadges({
         <Tooltip
           content={
             data.observer
-              ? t`An observer has no key: it follows every process and serves reads, but never settles.`
-              : t`A signer has a key: it proves batches and settles them on the registry.`
+              ? t`An observer has no key: it follows every process and answers questions about it, but never records a batch.`
+              : t`A signer has a key: it proves batches of votes and records them on the registry.`
           }
         >
           <span className='inline-flex'>
@@ -94,7 +94,7 @@ export function SequencerCard({
   /** What its settling account did on chain; null when nothing. */
   onchain: SequencerRow | null
 }) {
-  const { i18n, t } = useLingui()
+  const { t } = useLingui()
   const { endpoint, info, processes } = state
   const data = info.data
   const number = endpoint.index + 1
@@ -103,17 +103,17 @@ export function SequencerCard({
   const served = onchain?.processes ?? 0
   const release = data ? nodeRelease(data) : null
   const settlingHint = data?.observer
-    ? t`An observer has no key: it follows and serves reads, but never settles.`
+    ? t`An observer has no key: it follows every process and answers questions about it, but never records a batch.`
     : onchain
       ? t`sent ${plural(sent, { one: '# transition', other: '# transitions' })} on this registry, for ${plural(served, { one: '# process', other: '# processes' })}`
-      : t`has not settled a transition on this registry yet`
+      : t`has not recorded a batch on this registry yet`
 
   return (
     <Card flush className='overflow-hidden' data-testid={`sequencer-${endpoint.index}`}>
       <CardHeader
         label={t`Node API ${number}`}
         title={<span className='font-mono text-[14px]'>{endpoint.upstream}</span>}
-        description={t`What the node reports about itself through its HTTP API, polled every 30 seconds.`}
+        description={t`What the node says about itself through its HTTP API, asked every 30 seconds.`}
         actions={<NodeBadges node={state} />}
       />
       <div className='p-5'>
@@ -131,7 +131,7 @@ export function SequencerCard({
               <KeyValue
                 items={[
                   {
-                    label: t`Settling account`,
+                    label: t`Account it sends from`,
                     value: data.sequencerAddress ? (
                       <Address value={data.sequencerAddress} chars={6} />
                     ) : (
@@ -145,8 +145,8 @@ export function SequencerCard({
                         <Trans>Release</Trans>
                         <Explain>
                           <Trans>
-                            The davinci-zkvm release whose program keys and ballot key the node reports. The node does
-                            not report a software version; its keys say which programs it proves with.
+                            Which published release the node proves with, told by the program and ballot keys it reports
+                            (a davinci-zkvm release). The node does not report a software version.
                           </Trans>
                         </Explain>
                       </span>
@@ -162,9 +162,9 @@ export function SequencerCard({
                   {
                     label: (
                       <span className='inline-flex items-center gap-1'>
-                        <Trans>Settled by itself</Trans>
+                        <Trans>Recorded by itself</Trans>
                         <Explain>
-                          <Trans>Batches this node proved and settled.</Trans>
+                          <Trans>Batches this node proved and recorded on the registry.</Trans>
                         </Explain>
                       </span>
                     ),
@@ -177,8 +177,8 @@ export function SequencerCard({
                         <Trans>Synced from others</Trans>
                         <Explain>
                           <Trans>
-                            Transitions another node settled, which this one rebuilt from their blobs and accepted only
-                            because replaying them gave the event’s new root.
+                            Batches another node recorded. This node rebuilt each one from its published data, and
+                            accepted it only because doing so reached the same state fingerprint as the chain.
                           </Trans>
                         </Explain>
                       </span>
@@ -192,8 +192,8 @@ export function SequencerCard({
                         <Trans>Lost races</Trans>
                         <Explain>
                           <Trans>
-                            Batches that another node’s transition beat to the chain. The node rolled back, synced the
-                            winner and put the votes back in its queue: the only cost is the reverted transaction’s gas.
+                            Batches another node got onto the chain first. The node dropped its own, took the winner’s
+                            and put its votes back in the queue: the only cost is the failed transaction’s gas.
                           </Trans>
                         </Explain>
                       </span>
@@ -210,15 +210,16 @@ export function SequencerCard({
               </div>
               <p className='mt-1 text-[12px] leading-relaxed text-ash'>
                 <Trans>
-                  The node’s <code>/info</code> against the registry. A node checks these at boot and will not start on
-                  a mismatch, so a ✗ means it serves another deployment.
+                  What the node reports (its <code>/info</code>) against what the registry holds. A node checks these
+                  when it starts and refuses to run on a mismatch, so a ✗ means it serves another deployment.
                 </Trans>
               </p>
               <ul className='mt-3 flex flex-col gap-2' data-testid='sequencer-info-checks'>
                 {infoChecks(data, chain).map((c) => (
-                  <li key={c.id} className='flex items-center gap-2.5 text-[13px] text-silver'>
+                  <li key={c.id} className='flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[13px] text-silver'>
                     <CheckMark state={c.state} />
-                    {i18n._(c.label)}
+                    {c.label}
+                    {c.pin ? <code className='text-[11px] text-ash'>{c.pin}</code> : null}
                   </li>
                 ))}
               </ul>
@@ -277,8 +278,8 @@ function ServedProcesses({
       </div>
       <p className='mt-1 text-[12px] leading-relaxed text-ash'>
         <Trans>
-          Each process with its phase on chain and the node’s own view: whether it takes votes and whether its committed
-          tree is at the registry’s latest root.
+          Each process with its phase on the chain and the node’s own view: whether it takes votes, and whether its copy
+          of the state has reached the fingerprint the registry holds (its state root).
         </Trans>
       </p>
       {error ? (
@@ -307,7 +308,7 @@ function ServedProcesses({
                     <Trans>Votes</Trans>
                   </th>
                   <th className='label-caps px-3 py-2 text-[11px] font-semibold'>
-                    <Trans>Node’s root</Trans>
+                    <Trans>Node’s state</Trans>
                   </th>
                 </tr>
               </thead>
@@ -358,7 +359,7 @@ function ServedProcesses({
                               {sync === 'in-sync'
                                 ? t`at the on-chain root`
                                 : sync === 'differs'
-                                  ? t`not at it yet`
+                                  ? t`not there yet`
                                   : ''}
                             </span>
                           </span>

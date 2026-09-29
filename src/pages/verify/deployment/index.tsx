@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
-import { CheckMark } from '~components'
+import { CheckMark, Term } from '~components'
 import { Disclosure } from '~components/code'
 import { Formula } from '~components/Formula'
 import { useRuntimeConfig } from '~config/config-context'
@@ -139,8 +139,9 @@ export function VerifyDeploymentPage() {
                   </p>
                   <p>
                     <Trans>
-                      The verifier hashes the program key and the setup into what the proof must match, so a proof of
-                      any other program, or made with another setup, is refused:
+                      The verifier hashes the program’s fingerprint (its <Term id='program-vk'>program vk</Term>) and
+                      the <Term id='root-c-vadcop-final'>proving setup</Term> into what the proof must match, so a proof
+                      of any other program, or made with another setup, is refused:
                     </Trans>
                   </p>
                   <Formula block expr='publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)' />
@@ -148,7 +149,7 @@ export function VerifyDeploymentPage() {
                     <ul className='flex flex-col gap-1.5'>
                       {match.checks.map((c) => (
                         <li key={c.pin}>
-                          <span className='text-silver'>{i18n._(PIN_PLAIN[c.pin])}:</span>{' '}
+                          <span className='text-silver'>{PIN_LABELS[c.pin]}</span> <code>{c.pin}</code>:{' '}
                           {i18n._(PIN_DETAILS[c.pin].mismatch)}
                         </li>
                       ))}
@@ -178,9 +179,10 @@ export function VerifyDeploymentPage() {
                       <StatusDisc status={fromCheckState(state)} size='sm' />
                       <div className='min-w-0 flex-1'>
                         <div className='flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5'>
-                          <span className='text-[13px] font-medium text-ghost'>{i18n._(PIN_PLAIN[c.pin])}</span>
-                          <span className='text-[11px] text-ash'>{PIN_LABELS[c.pin]}</span>
+                          <span className='text-[13px] font-medium text-ghost'>{PIN_LABELS[c.pin]}</span>
+                          <code className='text-[11px] text-ash'>{c.pin}</code>
                         </div>
+                        <p className='mt-0.5 text-[12px] leading-relaxed text-pewter'>{i18n._(PIN_PLAIN[c.pin])}</p>
                         <dl className='mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-[12px]'>
                           <dt className='text-ash'>
                             <Trans>On chain</Trans>
@@ -333,10 +335,16 @@ export function VerifyDeploymentPage() {
                   <>
                     <p>
                       <Trans>
-                        Elections in the DKG key modes are decrypted by a committee. Each of its actions (dealing key
-                        shares, finalizing an epoch, decrypting a share, combining the shares) carries a Groth16 proof
-                        that one of four verifier contracts checks. Each verifier reports the hash of its circuit’s key,
-                        compared here with the davinci-dkg circuits-v6 release.
+                        Elections in the DKG key modes are decrypted by a <Term id='committee'>committee</Term>. Every
+                        step it takes comes with a proof, checked by one of four verifier contracts. Each verifier
+                        reports the fingerprint of the circuit key it accepts, and the explorer compares them with the
+                        published davinci-dkg circuits.
+                      </Trans>
+                    </p>
+                    <p className='text-[12px]'>
+                      <Trans>
+                        The steps are dealing key shares, finalizing an epoch, decrypting a share and combining the
+                        shares; each proof is a Groth16 proof, and the reference is the davinci-dkg circuits-v6 release.
                       </Trans>
                     </p>
                     <ul className='flex flex-col gap-2'>
@@ -388,7 +396,7 @@ export function VerifyDeploymentPage() {
         testId='deployment-limits'
         proves={[
           <Trans key='programs'>
-            Every batch of votes, and every result of a sequencer-key election, settles only with a proof of the
+            Every batch of votes, and every result of a sequencer-key election, is recorded only with a proof of the
             released programs, made with the released setup and checked by the released verifier code.
           </Trans>,
           <Trans key='ballots'>Only ballots proven with the released ballot circuit are accepted.</Trans>,
@@ -421,14 +429,15 @@ export function VerifyDeploymentPage() {
             <ul className='flex list-disc flex-col gap-1.5 pl-5'>
               <li>
                 <Trans>
-                  It does not re-verify the PLONK proofs or the KZG openings in the browser; the registry did, on chain.
+                  It does not check the proofs again in your browser (the PLONK proofs, and the KZG openings of the
+                  published data); the registry did, on the chain.
                 </Trans>
               </li>
               <li>
                 <Trans>
-                  It does not recompute KZG commitments from blob bytes. A blob from the beacon is tied to its
-                  transaction by its commitment’s versioned hash; one from a sequencer’s archive only by position, and
-                  the page says so.
+                  It does not recompute a blob’s fingerprint (its KZG commitment) from its bytes. A blob from the beacon
+                  is tied to its transaction by that commitment’s versioned hash; one from a sequencer’s archive only by
+                  position, and the page says so.
                 </Trans>
               </li>
               <li>
