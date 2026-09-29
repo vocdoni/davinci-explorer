@@ -6,7 +6,7 @@ import { Link } from 'react-router'
 import { CheckMark, Explain, NativeAmount, Term, Timestamp, TxLink } from '~components'
 import { useDataSource } from '~data/context'
 import type { ProcessView } from '~data/hooks'
-import type { TransitionRow } from '~indexer/selectors'
+import { votingOver, type TransitionRow } from '~indexer/selectors'
 import { Address, BlockCell, Card, CardHeader, DataTable, EmptyState, Hash, Panel, type AnyColumnDef } from '~kit'
 import { cn } from '~lib/cn'
 import { formatNumber } from '~lib/format'
@@ -221,10 +221,17 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
           virtualized={transitions.length > 50}
           maxHeight={transitions.length > 15 ? 600 : 100_000}
           empty={
-            <EmptyState
-              title={t`No batches yet`}
-              description={t`When a sequencer records the first batch of votes, it appears here with its block, data blobs and fee.`}
-            />
+            votingOver(view.row.phase) ? (
+              <EmptyState
+                title={t`No batch was recorded`}
+                description={t`Voting is over and no sequencer recorded a batch, so no vote was counted.`}
+              />
+            ) : (
+              <EmptyState
+                title={t`No batches yet`}
+                description={t`When a sequencer records the first batch of votes, it appears here with its block, data blobs and fee.`}
+              />
+            )
           }
         />
       </Card>

@@ -3,7 +3,13 @@
 // and the result checks from the results tab's hooks.
 
 import type { DkgApplicationView } from '~data/services'
-import type { CheckState, ProcessPhase, RootChain, TransitionDetail } from '~indexer/selectors'
+import {
+  votingOver,
+  type CheckState,
+  type ProcessPhase,
+  type RootChain,
+  type TransitionDetail,
+} from '~indexer/selectors'
 import type { MetadataVersion } from '~indexer/types'
 import { changedWhileOpen } from '~pages/process/metadata'
 import { reducedToCircom } from '~protocol/babyjubjub'
@@ -37,12 +43,9 @@ export function batchVerdicts(
   })
 }
 
-/** Phases after which no batch can settle any more. */
-const CLOSED: ProcessPhase[] = ['closed', 'ended', 'canceled', 'results']
-
 /** Every batch passed; with no batch, pending while votes may still come and not applicable after. */
 export function batchesStatus(verdicts: BatchVerdict[], phase: ProcessPhase): VerifyStatus {
-  if (verdicts.length === 0) return CLOSED.includes(phase) ? 'na' : 'pending'
+  if (verdicts.length === 0) return votingOver(phase) ? 'na' : 'pending'
   return combine(verdicts.map((v) => v.status))
 }
 

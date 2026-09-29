@@ -18,6 +18,8 @@ import {
   transitionDetail,
   transitionRows,
   votesPerDay,
+  votingOver,
+  type ProcessPhase,
 } from './selectors'
 import { txDetailsFrom } from './state'
 import type { Hex, IndexerStore, ProcessState } from './types'
@@ -44,6 +46,13 @@ describe('processRows', () => {
     expect(mine.every((r) => r.organizer === organizer)).toBe(true)
     const pid = store.processOrder[3]!
     expect(processRows(store, { query: pid.slice(40, 60) }).map((r) => r.id)).toContain(pid)
+  })
+})
+
+describe('votingOver', () => {
+  it('is over once no batch can be recorded', () => {
+    expect(['closed', 'ended', 'canceled', 'results'].every((p) => votingOver(p as ProcessPhase))).toBe(true)
+    expect(['loading', 'upcoming', 'open', 'paused'].some((p) => votingOver(p as ProcessPhase))).toBe(false)
   })
 })
 

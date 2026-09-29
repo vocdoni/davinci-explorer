@@ -4739,6 +4739,10 @@ msgid "The proof starts from the fingerprint of the state after the last batch (
 msgstr "La prueba parte de la huella del estado después del último lote (la raíz de estado, registros 2 a 9): <0/>"
 
 #: src/pages/process/results-checks.tsx
+msgid "No batch was recorded, so the proof starts from the fingerprint of the starting state (the state root, registers 2 to 9): <0/>"
+msgstr "No se anotó ningún lote, así que la prueba parte de la huella del estado inicial (la raíz de estado, registros 2 a 9): <0/>"
+
+#: src/pages/process/results-checks.tsx
 msgid "The fingerprint of the state the proof starts from (registers 2 to 9), against the one after the last batch."
 msgstr "La huella del estado del que parte la prueba (registros 2 a 9), frente a la de después del último lote."
 
@@ -5840,6 +5844,15 @@ msgstr "{gas} de gas"
 
 #: src/pages/process/tabs/TransitionsTab.tsx
 #: src/pages/process/tabs/VotesTab.tsx
+msgid "No batch was recorded"
+msgstr "No se anotó ningún lote"
+
+#: src/pages/process/tabs/TransitionsTab.tsx
+msgid "Voting is over and no sequencer recorded a batch, so no vote was counted."
+msgstr "La votación ha terminado y ningún secuenciador anotó un lote, así que no se contó ningún voto."
+
+#: src/pages/process/tabs/TransitionsTab.tsx
+#: src/pages/process/tabs/VotesTab.tsx
 msgid "No batches yet"
 msgstr "Aún no hay lotes"
 
@@ -5922,6 +5935,10 @@ msgstr "Qué casillas recibieron un voto cambiado. Un <0>voto cambiado</0> y una
 #: src/pages/process/tabs/VotesTab.tsx
 msgid "Each batch (a state transition) publishes its data in EIP-4844 blobs: the vote ids of the batch, then every ballot slot it wrote with the new ciphertexts, then the new accumulator. With a Merkle census a voter’s slot is derived from their address; with a credential service, from the index the service signs."
 msgstr "Cada lote (una transición de estado) publica sus datos en blobs EIP-4844: los ids de voto del lote, después cada casilla de papeleta que escribió con los nuevos textos cifrados y, por último, el nuevo acumulador. Con un censo Merkle, la casilla de un votante se deriva de su dirección; con un servicio de credenciales, del índice que firma el servicio."
+
+#: src/pages/process/tabs/VotesTab.tsx
+msgid "Voting is over and no sequencer recorded a batch, so there is no vote id to look up."
+msgstr "La votación ha terminado y ningún secuenciador anotó un lote, así que no hay ningún id de voto que buscar."
 
 #: src/pages/process/tabs/VotesTab.tsx
 msgid "Vote ids appear here once a sequencer records the first batch of this election."

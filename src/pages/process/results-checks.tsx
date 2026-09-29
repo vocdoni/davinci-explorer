@@ -94,10 +94,17 @@ export function useSequencerResultsChecks(view: ProcessView | null): SequencerRe
           : 'unknown',
       detail: pub ? (
         <span className='inline-flex flex-wrap items-center gap-1'>
-          <Trans>
-            The proof starts from the fingerprint of the state after the last batch (the state root, registers 2 to 9):{' '}
-            <Hash value={pub.stateRoot} chars={6} />
-          </Trans>
+          {view.transitions.length > 0 ? (
+            <Trans>
+              The proof starts from the fingerprint of the state after the last batch (the state root, registers 2 to
+              9): <Hash value={pub.stateRoot} chars={6} />
+            </Trans>
+          ) : (
+            <Trans>
+              No batch was recorded, so the proof starts from the fingerprint of the starting state (the state root,
+              registers 2 to 9): <Hash value={pub.stateRoot} chars={6} />
+            </Trans>
+          )}
         </span>
       ) : (
         t`The fingerprint of the state the proof starts from (registers 2 to 9), against the one after the last batch.`

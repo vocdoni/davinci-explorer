@@ -6,6 +6,7 @@ import { Explain, Term, Timestamp } from '~components'
 import { Disclosure } from '~components/code'
 import { useDataSource } from '~data/context'
 import type { ProcessView } from '~data/hooks'
+import { votingOver } from '~indexer/selectors'
 import { useTransitionBlobs } from '~data/queries'
 import {
   Button,
@@ -128,11 +129,19 @@ export function VotesTab({ view }: { view: ProcessView }) {
           </p>
         </Disclosure>
         {transitions.length === 0 ? (
-          <EmptyState
-            compact
-            title={t`No batches yet`}
-            description={t`Vote ids appear here once a sequencer records the first batch of this election.`}
-          />
+          votingOver(view.row.phase) ? (
+            <EmptyState
+              compact
+              title={t`No batch was recorded`}
+              description={t`Voting is over and no sequencer recorded a batch, so there is no vote id to look up.`}
+            />
+          ) : (
+            <EmptyState
+              compact
+              title={t`No batches yet`}
+              description={t`Vote ids appear here once a sequencer records the first batch of this election.`}
+            />
+          )
         ) : (
           <div className='flex flex-col gap-4'>
             <div className='flex flex-wrap items-end gap-2'>

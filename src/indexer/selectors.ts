@@ -67,6 +67,11 @@ export function processPhase(p: ProcessEntity, now: number | null): ProcessPhase
   }
 }
 
+/** A phase after which no batch can be recorded any more. */
+export function votingOver(phase: ProcessPhase): boolean {
+  return phase === 'closed' || phase === 'ended' || phase === 'canceled' || phase === 'results'
+}
+
 export interface ProcessRow {
   id: Hex
   organizer: Address

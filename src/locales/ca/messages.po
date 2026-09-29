@@ -4739,6 +4739,10 @@ msgid "The proof starts from the fingerprint of the state after the last batch (
 msgstr "La prova parteix de l'empremta de l'estat després de l'últim lot (l'arrel d'estat, registres 2 a 9): <0/>"
 
 #: src/pages/process/results-checks.tsx
+msgid "No batch was recorded, so the proof starts from the fingerprint of the starting state (the state root, registers 2 to 9): <0/>"
+msgstr "No es va anotar cap lot, així que la prova parteix de l'empremta de l'estat inicial (l'arrel d'estat, registres 2 a 9): <0/>"
+
+#: src/pages/process/results-checks.tsx
 msgid "The fingerprint of the state the proof starts from (registers 2 to 9), against the one after the last batch."
 msgstr "L'empremta de l'estat del qual parteix la prova (registres 2 a 9), comparada amb la de després de l'últim lot."
 
@@ -5840,6 +5844,15 @@ msgstr "{gas} de gas"
 
 #: src/pages/process/tabs/TransitionsTab.tsx
 #: src/pages/process/tabs/VotesTab.tsx
+msgid "No batch was recorded"
+msgstr "No es va anotar cap lot"
+
+#: src/pages/process/tabs/TransitionsTab.tsx
+msgid "Voting is over and no sequencer recorded a batch, so no vote was counted."
+msgstr "La votació ha acabat i cap seqüenciador no va anotar cap lot, així que no es va comptar cap vot."
+
+#: src/pages/process/tabs/TransitionsTab.tsx
+#: src/pages/process/tabs/VotesTab.tsx
 msgid "No batches yet"
 msgstr "Encara no hi ha lots"
 
@@ -5922,6 +5935,10 @@ msgstr "Quines caselles han rebut un vot canviat. Un <0>vot canviat</0> i una <1
 #: src/pages/process/tabs/VotesTab.tsx
 msgid "Each batch (a state transition) publishes its data in EIP-4844 blobs: the vote ids of the batch, then every ballot slot it wrote with the new ciphertexts, then the new accumulator. With a Merkle census a voter’s slot is derived from their address; with a credential service, from the index the service signs."
 msgstr "Cada lot (una transició d'estat) publica les seves dades en blobs EIP-4844: els ids de vot del lot, després cada casella de papereta que ha escrit amb els nous textos xifrats i, finalment, el nou acumulador. Amb un cens Merkle, la casella d'un votant es deriva de la seva adreça; amb un servei de credencials, de l'índex que signa el servei."
+
+#: src/pages/process/tabs/VotesTab.tsx
+msgid "Voting is over and no sequencer recorded a batch, so there is no vote id to look up."
+msgstr "La votació ha acabat i cap seqüenciador no va anotar cap lot, així que no hi ha cap id de vot per cercar."
 
 #: src/pages/process/tabs/VotesTab.tsx
 msgid "Vote ids appear here once a sequencer records the first batch of this election."

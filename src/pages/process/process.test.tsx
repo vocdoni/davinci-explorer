@@ -7,6 +7,8 @@ import { processRow, rootChain } from '~indexer/selectors'
 import { formatTimestamp } from '~lib/format'
 import { renderWithProviders } from '../../test-utils'
 import { Lifecycle } from './Lifecycle'
+import { TransitionsTab } from './tabs/TransitionsTab'
+import { VotesTab } from './tabs/VotesTab'
 import { ProcessPage } from '.'
 
 const fixture = demoFixture()
@@ -140,5 +142,26 @@ describe('Lifecycle', () => {
     const steps = within(screen.getByTestId('process-lifecycle')).getAllByRole('listitem')
     expect(steps[1]).toHaveTextContent('Canceled before the start')
     expect(steps[1]).toHaveTextContent(formatTimestamp(start))
+  })
+})
+
+describe('an election over without a batch', () => {
+  // The ended demo election, as if no batch had been recorded.
+  const pid = fixture.store.processOrder.find((k) => fixture.store.processes[k]!.state?.status === 'ended')!
+  const process = { ...fixture.store.processes[pid]!, transitions: [] }
+  const view = {
+    process,
+    row: { ...processRow(fixture.store, process), transitions: 0 },
+    transitions: [],
+    rootChain: { ...rootChain(fixture.store, pid), links: [] },
+  }
+
+  it('says no batch was recorded, not that one is still to come', () => {
+    const batches = renderWithProviders(<TransitionsTab view={view} />)
+    expect(screen.getByText('No batch was recorded')).toBeInTheDocument()
+    expect(screen.queryByText('No batches yet')).toBeNull()
+    batches.unmount()
+    renderWithProviders(<VotesTab view={view} />)
+    expect(screen.getByText('No batch was recorded')).toBeInTheDocument()
   })
 })
