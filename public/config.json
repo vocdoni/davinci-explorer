@@ -7,8 +7,8 @@
     "https://rpc.gnosischain.com"
   ],
   "beaconUrl": "https://rpc-gbc.gnosischain.com",
-  "registryAddress": "0x7e79660dE04b8fC1FFAfB9d09f3B0770Bdb0D831",
-  "startBlock": 48489493,
+  "registryAddress": "0x6702e0141B6b72bCF8C1bdff20A82A35C5502E7D",
+  "startBlock": 48504090,
   "sequencers": [],
   "blockExplorerUrl": "https://gnosisscan.io",
   "dkgExplorerUrl": ""
