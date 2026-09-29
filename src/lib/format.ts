@@ -45,8 +45,8 @@ const numberFormat = (options: Intl.NumberFormatOptions = {}) =>
   cached('number', options, (l) => new Intl.NumberFormat(l, options))
 const dateFormat = (options: Intl.DateTimeFormatOptions) =>
   cached('date', options, (l) => new Intl.DateTimeFormat(l, options))
-const relativeFormat = () =>
-  cached('relative', {}, (l) => new Intl.RelativeTimeFormat(l, { numeric: 'auto', style: 'short' }))
+const relativeFormat = (numeric: 'auto' | 'always' = 'auto') =>
+  cached('relative', { numeric }, (l) => new Intl.RelativeTimeFormat(l, { numeric, style: 'short' }))
 
 /** The decimal separator of the active language. */
 function decimalSeparator(): string {
@@ -168,7 +168,12 @@ export function formatDate(value: number | string, style: 'medium' | 'short' = '
   return dateFormat(options).format(d)
 }
 
-/** "5 min. ago", "in 3 hr.", "now": relative to `now` (unix seconds), in the largest whole unit. */
+/**
+ * "5 min. ago", "in 3 hr.", "now": relative to `now` (unix seconds), in the
+ * largest unit that fits, rounded to the nearest one (2 days 23 hours is
+ * "in 3 days"). Days are always a number: 30 hours ahead may be the day
+ * after tomorrow, so never "tomorrow".
+ */
 export function timeAgo(unixSeconds: number | null | undefined, now = Date.now() / 1000): string {
   if (unixSeconds == null) return '—'
   const delta = Math.round(unixSeconds - now)
@@ -177,7 +182,9 @@ export function timeAgo(unixSeconds: number | null | undefined, now = Date.now()
   const rtf = relativeFormat()
   if (abs < 10) return rtf.format(0, 'second')
   if (abs < 60) return rtf.format(sign * abs, 'second')
-  if (abs < 3600) return rtf.format(sign * Math.floor(abs / 60), 'minute')
-  if (abs < 86_400) return rtf.format(sign * Math.floor(abs / 3600), 'hour')
-  return rtf.format(sign * Math.floor(abs / 86_400), 'day')
+  const minutes = Math.round(abs / 60)
+  if (minutes < 60) return rtf.format(sign * minutes, 'minute')
+  const hours = Math.round(abs / 3600)
+  if (hours < 24) return rtf.format(sign * hours, 'hour')
+  return relativeFormat('always').format(sign * Math.max(1, Math.round(abs / 86_400)), 'day')
 }

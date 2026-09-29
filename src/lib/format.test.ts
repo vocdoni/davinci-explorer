@@ -74,6 +74,19 @@ describe('numbers and units', () => {
     expect(timeAgo(0, 3 * 86400)).toBe('3 days ago')
   })
 
+  it('rounds a relative time to the nearest unit, and never says tomorrow', () => {
+    const hour = 3600
+    const day = 24 * hour
+    expect(timeAgo(2 * day + 23 * hour, 0)).toBe('in 3 days')
+    expect(timeAgo(0, 4 * day + 22 * hour)).toBe('5 days ago')
+    expect(timeAgo(38 * hour, 0)).toBe('in 2 days')
+    expect(timeAgo(30 * hour, 0)).toBe('in 1 day')
+    expect(timeAgo(0, 30 * hour)).toBe('1 day ago')
+    expect(timeAgo(22 * hour + 40 * 60, 0)).toBe('in 23 hr.')
+    expect(timeAgo(23 * hour + 40 * 60, 0)).toBe('in 1 day')
+    expect(timeAgo(59 * 60 + 40, 0)).toBe('in 1 hr.')
+  })
+
   it('formats byte counts', () => {
     expect(formatBytes(512)).toBe('512 B')
     expect(formatBytes(131072)).toBe('128 KiB')
@@ -126,7 +139,7 @@ describe('in Catalan', () => {
     expect(formatShare(1, 3)).toBe('33,3\u00a0%')
     expect(formatTimestamp(1_790_600_000)).toBe('28 de set. del 2026, 12:53 UTC')
     expect(timeAgo(1000, 1600)).toBe('fa 10 min')
-    expect(timeAgo(0, 86400)).toBe('ahir')
+    expect(timeAgo(0, 86400)).toBe('fa 1 dia')
     expect(formatList(['a', 'b', 'c'])).toBe('a, b i c')
   })
 })
