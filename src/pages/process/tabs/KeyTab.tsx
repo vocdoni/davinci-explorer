@@ -517,20 +517,22 @@ function DkgPanel({ view }: { view: ProcessView }) {
                     </>
                   ) : null}
                 </p>
-                <div className='overflow-hidden rounded-sm border border-charcoal'>
-                  <DataTable
-                    data={app.ciphertexts}
-                    columns={ciphertextColumns}
-                    getRowId={(r) => String(r.index)}
-                    sorting={sorting}
-                    onSortingChange={setSorting}
-                    empty={
-                      <p className='p-4 text-[13px] text-ash'>
-                        <Trans>Every field was empty, as no ballot was counted: nothing was sent.</Trans>
-                      </p>
-                    }
-                  />
-                </div>
+                {info.count === 0 ? null : (
+                  <div className='overflow-hidden rounded-sm border border-charcoal'>
+                    <DataTable
+                      data={app.ciphertexts}
+                      columns={ciphertextColumns}
+                      getRowId={(r) => String(r.index)}
+                      sorting={sorting}
+                      onSortingChange={setSorting}
+                      empty={
+                        <p className='p-4 text-[13px] text-ash'>
+                          <Trans>Every field was empty, as no ballot was counted: nothing was sent.</Trans>
+                        </p>
+                      }
+                    />
+                  </div>
+                )}
               </>
             ) : (
               <SkeletonText lines={3} />
@@ -569,6 +571,15 @@ function SubmittedSummary({
     )
   const identity = skipped.length
   const fields = formatList(skipped.map((f) => formatNumber(f)))
+  if (count === 0)
+    return (
+      <>
+        {t`Nothing was sent: ${plural(identity, {
+          one: `field ${fields} was empty, as no ballot was counted, and was recorded as 0`,
+          other: `fields ${fields} were empty, as no ballot was counted, and were recorded as 0`,
+        })}.`}
+      </>
+    )
   return (
     <>
       {t`${plural(count, { one: '# encrypted value', other: '# encrypted values' })}, from committee index ${first}; ${plural(

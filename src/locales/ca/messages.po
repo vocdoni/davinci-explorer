@@ -1425,6 +1425,10 @@ msgid "Status changed from {from} to {to}"
 msgstr "Canvi d'estat: abans {from}, ara {to}"
 
 #: src/indexer/selectors.ts
+msgid "Results requested with nothing to decrypt: no ballot was counted"
+msgstr "Resultats sol·licitats sense res a desxifrar: no es va comptar cap papereta"
+
+#: src/indexer/selectors.ts
 msgid "Encrypted total sent to the key committee to decrypt ({count, plural, one {# field} other {# fields}})"
 msgstr "Total xifrat enviat al comitè de claus per desxifrar-lo ({count, plural, one {# camp} other {# camps}})"
 
@@ -4774,6 +4778,14 @@ msgid "Until the reveal the committee cannot decrypt: its contracts refuse every
 msgstr "Fins a la revelació, el comitè no pot desxifrar: els seus contractes rebutgen tots els desxifratges parcials i les combinacions."
 
 #: src/pages/process/results-checks.tsx
+msgid "Nothing had to be decrypted"
+msgstr "No calia desxifrar res"
+
+#: src/pages/process/results-checks.tsx
+msgid "No ballot was counted, so every field of the encrypted total was empty and nothing went to the key committee."
+msgstr "No es va comptar cap papereta, així que tots els camps del total xifrat eren buits i no es va enviar res al comitè de claus."
+
+#: src/pages/process/results-checks.tsx
 msgid "Every value sent to the key committee is decrypted"
 msgstr "Tots els valors enviats al comitè de claus estan desxifrats"
 
@@ -4790,12 +4802,20 @@ msgid "The key committee’s contracts could not be read"
 msgstr "No s'han pogut llegir els contractes del comitè de claus"
 
 #: src/pages/process/results-checks.tsx
+msgid "Every stored total is 0"
+msgstr "Tots els totals desats són 0"
+
+#: src/pages/process/results-checks.tsx
+msgid "With nothing to decrypt, the registry records 0 for every field, in the same transaction as the request."
+msgstr "Sense res a desxifrar, el registre anota 0 a cada camp, en la mateixa transacció que la sol·licitud."
+
+#: src/pages/process/results-checks.tsx
 msgid "The stored totals are the key committee’s decrypted values"
 msgstr "Els totals desats són els valors desxifrats pel comitè de claus"
 
 #: src/pages/process/results-checks.tsx
-msgid "Each decrypted value against its field in the ProcessResultsSet event."
-msgstr "Cada valor desxifrat, comparat amb el seu camp a l'esdeveniment ProcessResultsSet."
+msgid "Each decrypted value against its field in the ProcessResultsSet event, and 0 for a field that was empty."
+msgstr "Cada valor desxifrat comparat amb el seu camp a l'esdeveniment ProcessResultsSet, i 0 en un camp que era buit."
 
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "One sequencer node holds the secret that opens the ballots. The organizer got this key from that node when it created the election."
@@ -5037,6 +5057,10 @@ msgstr "Tots els camps eren buits, perquè no es va comptar cap papereta: no es 
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "{count, plural, one {# encrypted value} other {# encrypted values}}, from committee index {first}."
 msgstr "{count, plural, one {# valor xifrat} other {# valors xifrats}}, a partir de l'índex del comitè {first}."
+
+#: src/pages/process/tabs/KeyTab.tsx
+msgid "Nothing was sent: {identity, plural, one {field {fields} was empty, as no ballot was counted, and was recorded as 0} other {fields {fields} were empty, as no ballot was counted, and were recorded as 0}}."
+msgstr "No es va enviar res: {identity, plural, one {el camp {fields} era buit, perquè no es va comptar cap papereta, i es va anotar com a 0} other {els camps {fields} eren buits, perquè no es va comptar cap papereta, i es van anotar com a 0}}."
 
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "{count, plural, one {# encrypted value} other {# encrypted values}}, from committee index {first}; {identity, plural, one {field {fields} was empty, as no ballot was counted, and was recorded as 0} other {fields {fields} were empty, as no ballot was counted, and were recorded as 0}}."
@@ -5675,6 +5699,10 @@ msgstr "bloc {requestBlock}"
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "Encrypted values sent"
 msgstr "Valors xifrats enviats"
+
+#: src/pages/process/tabs/ResultsTab.tsx
+msgid "none: every field was empty, as no ballot was counted"
+msgstr "cap: tots els camps eren buits, perquè no es va comptar cap papereta"
 
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "{requestCount} from committee index {requestFirst}"
@@ -8330,8 +8358,16 @@ msgid "The results were proven correct"
 msgstr "Es va demostrar que els resultats són correctes"
 
 #: src/pages/verify/election/checks.tsx
+msgid "There was nothing to decrypt"
+msgstr "No hi havia res a desxifrar"
+
+#: src/pages/verify/election/checks.tsx
 msgid "The key committee decrypted the right total"
 msgstr "El comitè de claus ha desxifrat el total correcte"
+
+#: src/pages/verify/election/checks.tsx
+msgid "No ballot was counted, so every field of the encrypted total was empty. The registry checked that total against the final state and recorded 0 for every field, without the key committee."
+msgstr "No es va comptar cap papereta, així que tots els camps del total xifrat eren buits. El registre va comprovar que aquest total és el de l'estat final i va anotar 0 a cada camp, sense el comitè de claus."
 
 #: src/pages/verify/election/checks.tsx
 msgid "The results tab has the transaction, the rules the registry enforced and every value."
@@ -8344,6 +8380,10 @@ msgstr "Els nombres publicats són els demostrats"
 #: src/pages/verify/election/checks.tsx
 msgid "Every number the registry stored is exactly the one the results proof carries."
 msgstr "Cada nombre que el registre ha desat és exactament el que porta la prova dels resultats."
+
+#: src/pages/verify/election/checks.tsx
+msgid "Every number the registry stored is 0, as no ballot was counted."
+msgstr "Cada nombre que el registre ha desat és 0, perquè no es va comptar cap papereta."
 
 #: src/pages/verify/election/checks.tsx
 msgid "Every number the registry stored is exactly the one the committee decrypted."

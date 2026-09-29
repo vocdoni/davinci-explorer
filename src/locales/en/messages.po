@@ -1425,6 +1425,10 @@ msgid "Status changed from {from} to {to}"
 msgstr "Status changed from {from} to {to}"
 
 #: src/indexer/selectors.ts
+msgid "Results requested with nothing to decrypt: no ballot was counted"
+msgstr "Results requested with nothing to decrypt: no ballot was counted"
+
+#: src/indexer/selectors.ts
 msgid "Encrypted total sent to the key committee to decrypt ({count, plural, one {# field} other {# fields}})"
 msgstr "Encrypted total sent to the key committee to decrypt ({count, plural, one {# field} other {# fields}})"
 
@@ -4774,6 +4778,14 @@ msgid "Until the reveal the committee cannot decrypt: its contracts refuse every
 msgstr "Until the reveal the committee cannot decrypt: its contracts refuse every partial decryption and combine."
 
 #: src/pages/process/results-checks.tsx
+msgid "Nothing had to be decrypted"
+msgstr "Nothing had to be decrypted"
+
+#: src/pages/process/results-checks.tsx
+msgid "No ballot was counted, so every field of the encrypted total was empty and nothing went to the key committee."
+msgstr "No ballot was counted, so every field of the encrypted total was empty and nothing went to the key committee."
+
+#: src/pages/process/results-checks.tsx
 msgid "Every value sent to the key committee is decrypted"
 msgstr "Every value sent to the key committee is decrypted"
 
@@ -4790,12 +4802,20 @@ msgid "The key committee’s contracts could not be read"
 msgstr "The key committee’s contracts could not be read"
 
 #: src/pages/process/results-checks.tsx
+msgid "Every stored total is 0"
+msgstr "Every stored total is 0"
+
+#: src/pages/process/results-checks.tsx
+msgid "With nothing to decrypt, the registry records 0 for every field, in the same transaction as the request."
+msgstr "With nothing to decrypt, the registry records 0 for every field, in the same transaction as the request."
+
+#: src/pages/process/results-checks.tsx
 msgid "The stored totals are the key committee’s decrypted values"
 msgstr "The stored totals are the key committee’s decrypted values"
 
 #: src/pages/process/results-checks.tsx
-msgid "Each decrypted value against its field in the ProcessResultsSet event."
-msgstr "Each decrypted value against its field in the ProcessResultsSet event."
+msgid "Each decrypted value against its field in the ProcessResultsSet event, and 0 for a field that was empty."
+msgstr "Each decrypted value against its field in the ProcessResultsSet event, and 0 for a field that was empty."
 
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "One sequencer node holds the secret that opens the ballots. The organizer got this key from that node when it created the election."
@@ -5037,6 +5057,10 @@ msgstr "Every field was empty, as no ballot was counted: nothing was sent."
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "{count, plural, one {# encrypted value} other {# encrypted values}}, from committee index {first}."
 msgstr "{count, plural, one {# encrypted value} other {# encrypted values}}, from committee index {first}."
+
+#: src/pages/process/tabs/KeyTab.tsx
+msgid "Nothing was sent: {identity, plural, one {field {fields} was empty, as no ballot was counted, and was recorded as 0} other {fields {fields} were empty, as no ballot was counted, and were recorded as 0}}."
+msgstr "Nothing was sent: {identity, plural, one {field {fields} was empty, as no ballot was counted, and was recorded as 0} other {fields {fields} were empty, as no ballot was counted, and were recorded as 0}}."
 
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "{count, plural, one {# encrypted value} other {# encrypted values}}, from committee index {first}; {identity, plural, one {field {fields} was empty, as no ballot was counted, and was recorded as 0} other {fields {fields} were empty, as no ballot was counted, and were recorded as 0}}."
@@ -5675,6 +5699,10 @@ msgstr "block {requestBlock}"
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "Encrypted values sent"
 msgstr "Encrypted values sent"
+
+#: src/pages/process/tabs/ResultsTab.tsx
+msgid "none: every field was empty, as no ballot was counted"
+msgstr "none: every field was empty, as no ballot was counted"
 
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "{requestCount} from committee index {requestFirst}"
@@ -8330,8 +8358,16 @@ msgid "The results were proven correct"
 msgstr "The results were proven correct"
 
 #: src/pages/verify/election/checks.tsx
+msgid "There was nothing to decrypt"
+msgstr "There was nothing to decrypt"
+
+#: src/pages/verify/election/checks.tsx
 msgid "The key committee decrypted the right total"
 msgstr "The key committee decrypted the right total"
+
+#: src/pages/verify/election/checks.tsx
+msgid "No ballot was counted, so every field of the encrypted total was empty. The registry checked that total against the final state and recorded 0 for every field, without the key committee."
+msgstr "No ballot was counted, so every field of the encrypted total was empty. The registry checked that total against the final state and recorded 0 for every field, without the key committee."
 
 #: src/pages/verify/election/checks.tsx
 msgid "The results tab has the transaction, the rules the registry enforced and every value."
@@ -8344,6 +8380,10 @@ msgstr "The published numbers are the ones proven"
 #: src/pages/verify/election/checks.tsx
 msgid "Every number the registry stored is exactly the one the results proof carries."
 msgstr "Every number the registry stored is exactly the one the results proof carries."
+
+#: src/pages/verify/election/checks.tsx
+msgid "Every number the registry stored is 0, as no ballot was counted."
+msgstr "Every number the registry stored is 0, as no ballot was counted."
 
 #: src/pages/verify/election/checks.tsx
 msgid "Every number the registry stored is exactly the one the committee decrypted."

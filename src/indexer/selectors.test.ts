@@ -127,6 +127,15 @@ describe('network views', () => {
     expect(mine[mine.length - 1]!.kind).toBe('created')
   })
 
+  it('says when a decryption request had nothing to decrypt', () => {
+    const s = clone(store)
+    const request = s.events.find((e) => e.name === 'ResultsDecryptionRequested')!
+    const entry = () => activityFeed(s, s.events.length).find((e) => e.kind === 'decryption' && e.tx === request.tx)!
+    expect(entry().label).toMatch(/^Encrypted total sent to the key committee to decrypt \(\d+ fields?\)$/)
+    if (request.name === 'ResultsDecryptionRequested') request.data.count = 0
+    expect(entry().label).toBe('Results requested with nothing to decrypt: no ballot was counted')
+  })
+
   it('buckets settled ballots per day', () => {
     const days = votesPerDay(store, 40)
     expect(days).toHaveLength(40)

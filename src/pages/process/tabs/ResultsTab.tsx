@@ -413,8 +413,11 @@ function DkgDecryptionPanel({ view }: { view: ProcessView }) {
             },
             {
               label: t`Encrypted values sent`,
-              value: t`${requestCount} from committee index ${requestFirst}`,
-              mono: true,
+              value:
+                request.count === 0
+                  ? t`none: every field was empty, as no ballot was counted`
+                  : t`${requestCount} from committee index ${requestFirst}`,
+              mono: request.count !== 0,
             },
             { label: t`Epoch`, value: <Hash value={request.epochId} chars={8} /> },
             { label: 'aid', value: <Hash value={request.aid} chars={8} /> },

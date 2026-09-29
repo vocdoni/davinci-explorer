@@ -759,13 +759,27 @@ export function ProducedCard({
   const { i18n, t } = useLingui()
   const mode = view.process.state?.keyMode
   const pid = view.process.id
+  // No ballot counted: the total was empty and nothing went to the committee.
+  const empty = mode !== 'sequencer' && view.process.decryptionRequest?.count === 0
   return (
     <CheckCard
       id='produced'
       status={status}
-      title={mode === 'sequencer' ? t`The results were proven correct` : t`The key committee decrypted the right total`}
+      title={
+        mode === 'sequencer'
+          ? t`The results were proven correct`
+          : empty
+            ? t`There was nothing to decrypt`
+            : t`The key committee decrypted the right total`
+      }
       statusLabel={status === 'pending' && checks.length === 0 ? t`Not yet` : undefined}
-      summary={mode ? i18n._(HOW_RESULT[mode]) : t`Reading the election…`}
+      summary={
+        empty
+          ? t`No ballot was counted, so every field of the encrypted total was empty. The registry checked that total against the final state and recorded 0 for every field, without the key committee.`
+          : mode
+            ? i18n._(HOW_RESULT[mode])
+            : t`Reading the election…`
+      }
       how={
         checks.length ? (
           <>
@@ -793,6 +807,7 @@ export function TallyCard({
 }) {
   const { t } = useLingui()
   const mode = view.process.state?.keyMode
+  const empty = mode !== 'sequencer' && view.process.decryptionRequest?.count === 0
   return (
     <CheckCard
       id='tally'
@@ -803,6 +818,8 @@ export function TallyCard({
         status === 'pass' ? (
           mode === 'sequencer' ? (
             <Trans>Every number the registry stored is exactly the one the results proof carries.</Trans>
+          ) : empty ? (
+            <Trans>Every number the registry stored is 0, as no ballot was counted.</Trans>
           ) : (
             <Trans>Every number the registry stored is exactly the one the committee decrypted.</Trans>
           )

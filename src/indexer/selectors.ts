@@ -588,7 +588,10 @@ function feedEntry(store: IndexerStore, ev: IndexedEvent): FeedEntry | null {
       return {
         ...base,
         kind: 'decryption',
-        label: t`Encrypted total sent to the key committee to decrypt (${plural(count, { one: '# field', other: '# fields' })})`,
+        label:
+          count === 0
+            ? t`Results requested with nothing to decrypt: no ballot was counted`
+            : t`Encrypted total sent to the key committee to decrypt (${plural(count, { one: '# field', other: '# fields' })})`,
         href: paths.process(ev.processId, 'results'),
       }
     }

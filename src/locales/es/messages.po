@@ -1425,6 +1425,10 @@ msgid "Status changed from {from} to {to}"
 msgstr "Cambio de estado de {from} a {to}"
 
 #: src/indexer/selectors.ts
+msgid "Results requested with nothing to decrypt: no ballot was counted"
+msgstr "Resultados solicitados sin nada que descifrar: no se contó ninguna papeleta"
+
+#: src/indexer/selectors.ts
 msgid "Encrypted total sent to the key committee to decrypt ({count, plural, one {# field} other {# fields}})"
 msgstr "Total cifrado enviado al comité de claves para descifrarlo ({count, plural, one {# campo} other {# campos}})"
 
@@ -4774,6 +4778,14 @@ msgid "Until the reveal the committee cannot decrypt: its contracts refuse every
 msgstr "Hasta la revelación, el comité no puede descifrar: sus contratos rechazan todo descifrado parcial y toda combinación."
 
 #: src/pages/process/results-checks.tsx
+msgid "Nothing had to be decrypted"
+msgstr "No había nada que descifrar"
+
+#: src/pages/process/results-checks.tsx
+msgid "No ballot was counted, so every field of the encrypted total was empty and nothing went to the key committee."
+msgstr "No se contó ninguna papeleta, así que todos los campos del total cifrado estaban vacíos y no se envió nada al comité de claves."
+
+#: src/pages/process/results-checks.tsx
 msgid "Every value sent to the key committee is decrypted"
 msgstr "Todos los valores enviados al comité de claves están descifrados"
 
@@ -4790,12 +4802,20 @@ msgid "The key committee’s contracts could not be read"
 msgstr "No se han podido leer los contratos del comité de claves"
 
 #: src/pages/process/results-checks.tsx
+msgid "Every stored total is 0"
+msgstr "Todos los totales guardados son 0"
+
+#: src/pages/process/results-checks.tsx
+msgid "With nothing to decrypt, the registry records 0 for every field, in the same transaction as the request."
+msgstr "Sin nada que descifrar, el registro anota 0 en cada campo, en la misma transacción que la solicitud."
+
+#: src/pages/process/results-checks.tsx
 msgid "The stored totals are the key committee’s decrypted values"
 msgstr "Los totales guardados son los valores descifrados por el comité de claves"
 
 #: src/pages/process/results-checks.tsx
-msgid "Each decrypted value against its field in the ProcessResultsSet event."
-msgstr "Cada valor descifrado, frente a su campo en el evento ProcessResultsSet."
+msgid "Each decrypted value against its field in the ProcessResultsSet event, and 0 for a field that was empty."
+msgstr "Cada valor descifrado frente a su campo en el evento ProcessResultsSet, y 0 en un campo que estaba vacío."
 
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "One sequencer node holds the secret that opens the ballots. The organizer got this key from that node when it created the election."
@@ -5037,6 +5057,10 @@ msgstr "Todos los campos estaban vacíos, porque no se contó ninguna papeleta: 
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "{count, plural, one {# encrypted value} other {# encrypted values}}, from committee index {first}."
 msgstr "{count, plural, one {# valor cifrado} other {# valores cifrados}}, desde el índice {first} del comité."
+
+#: src/pages/process/tabs/KeyTab.tsx
+msgid "Nothing was sent: {identity, plural, one {field {fields} was empty, as no ballot was counted, and was recorded as 0} other {fields {fields} were empty, as no ballot was counted, and were recorded as 0}}."
+msgstr "No se envió nada: {identity, plural, one {el campo {fields} estaba vacío, porque no se contó ninguna papeleta, y se anotó como 0} other {los campos {fields} estaban vacíos, porque no se contó ninguna papeleta, y se anotaron como 0}}."
 
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "{count, plural, one {# encrypted value} other {# encrypted values}}, from committee index {first}; {identity, plural, one {field {fields} was empty, as no ballot was counted, and was recorded as 0} other {fields {fields} were empty, as no ballot was counted, and were recorded as 0}}."
@@ -5675,6 +5699,10 @@ msgstr "bloque {requestBlock}"
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "Encrypted values sent"
 msgstr "Valores cifrados enviados"
+
+#: src/pages/process/tabs/ResultsTab.tsx
+msgid "none: every field was empty, as no ballot was counted"
+msgstr "ninguno: todos los campos estaban vacíos, porque no se contó ninguna papeleta"
 
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "{requestCount} from committee index {requestFirst}"
@@ -8330,8 +8358,16 @@ msgid "The results were proven correct"
 msgstr "Se ha demostrado que los resultados son correctos"
 
 #: src/pages/verify/election/checks.tsx
+msgid "There was nothing to decrypt"
+msgstr "No había nada que descifrar"
+
+#: src/pages/verify/election/checks.tsx
 msgid "The key committee decrypted the right total"
 msgstr "El comité de claves ha descifrado el total correcto"
+
+#: src/pages/verify/election/checks.tsx
+msgid "No ballot was counted, so every field of the encrypted total was empty. The registry checked that total against the final state and recorded 0 for every field, without the key committee."
+msgstr "No se contó ninguna papeleta, así que todos los campos del total cifrado estaban vacíos. El registro comprobó que ese total es el del estado final y anotó 0 en cada campo, sin el comité de claves."
 
 #: src/pages/verify/election/checks.tsx
 msgid "The results tab has the transaction, the rules the registry enforced and every value."
@@ -8344,6 +8380,10 @@ msgstr "Los números publicados son los demostrados"
 #: src/pages/verify/election/checks.tsx
 msgid "Every number the registry stored is exactly the one the results proof carries."
 msgstr "Cada número que guardó el registro es exactamente el que lleva la prueba de resultados."
+
+#: src/pages/verify/election/checks.tsx
+msgid "Every number the registry stored is 0, as no ballot was counted."
+msgstr "Cada número que guardó el registro es 0, porque no se contó ninguna papeleta."
 
 #: src/pages/verify/election/checks.tsx
 msgid "Every number the registry stored is exactly the one the committee decrypted."

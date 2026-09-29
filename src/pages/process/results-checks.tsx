@@ -123,6 +123,18 @@ export function useSequencerResultsChecks(view: ProcessView | null): SequencerRe
   return { checks, publics: pub, decodeError: decoded.error }
 }
 
+/**
+ * The stored tally is the committee's: every decrypted value in its field,
+ * and 0 in each field that was empty and never sent.
+ */
+export function tallyMatches(values: bigint[], ciphertexts: DkgApplicationView['ciphertexts']): boolean {
+  const sent = new Map(ciphertexts.map((c) => [c.field, c]))
+  return values.every((v, field) => {
+    const c = sent.get(field)
+    return c ? c.completed && c.plaintext === v : v === 0n
+  })
+}
+
 export interface DkgResults {
   /** Empty until the decryption was requested. */
   checks: ResultsCheck[]
@@ -149,6 +161,9 @@ export function useDkgResultsChecks(view: ProcessView | null): DkgResults {
   const combined = formatNumber(completed)
   const total = formatNumber(submitted)
 
+  // Nothing goes to the committee when every field is empty (no ballot was
+  // counted): the registry records the zeros in the request's transaction.
+  const empty = request?.count === 0
   const checks: ResultsCheck[] = request
     ? [
         {
@@ -157,7 +172,7 @@ export function useDkgResultsChecks(view: ProcessView | null): DkgResults {
           state: 'pass',
           detail: t`The registry emits ResultsDecryptionRequested only after checking that the encrypted total (the accumulator) is leaf 0x04 of the final state root.`,
         },
-        ...(locked
+        ...(locked && !empty
           ? [
               {
                 id: 'revealed' as const,
@@ -174,28 +189,42 @@ export function useDkgResultsChecks(view: ProcessView | null): DkgResults {
               },
             ]
           : []),
-        {
-          id: 'combined',
-          label: t`Every value sent to the key committee is decrypted`,
-          state: (app ? (completed === submitted ? 'pass' : 'unknown') : 'unknown') as CheckState,
-          detail: app
-            ? t`${combined} of ${total} decrypted by the key committee, each from its members’ partial decryptions`
-            : dkg.isLoading
-              ? t`Reading the key committee’s contracts…`
-              : t`The key committee’s contracts could not be read`,
-        },
-        ...(results && app && app.ciphertexts.length > 0
+        empty
+          ? {
+              id: 'combined',
+              label: t`Nothing had to be decrypted`,
+              state: 'pass',
+              detail: t`No ballot was counted, so every field of the encrypted total was empty and nothing went to the key committee.`,
+            }
+          : {
+              id: 'combined',
+              label: t`Every value sent to the key committee is decrypted`,
+              state: (app ? (completed === submitted ? 'pass' : 'unknown') : 'unknown') as CheckState,
+              detail: app
+                ? t`${combined} of ${total} decrypted by the key committee, each from its members’ partial decryptions`
+                : dkg.isLoading
+                  ? t`Reading the key committee’s contracts…`
+                  : t`The key committee’s contracts could not be read`,
+            },
+        ...(results && empty
           ? [
               {
                 id: 'tally-plaintexts' as const,
-                label: t`The stored totals are the key committee’s decrypted values`,
-                state: (app.ciphertexts.every((c) => c.completed && results.values[c.field] === c.plaintext)
-                  ? 'pass'
-                  : 'fail') as CheckState,
-                detail: t`Each decrypted value against its field in the ProcessResultsSet event.`,
+                label: t`Every stored total is 0`,
+                state: (results.values.every((v) => v === 0n) ? 'pass' : 'fail') as CheckState,
+                detail: t`With nothing to decrypt, the registry records 0 for every field, in the same transaction as the request.`,
               },
             ]
-          : []),
+          : results && app && app.ciphertexts.length > 0
+            ? [
+                {
+                  id: 'tally-plaintexts' as const,
+                  label: t`The stored totals are the key committee’s decrypted values`,
+                  state: (tallyMatches(results.values, app.ciphertexts) ? 'pass' : 'fail') as CheckState,
+                  detail: t`Each decrypted value against its field in the ProcessResultsSet event, and 0 for a field that was empty.`,
+                },
+              ]
+            : []),
       ]
     : []
   return { checks, app, loading: dkg.isLoading, completed, submitted }
