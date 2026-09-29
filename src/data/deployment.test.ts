@@ -27,6 +27,11 @@ const registry: RegistryInfo = {
   dkgAdapter: A(0xad),
   dkgManager: A(0x3a),
   dkgAppManager: A(0xa3),
+  defaultGrace: 180,
+  graceFloor: 150,
+  graceCeil: 600,
+  graceMaxTotal: 1800,
+  noticeMin: 60,
   readAtBlock: 1,
 }
 

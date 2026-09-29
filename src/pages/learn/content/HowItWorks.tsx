@@ -300,9 +300,10 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
       <Section id='7-results' n={7} title={t`Results`}>
         <P>
           <Trans>
-            When voting ends, the <Term id='accumulator'>encrypted total</Term> is decrypted and published as the
-            results. The protocol decrypts only that final total, never a single ballot. The key holder could still
-            decrypt any ballot or any earlier total from the published data, which is why the key mode matters.
+            When voting ends, and the short <Term id='grace-window'>grace window</Term> that lets the last batches in
+            has closed, the <Term id='accumulator'>encrypted total</Term> is decrypted and published as the results. The
+            protocol decrypts only that final total, never a single ballot. The key holder could still decrypt any
+            ballot or any earlier total from the published data, which is why the key mode matters.
           </Trans>
         </P>
         <UL>

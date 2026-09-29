@@ -4,7 +4,7 @@ import { InShort } from '~components/InShort'
 import { NumberedList } from '~components/NumberedList'
 import { paths } from '~routes/paths'
 import type { LearnExamples } from '../examples'
-import { A, C, Details, OL, P, Section, SeeIt, SimpleTable, Term, UL } from '../prose'
+import { A, C, Details, H3, OL, P, Section, SeeIt, SimpleTable, Term, UL } from '../prose'
 
 export function Settlement({ ex }: { ex: LearnExamples }) {
   const { t } = useLingui()
@@ -13,10 +13,10 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
     <>
       <InShort className='mb-8'>
         <Trans>
-          The registry records a batch only if the election is open, the proof is valid and says every check passed, the
-          batch starts from the latest state, its voters were checked against the right list of voters, the voter limit
-          holds and the published data matches the proof. If any check fails the transaction is refused and nothing
-          changes.
+          The registry records a batch only if the election is open or has just ended (a short grace window lets the
+          last batches in), the proof is valid and says every check passed, the batch starts from the latest state, its
+          voters were checked against the right list of voters, the voter limit holds and the published data matches the
+          proof. If any check fails the transaction is refused and nothing changes.
         </Trans>
       </InShort>
 
@@ -44,7 +44,9 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
         <NumberedList
           className='my-4 [&_li]:text-[14px]'
           items={[
-            <Trans key='1'>The election exists, is open and is inside its voting window.</Trans>,
+            <Trans key='1'>
+              The election exists and is open, or its end has passed but its grace window has not closed yet.
+            </Trans>,
             <Trans key='2'>The proof’s public values have the right size and say every check passed.</Trans>,
             <Trans key='3'>
               The batch starts from the election’s latest state. A batch built on an older state, such as the loser of a
@@ -55,7 +57,9 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
               The number of voters before the batch matches the registry’s own count. The proof cannot see the whole
               state, so the registry supplies it.
             </Trans>,
-            <Trans key='6'>The batch does not take the election past its maximum number of voters.</Trans>,
+            <Trans key='6'>
+              The batch carries at least one vote, and does not take the election past its maximum number of voters.
+            </Trans>,
             <Trans key='7'>
               The published data matches the proof: the right number of data blobs, and a fingerprint of them equal to
               the one in the proof.
@@ -75,7 +79,10 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
         <Details summary={<Trans>The exact checks</Trans>}>
           <OL>
             <li>
-              <Trans>The process exists, is Ready and is inside its voting window.</Trans>
+              <Trans>
+                The process exists, is Ready, Ended, or Paused past its end, and{' '}
+                <Formula expr='startTime ≤ block.timestamp < getProcessGraceEnd(processId)' />.
+              </Trans>
             </li>
             <li>
               <Trans>
@@ -101,7 +108,10 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
               </Trans>
             </li>
             <li>
-              <Formula expr='votersCount + votes − overwrites ≤ maxVoters' />
+              <Trans>
+                <Formula expr='votes > 0' /> (<C>EmptyTransition</C> otherwise) and{' '}
+                <Formula expr='votersCount + votes − overwrites ≤ maxVoters' />.
+              </Trans>
             </li>
             <li>
               <Trans>
@@ -133,10 +143,77 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
             <Trans>
               On success <C>latestStateRoot</C> becomes the root after, <C>votersCount</C> grows by{' '}
               <Formula expr='votes − overwrites' />, <C>overwrittenVotesCount</C> by the overwrites and{' '}
-              <C>batchNumber</C> by one, and the registry emits <C>ProcessStateTransitioned</C>.
+              <C>batchNumber</C> by one, <C>lastVoteAt</C> becomes the block time, and the registry emits{' '}
+              <C>ProcessStateTransitioned</C>.
             </Trans>
           </P>
         </Details>
+      </Section>
+
+      <Section id='after-the-end' title={t`After the end: the grace window`}>
+        <P>
+          <Trans>
+            Voting closes at the end time, but votes cast just before it can still be waiting at a sequencer, or in a
+            batch being proved. So the registry keeps recording batches for a short{' '}
+            <Term id='grace-window'>grace window</Term> after the end, and accepts the results only once that window has
+            closed. The results then count every vote that made it in.
+          </Trans>
+        </P>
+        <P>
+          <Trans>
+            Each batch recorded after the end keeps the window open a little longer, so it stays open while batches keep
+            arriving close together, but never past a fixed limit after the end. Nobody can close it early, the
+            organizer included, and a pause does not stop it.
+          </Trans>
+        </P>
+        <P>
+          <Trans>
+            <strong className='font-semibold text-silver'>What you trust here.</strong> The registry cannot tell when a
+            vote was cast, so while the window is open a sequencer could also slip in a vote cast after the end. That is
+            bounded by the window’s limit, and it is visible: every batch’s time is public, and the explorer marks each
+            batch recorded after the end.
+          </Trans>
+        </P>
+        <H3>
+          <Trans>Moving the end earlier</Trans>
+        </H3>
+        <P>
+          <Trans>
+            Before the end, the organizer can move it later, or earlier with notice: the new end must be at least a
+            minimum time away, so every sequencer sees it before it arrives and no vote they already accepted is left
+            out. That is how a live meeting can announce that voting closes in one minute. Ending the election at once
+            (status Ended) still works, and the grace window follows either kind of end.
+          </Trans>
+        </P>
+        <Details>
+          <Formula block expr='graceEnd = min(end + graceMaxTotal, max(end, lastVoteAt) + grace)' className='mb-2' />
+          <P>
+            <Trans>
+              With <Formula expr='end = startTime + duration' />, <C>getProcessGraceEnd(processId)</C> returns it.{' '}
+              <C>lastVoteAt</C> is the block time of the last settled transition (0 before the first), and a transition
+              must add a vote, so a batch of silent refreshes alone cannot extend the window. <C>grace</C> starts at the
+              registry’s <C>defaultGrace</C>; the organizer may set it between <C>graceFloor</C> and <C>graceCeil</C>{' '}
+              with <C>setProcessGrace</C> while the process is Ready or Paused and before its end (
+              <C>ProcessGraceChanged</C>). <C>setProcessResults</C>, <C>requestResultsDecryption</C> and{' '}
+              <C>finalizeResultsFromDKG</C> revert with <C>GraceOpen</C> until the block time reaches it.
+            </Trans>
+          </P>
+          <P>
+            <Trans>
+              <C>setProcessDuration</C> accepts an earlier end at least <C>noticeMin</C> seconds after the call and
+              emits <C>ProcessDurationChanged</C>. Past the end the duration and <C>grace</C> are fixed, and{' '}
+              <C>setProcessStatus(ENDED)</C> no longer moves the end.
+            </Trans>
+          </P>
+        </Details>
+        {ex.grace ? (
+          <SeeIt to={paths.process(ex.grace.id, 'transitions')}>
+            <Trans>The batches of an election recorded after its end</Trans>
+          </SeeIt>
+        ) : null}
+        <SeeIt to={`${paths.contracts()}#grace`}>
+          <Trans>This registry’s grace window and notice</Trans>
+        </SeeIt>
       </Section>
 
       <Section id='the-public-values-it-reads' title={t`What the registry reads from the proof`}>

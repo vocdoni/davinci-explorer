@@ -142,6 +142,16 @@ export function formatDuration(seconds: number | bigint | null | undefined): str
   return h % 24 ? `${n(d)} d ${n(h % 24)} h` : `${n(d)} d`
 }
 
+/**
+ * Seconds to the second under an hour ("2 min 30 s", "3 min", "45 s"), for
+ * the registry's short windows, where `formatDuration` would round down.
+ */
+export function formatSeconds(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds))
+  if (s < 60 || s >= 3600 || s % 60 === 0) return formatDuration(s)
+  return `${formatNumber(Math.floor(s / 60))} min ${formatNumber(s % 60)} s`
+}
+
 /** Unix seconds as a UTC date and time: "Sep 28, 2026, 14:03 UTC" in English. */
 export function formatTimestamp(unixSeconds: number | bigint | null | undefined): string {
   if (unixSeconds == null) return '—'

@@ -6,7 +6,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import { CensusOriginBadge, CheckMark, KeyModeBadge, Term, Timestamp, UnverifiedMark } from '~components'
 import { Formula } from '~components/Formula'
-import type { ProcessView } from '~data/hooks'
+import { useChain, type ProcessView } from '~data/hooks'
 import type { MetadataCheck } from '~data/queries'
 import type { DkgApplicationView } from '~data/services'
 import type { CheckState } from '~indexer/selectors'
@@ -16,7 +16,13 @@ import { bigIntToHex, formatNumber, formatTimestamp } from '~lib/format'
 import { describeBallotMode } from '~pages/process/ballot-mode'
 import { changedWhileOpen, metadataTitle } from '~pages/process/metadata'
 import type { ResultsCheck } from '~pages/process/results-checks'
-import { GET_PROCESS, metadataHashCommand, metadataHistoryCommand, TRANSITION_EVENT } from '~pages/transition/commands'
+import {
+  GET_PROCESS,
+  graceEndCommand,
+  metadataHashCommand,
+  metadataHistoryCommand,
+  TRANSITION_EVENT,
+} from '~pages/transition/commands'
 import { browsableUri } from '~protocol/metadata'
 import { CENSUS_ORIGIN_INFO, KEY_MODE_INFO } from '~protocol/types'
 import { paths } from '~routes/paths'
@@ -721,10 +727,13 @@ export function ChainCard({ view, status, registry }: { view: ProcessView; statu
 
 export function PublishedCard({ view, status }: { view: ProcessView; status: VerifyStatus }) {
   const { t } = useLingui()
+  const registry = useChain().registryAddress
   const results = view.process.results
   const request = view.process.decryptionRequest
+  const phase = view.row.phase
   const when = results?.timestamp != null ? formatTimestamp(results.timestamp) : null
   const end = view.row.endTime != null ? formatTimestamp(view.row.endTime) : null
+  const graceEnd = view.row.graceEnd != null ? formatTimestamp(view.row.graceEnd) : null
   const voters = view.row.votersCount
   const pid = view.process.id
   const link = (
@@ -755,10 +764,37 @@ export function PublishedCard({ view, status }: { view: ProcessView; status: Ver
           <Trans>
             The encrypted total went to the key committee for decryption; the results follow once it is decrypted.
           </Trans>
+        ) : phase === 'ended' && graceEnd ? (
+          <Trans>
+            Not yet: voting is over, and the registry has accepted the results since the grace window closed on{' '}
+            {graceEnd}.
+          </Trans>
+        ) : phase === 'closing' && graceEnd ? (
+          <Trans>
+            Not yet: voting has ended, and the registry accepts the results once the grace window closes, on {graceEnd},
+            or later if more batches are recorded.
+          </Trans>
         ) : end ? (
-          <Trans>Not yet: the results come after the vote ends, on {end}.</Trans>
+          <Trans>Not yet: the results come after the vote ends, on {end}, and a short grace window after it.</Trans>
         ) : (
           <Trans>Not yet: the results come after the vote ends.</Trans>
+        )
+      }
+      how={
+        results || phase === 'canceled' ? undefined : (
+          <>
+            <p>
+              <Trans>
+                After the end the registry still records batches of votes cast before it, for a short{' '}
+                <Term id='grace-window'>grace window</Term>, and refuses the results until the window closes (the call
+                reverts with <code>GraceOpen</code>), so they count every recorded vote.
+              </Trans>
+            </p>
+            <RedoCommand
+              note={<Trans>The registry’s answer is the unix time the window closes, or closed.</Trans>}
+              code={graceEndCommand({ registry, processId: view.process.id })}
+            />
+          </>
         )
       }
     />

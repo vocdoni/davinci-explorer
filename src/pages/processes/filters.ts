@@ -14,14 +14,18 @@ export interface FilterOption<T extends string> {
   label: MessageDescriptor
 }
 
-/** Phases a user filters by, in lifecycle order. `ready` covers upcoming, open and closed. */
+/**
+ * Phases a user filters by, in lifecycle order. `ready` is the on-chain
+ * status: upcoming, open, and past the end until someone ends the election
+ * or publishes its results.
+ */
 export const PHASE_OPTIONS: FilterOption<ProcessPhase | 'ready'>[] = [
   { value: 'upcoming', label: msg`Upcoming` },
   { value: 'open', label: msg`Open` },
   { value: 'paused', label: msg`Paused` },
-  { value: 'closed', label: msg`Voting closed` },
+  { value: 'closing', label: msg`Closing` },
   { value: 'ready', label: msg`Ready (any time)` },
-  { value: 'ended', label: msg`Ended` },
+  { value: 'ended', label: msg`Ended, results pending` },
   { value: 'results', label: msg`Results` },
   { value: 'canceled', label: msg`Canceled` },
 ]

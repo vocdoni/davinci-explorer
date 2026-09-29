@@ -59,7 +59,7 @@ test.describe('verify', () => {
     await demo(page, '/verify/election')
     const picker = page.getByTestId('process-picker')
     await expect(picker.getByTestId('picker-row')).toHaveCount(8)
-    await picker.getByRole('button', { name: 'Show all 10 elections' }).click()
+    await picker.getByRole('button', { name: 'Show all 11 elections' }).click()
     await picker.getByLabel('Find the election').fill(RESULTS)
     await expect(picker.getByTestId('picker-row')).toHaveCount(1)
     await picker.getByTestId('picker-row').click()

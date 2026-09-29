@@ -3,6 +3,7 @@ import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
 import {
+  AfterEndBadge,
   Explain,
   HashLink,
   InShort,
@@ -15,9 +16,8 @@ import {
 } from '~components'
 import type { DecodedTransitionBlobs } from '~data/queries'
 import type { TransitionDetail } from '~indexer/selectors'
-import { processPhase } from '~indexer/selectors'
 import { Address, BlockCell, Card, Hash, KeyValue, Skeleton, type KeyValueItem } from '~kit'
-import { formatBytes, formatGwei, formatNumber } from '~lib/format'
+import { formatBytes, formatGwei, formatNumber, formatSeconds } from '~lib/format'
 import { paths } from '~routes/paths'
 import type { UseQueryResult } from '@tanstack/react-query'
 
@@ -56,12 +56,10 @@ function Label({ children, explain }: { children: ReactNode; explain?: ReactNode
 export function TransitionSummary({
   detail,
   blobs,
-  now,
   total,
 }: {
   detail: TransitionDetail
   blobs: UseQueryResult<DecodedTransitionBlobs>
-  now: number | null
   total: number
 }) {
   const { t } = useLingui()
@@ -88,7 +86,7 @@ export function TransitionSummary({
       value: (
         <span className='inline-flex items-center gap-2'>
           <ProcessIdLink id={process.id} chars={10} />
-          <ProcessPhaseBadge phase={processPhase(process, now)} size='sm' />
+          <ProcessPhaseBadge phase={detail.phase} size='sm' />
         </span>
       ),
     },
@@ -106,9 +104,10 @@ export function TransitionSummary({
     {
       label: <Label>{t`Block`}</Label>,
       value: (
-        <span className='inline-flex items-center gap-2'>
+        <span className='inline-flex flex-wrap items-center gap-2'>
           <BlockCell block={tr.block} />
           <Timestamp value={row.timestamp} className='text-ash' />
+          {row.afterEnd ? <AfterEndBadge size='sm' /> : null}
         </span>
       ),
     },
@@ -264,6 +263,10 @@ export function TransitionInShort({ detail }: { detail: TransitionDetail }) {
   const newVoters = tr.newVoters
   const overwrites = tr.overwrites
   const nBlobs = tr.nBlobs
+  const after =
+    row.afterEnd && row.timestamp != null && detail.processEnd != null
+      ? formatSeconds(row.timestamp - detail.processEnd)
+      : null
   return (
     <InShort>
       <ul data-testid='transition-in-short'>
@@ -305,6 +308,14 @@ export function TransitionInShort({ detail }: { detail: TransitionDetail }) {
             rebuild the election’s <Term id='state-root'>state</Term> from it without trusting whoever sent it.
           </Trans>
         </li>
+        {after != null ? (
+          <li data-testid='transition-after-end'>
+            <Trans>
+              It was recorded {after} after the election’s end, in its <Term id='grace-window'>grace window</Term>:
+              batches of votes cast before the end can still be recorded for a short while after it.
+            </Trans>
+          </li>
+        ) : null}
       </ul>
     </InShort>
   )

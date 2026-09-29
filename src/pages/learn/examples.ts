@@ -12,6 +12,8 @@ export interface LearnExamples {
   active: ProcessRow | null
   withResults: ProcessRow | null
   dkg: ProcessRow | null
+  /** Newest process in its grace window, else the newest with a batch recorded in one. */
+  grace: ProcessRow | null
   /** Newest process of any kind. */
   newest: ProcessRow | null
 }
@@ -21,6 +23,7 @@ export function pickExamples(rows: ProcessRow[]): LearnExamples {
     active: rows.find((r) => r.transitions > 0) ?? null,
     withResults: rows.find((r) => r.hasResults) ?? null,
     dkg: rows.find((r) => r.keyMode === 'dkg-automatic' || r.keyMode === 'dkg-locked') ?? null,
+    grace: rows.find((r) => r.phase === 'closing') ?? rows.find((r) => r.graceBatches > 0) ?? null,
     newest: rows[0] ?? null,
   }
 }

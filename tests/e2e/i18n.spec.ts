@@ -31,8 +31,8 @@ test.describe('language', () => {
     await expect(
       page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Processos' })
     ).toBeVisible()
-    // Numbers follow the language: 1,766 ballots in English.
-    await expect(root.getByText('1.766', { exact: true })).toBeVisible()
+    // Numbers follow the language: 1,827 ballots in English.
+    await expect(root.getByText('1.827', { exact: true })).toBeVisible()
 
     await page.reload()
     await expect(html(page)).toHaveAttribute('lang', 'ca')
@@ -47,18 +47,18 @@ test.describe('language', () => {
     await expect(html(page)).toHaveAttribute('lang', 'es')
     const root = page.getByTestId('page-processes')
     await expect(root.getByRole('heading', { name: 'Todos los procesos de votación del registro' })).toBeVisible()
-    await expect(page.getByTestId('process-count')).toHaveText('10 procesos')
+    await expect(page.getByTestId('process-count')).toHaveText('11 procesos')
     await page.getByLabel('Fase').selectOption('results')
     await expect(page.getByTestId('process-count')).toHaveText('2 procesos')
-    await expect(root).toContainText('coinciden, de 10 en el registro.')
+    await expect(root).toContainText('coinciden, de 11 en el registro.')
     await expect(root.getByRole('columnheader', { name: /Organizador/ })).toBeVisible()
     await page.getByRole('button', { name: 'Quitar los filtros' }).first().click()
-    await expect(page.getByTestId('process-count')).toHaveText('10 procesos')
+    await expect(page.getByTestId('process-count')).toHaveText('11 procesos')
 
     // The route and the language both survive a reload.
     await page.reload()
     await expect(html(page)).toHaveAttribute('lang', 'es')
-    await expect(page.getByTestId('process-count')).toHaveText('10 procesos')
+    await expect(page.getByTestId('process-count')).toHaveText('11 procesos')
   })
 
   test('the 404 page and the search box speak the chosen language', async ({ page }) => {

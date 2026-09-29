@@ -13,6 +13,7 @@ import { buttonClasses, Callout, SectionHeader, Stack } from '~kit'
 import { paths } from '~routes/paths'
 import { AddressesPanel } from './AddressesPanel'
 import { DkgPanel } from './DkgPanel'
+import { GracePanel } from './GracePanel'
 import { ParametersPanel } from './ParametersPanel'
 import { ReleasePanel } from './ReleasePanel'
 import { contractRows, releaseVerdict, wiringChecks } from './model'
@@ -21,6 +22,7 @@ const SECTIONS: Array<{ id: string; label: MessageDescriptor }> = [
   { id: 'addresses', label: msg`Addresses` },
   { id: 'parameters', label: msg`Pinned values` },
   { id: 'release', label: msg`Release check` },
+  { id: 'grace', label: msg`Grace window` },
   { id: 'dkg', label: msg`Key committee` },
 ]
 
@@ -130,6 +132,9 @@ export function ContractsPage() {
       </section>
       <section id='release' className='scroll-mt-20'>
         <ReleasePanel match={match} technical={technical} onTechnical={setTechnical} />
+      </section>
+      <section id='grace' className='scroll-mt-20'>
+        <GracePanel chain={chain} technical={technical} onTechnical={setTechnical} />
       </section>
       <section id='dkg' className='scroll-mt-20'>
         <DkgPanel

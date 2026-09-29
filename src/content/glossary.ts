@@ -197,6 +197,17 @@ export const GLOSSARY = [
     text: msg`The state root before the first transition, computed by the registry at creation from six leaves: the process id, the ballot mode, the encryption key hash, an empty accumulator, the census origin and the ballot VK hash.`,
   },
   {
+    id: 'grace-window',
+    term: msg`Grace window`,
+    short: msg`A short time after an election’s end during which batches of votes cast before the end can still be recorded. The results wait until it closes.`,
+    text: msg({
+      message:
+        'Sequencers collect votes and record them in batches, so a vote cast just before the end can still be on its way when the end passes. The registry keeps accepting batches after the end until the grace window closes, `getProcessGraceEnd`, as below: `grace` seconds after the end or after the last batch, whichever is later, and never more than `graceMaxTotal` after the end. `lastVoteAt` is the time of the last recorded batch. Every batch recorded after the end moves the window later, and once it closes nothing is recorded again. The results calls revert with `GraceOpen` until then. The registry cannot tell when a vote was cast, so a sequencer could include one cast after the end; the window is short and capped, and each batch’s time is public.',
+    }),
+    formula: 'graceEnd = min(end + graceMaxTotal, max(end, lastVoteAt) + grace)',
+    see: { label: msg`What the chain checks for each batch`, to: `${paths.learn('settlement')}#after-the-end` },
+  },
+  {
     id: 'guest',
     term: msg`Program (guest)`,
     short: msg`A program whose run is proven. The batch program checks each batch of votes; the results program checks the results.`,

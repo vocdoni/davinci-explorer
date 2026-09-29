@@ -27,7 +27,7 @@ describe('synthetic network', () => {
     for (const status of ['ready', 'ended', 'canceled', 'paused', 'results'] as const) {
       expect(stats.byStatus[status], status).toBeGreaterThan(0)
     }
-    for (const phase of ['upcoming', 'open', 'closed', 'paused', 'ended', 'canceled', 'results'] as const) {
+    for (const phase of ['upcoming', 'open', 'closing', 'paused', 'ended', 'canceled', 'results'] as const) {
       expect(stats.byPhase[phase], phase).toBeGreaterThan(0)
     }
     for (const mode of ['sequencer', 'dkg-automatic', 'dkg-locked'] as const) {

@@ -2,7 +2,7 @@
 // and census origin, links for process ids and transactions, times, amounts,
 // check marks, the "what is this" affordance, glossary terms and formulas.
 // Built on `~kit`.
-export { CensusOriginBadge, KeyModeBadge, ProcessPhaseBadge } from './badges'
+export { AfterEndBadge, CensusOriginBadge, KeyModeBadge, ProcessPhaseBadge } from './badges'
 export { CheckMark, Explain, NativeAmount, ProcessIdLink, Timestamp, TxLink } from './values'
 export { MissingEntity } from './states'
 export { NumberedList } from './NumberedList'

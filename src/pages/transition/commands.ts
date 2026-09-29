@@ -17,7 +17,10 @@ export const TRANSITION_EVENT =
 export const GET_PROCESS =
   'getProcess(bytes31)((uint8,address,(uint256,uint256),bytes32,uint256[],uint256,uint256,uint256,uint256,' +
   'uint256,uint256,uint256,string,bytes32,(bool,uint8,uint8,uint8,uint256,uint256,uint256,uint256),' +
-  '(uint8,bytes32,address,string,bool),uint8,bytes12,uint16,uint8,uint16,bool,bytes32))'
+  '(uint8,bytes32,address,string,bool),uint8,bytes12,uint16,uint8,uint16,bool,bytes32,uint32,uint64))'
+
+/** When a process's grace window closes, as a unix time. */
+export const GRACE_END = 'getProcessGraceEnd(bytes31)(uint256)'
 
 export const METADATA_EVENT =
   'ProcessMetadataUpdated(bytes31 indexed processId, string metadataURI, bytes32 metadataHash)'
@@ -85,6 +88,11 @@ export function metadataHistoryCommand(input: { registry: string; processId: str
     `  "${METADATA_EVENT}" \\`,
     `  ${input.processId} --rpc-url $RPC`,
   ].join('\n')
+}
+
+/** When a process's grace window closes, from the registry: the results calls open at that unix time. */
+export function graceEndCommand(input: { registry: string; processId: string }): string {
+  return [`cast call ${input.registry} \\`, `  "${GRACE_END}" \\`, `  ${input.processId} --rpc-url $RPC`].join('\n')
 }
 
 /** The 192-byte point-evaluation input: versioned hash, z, y, commitment, proof. */

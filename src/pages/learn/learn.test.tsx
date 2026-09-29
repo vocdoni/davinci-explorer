@@ -96,7 +96,7 @@ describe('glossary', () => {
 
 describe('pickExamples', () => {
   it('picks nothing on an empty registry', () => {
-    expect(pickExamples([])).toEqual({ active: null, withResults: null, dkg: null, newest: null })
+    expect(pickExamples([])).toEqual({ active: null, withResults: null, dkg: null, grace: null, newest: null })
   })
 })
 

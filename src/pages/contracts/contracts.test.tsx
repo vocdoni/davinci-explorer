@@ -36,6 +36,10 @@ describe('ContractsPage', () => {
     expect(within(screen.getByTestId('wiring-checks')).getByText('7 of 7 consistent')).toBeInTheDocument()
     expect(screen.getByTestId('registration-epoch')).toHaveTextContent('registrationEpoch()')
     expect(screen.getByTestId('page-contracts')).toHaveTextContent(`pins frozen on ${formatDate(release.date)}`)
+    // The grace window settings, to the second.
+    expect(screen.getByTestId('param-defaultGrace')).toHaveTextContent('3 min · 180 s')
+    expect(screen.getByTestId('param-graceFloor')).toHaveTextContent('2 min 30 s · 150 s')
+    expect(screen.getByTestId('param-graceMaxTotal')).toHaveTextContent('registry.graceMaxTotal()')
   })
 
   it('formats numbers and dates in the active language', async () => {

@@ -138,10 +138,10 @@ are numbers; field elements, tallies and wei are `bigint`; hex is lowercase.
 
 | Entity             | Key           | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ProcessEntity`    | pid (bytes31) | organizer, creation block/tx/time, `state` (the normalised `getProcess`: status, key mode, ballot mode, census, key, times, counters, root, result, `metadataURI` and `metadataHash`, DKG info) and the block it was read at, `genesisRoot`, transition keys, status / duration / max-voters / census changes, `metadataHistory` (below), `results` (`ProcessResultsSet`), `decryptionRequest` (`ResultsDecryptionRequested`), event indices |
+| `ProcessEntity`    | pid (bytes31) | organizer, creation block/tx/time, `state` (the normalised `getProcess`: status, key mode, ballot mode, census, key, times, counters, root, result, `metadataURI` and `metadataHash`, DKG info, `grace` and `lastVoteAt`) and the block it was read at, `genesisRoot`, transition keys, status / duration / max-voters / grace / census changes, `metadataHistory` (below), `results` (`ProcessResultsSet`), `decryptionRequest` (`ResultsDecryptionRequested`), event indices |
 | `TransitionEntity` | `pid:index`   | 0-based index (the sequencer API's), block, tx, time, sender, roots before and after, process totals after, `newVoters` and `overwrites` of this batch, `nBlobs`                                                                                                                                                                                                                                                                             |
 | `TxDetails`        | tx hash       | from, status, gas, blob gas, `fee` (gas·price + blob gas·blob price), `blobVersionedHashes` (null when the RPC omits it), calldata size, the decoded `publicValues`, `proofBytes`, `commitments`, `ys`, `kzgProofs`; for `newProcess`, the census, duration, voter limit and status it was created with (`initialCensusRoot`, `initialCensusURI`, `initialDuration`, `initialMaxVoters`, `initialStatus`)                                    |
-| `ChainMeta`        |               | chain id, network name, registry, start block, head block and time, block time, `registry` (immutables: program vks, `rootCVadcopFinal`, `ballotVKHash`, `ziskVerifier` and its runtime code hash, `dkgAdapter` → DKG manager and app manager, `chainID`, `pidPrefix`, `processCount`)                                                                                                                                                       |
+| `ChainMeta`        |               | chain id, network name, registry, start block, head block and time, block time, `registry` (immutables: program vks, `rootCVadcopFinal`, `ballotVKHash`, `ziskVerifier` and its runtime code hash, `dkgAdapter` → DKG manager and app manager, the grace window settings `defaultGrace`, `graceFloor`, `graceCeil`, `graceMaxTotal`, `noticeMin`, `chainID`, `pidPrefix`, `processCount`)                                                            |
 
 `metadataHistory` is every `ProcessMetadataUpdated`, oldest first: the
 document set at creation, then each `setProcessMetadata`. A `MetadataVersion`
@@ -153,10 +153,23 @@ settled before it). The last one is what `getProcess` returns.
 `changedWhileOpen(version)` (`pages/process/metadata.ts`) is the flag the
 pages show in amber.
 
-A process's on-chain status stays `ready` after its end time until someone
-ends it or posts results. `processPhase` (below) combines status and clock:
-`upcoming`, `open`, `paused`, `closed` (ready but past the end), `ended`,
-`canceled`, `results`, and `loading` before the first read.
+After its end a process keeps recording batches for a grace window, until
+`graceEnd = min(end + graceMaxTotal, max(end, lastVoteAt) + grace)`
+(`getProcessGraceEnd`); each batch recorded after the end moves `lastVoteAt`,
+so the window slides until the cap, and the results calls open only when it
+closes. The explorer computes it with the same formula (`graceEnd` in
+`~protocol/grace`, `processGraceEnd` for a process) rather than calling the
+view: the event of a new batch moves it before the next `getProcess` read.
+A process's on-chain status stays `ready` (or `paused`: a pause does not
+outlive the end) after its end until someone posts results. `processPhase`
+(below) combines status, clock and window: `upcoming`, `open`, `paused`
+(before the end), `closing` (past the end, window open, whatever the status),
+`ended` (window closed, results pending), `canceled`, `results`, and
+`loading` before the first read. A process row carries `grace`, `graceEnd`,
+`graceCap` and the batches and votes recorded after the end
+(`graceBatches`, `graceVotes`); a transition row carries `afterEnd`
+(`settledAfterEnd`: its block time at or past the end, the organizer's end in
+the same block ordered by log index).
 
 ## Hooks
 
@@ -168,7 +181,7 @@ call with `undefined` (they return `null` or `[]`):
 | `useIndexer()`                 | `{ status, kind, loading, scanning, headBlock, lastBlock, progress, refresh, clearCache }`; `status.chainMismatch`, `status.errors`, `status.skippedTx`    |
 | `useChain()` / `useChainNow()` | `ChainMeta`; the head block's unix time (use it as "now")                                                                                                  |
 | `useNetworkStats()`            | processes by status / phase / key mode / census origin, organizers, voters, overwrites, ballots, transitions, blobs, processes with results, last activity |
-| `useProcesses(filter)`         | `ProcessRow[]`, newest first; `filter = { status (a status or a phase), keyMode, censusOrigin, organizer, query }`                                         |
+| `useProcesses(filter)`         | `ProcessRow[]`, newest first; `filter = { status, keyMode, censusOrigin, organizer, query }`, `status` being `ready` (the on-chain status) or a phase     |
 | `useProcess(pid)`              | `{ process, row, transitions, rootChain }`; also asks for a fresh `getProcess`                                                                             |
 | `useTransitions(pid)`          | `TransitionRow[]` in index order, with gas, fee and `continuous` (root continuity)                                                                         |
 | `useTransition(pid, index)`    | `TransitionDetail`: entity, row, process, previous/next, `tx`, decoded `publics`, and `checks` (below); asks for the tx details first                      |
@@ -229,7 +242,9 @@ it as unverified. `metadataHashCommand` and `metadataHistoryCommand`
 
 Pure functions, unit-tested; use them directly when a hook does not fit.
 
-- `~indexer/selectors`: `processRow(s)`, `processPhase`, `transitionRows`,
+- `~indexer/selectors`: `processRow(s)`, `processPhase`, `processGraceEnd`,
+  `settledAfterEnd`, `durationBefore` (what a `ProcessDurationChanged`
+  replaced, so the feed says whether the end moved earlier), `transitionRows`,
   `rootChain` (genesis → every transition → the registry root, with `gaps`
   and `headMatches`), `transitionDetail`, `transitionByTx`, `networkStats`,
   `activityFeed`, `votesPerDay`, `blockTimestamp` (exact or estimated from the
@@ -299,6 +314,8 @@ Pure functions, unit-tested; use them directly when a hook does not fit.
   release, newest first. `PIN_LABELS` are the pins' plain names ("Batch
   program", "Proving setup"); the pin's own name (`batchProgramVK`) is the
   technical one.
+- `~protocol/grace`: `graceEnd` and `graceCap`, the registry's grace window
+  formula.
 - `~protocol/limits`: protocol constants (`NUM_FIELDS`, `MAX_BLOBS`,
   `TX_BLOB_CAP`, vote-id and slot namespaces, the refresh rule).
 
@@ -417,7 +434,13 @@ transition over four blobs), `settledVote` (a vote id with a tracker proof
 that verifies), `pendingVote`, and three metadata cases:
 `metadataBeforeStart` (a second version set before voting opened),
 `metadataAfterVotes` (one set after votes had settled, flagged) and
-`metadataTampered` (the URI serves another document than the committed one).
+`metadataTampered` (the URI serves another document than the committed one),
+and three grace window cases: `closingProcess` (past its end with the window
+open for a few more minutes of the demo's clock, two batches recorded after
+the end, a grace the organizer raised), `graceSettled` (a window that closed
+after recording two batches, results pending) and `shortenedEnd` (an end the
+organizer moved earlier, still open). The demo registry has the production
+grace settings.
 `fixture.metadata` holds the bytes each URI serves, and every other process's
 hash is the SHA-256 of those bytes. Roots after each transition are the roots
 of a vote-id tree (`smt.ts`), so tracker proofs verify with the real

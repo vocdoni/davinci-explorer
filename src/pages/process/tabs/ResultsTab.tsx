@@ -47,7 +47,10 @@ function ContractRules({ mode }: { mode: 'sequencer' | 'dkg' }) {
         Only for an election with a sequencer key that is not canceled and has no results yet (
         <code>setProcessResults</code>).
       </Trans>,
-      <Trans key='2'>The election must have ended: status Ended, or its end time passed.</Trans>,
+      <Trans key='2'>
+        The election must have ended, by status or by time, and its grace window must have closed, so no batch can come
+        after the results (<code>GraceOpen</code> otherwise).
+      </Trans>,
       <Trans key='3'>
         The results program must report that every one of its checks passed: <Formula expr='ok = 1, fail_mask = 0' />.
       </Trans>,
@@ -66,7 +69,7 @@ function ContractRules({ mode }: { mode: 'sequencer' | 'dkg' }) {
     dkg: [
       <Trans key='1'>
         Only for an election with a committee key that is not canceled, has no results and was not sent before, once
-        voting has ended by status or by time (<code>requestResultsDecryption</code>).
+        voting has ended by status or by time and its grace window has closed (<code>requestResultsDecryption</code>).
       </Trans>,
       <Trans key='2'>
         The <Term id='accumulator'>encrypted total</Term> sent must be the one in the latest state, with every number in
@@ -279,9 +282,9 @@ function TallyPanel({ view }: { view: ProcessView }) {
 }
 
 const NEXT: Record<KeyModeName, MessageDescriptor> = {
-  sequencer: msg`After voting ends, the key holder (normally the sequencer node that issued the key) decrypts the encrypted total, proves the results with the results program and publishes them (setProcessResults). Only the key holder can.`,
-  'dkg-automatic': msg`After voting ends, anyone can send the encrypted total to the key committee (requestResultsDecryption); sequencers do it on their first heartbeat after the end. Enough members then decrypt it together, field by field, and anyone can store the results on the chain (finalizeResultsFromDKG).`,
-  'dkg-locked': msg`After voting ends, anyone can send the encrypted total to the key committee (requestResultsDecryption); sequencers do it on their first heartbeat after the end. The committee can decrypt it only after the organizer reveals the organizer secret (revealProcessKey); then anyone can store the results on the chain (finalizeResultsFromDKG).`,
+  sequencer: msg`After voting ends and its grace window closes, the key holder (normally the sequencer node that issued the key) decrypts the encrypted total, proves the results with the results program and publishes them (setProcessResults). Only the key holder can.`,
+  'dkg-automatic': msg`After voting ends and its grace window closes, anyone can send the encrypted total to the key committee (requestResultsDecryption); sequencers do it on their first heartbeat after that. Enough members then decrypt it together, field by field, and anyone can store the results on the chain (finalizeResultsFromDKG).`,
+  'dkg-locked': msg`After voting ends and its grace window closes, anyone can send the encrypted total to the key committee (requestResultsDecryption); sequencers do it on their first heartbeat after that. The committee can decrypt it only after the organizer reveals the organizer secret (revealProcessKey); then anyone can store the results on the chain (finalizeResultsFromDKG).`,
 }
 
 function NoResultsPanel({ view }: { view: ProcessView }) {
@@ -302,14 +305,24 @@ function NoResultsPanel({ view }: { view: ProcessView }) {
       s.keyMode === 'dkg-locked'
         ? t`The encrypted total went to the key committee. Its members can decrypt it once the organizer reveals the organizer secret; when every field is decrypted, anyone can store the results on the chain.`
         : t`The encrypted total went to the key committee. Once enough members have posted their partial decryptions and every field is combined, anyone can store the results on the chain.`
-  } else if (phase === 'ended' || phase === 'closed') {
+  } else if (phase === 'ended') {
     title = t`Voting is over; results pending`
+  } else if (phase === 'closing') {
+    title = t`Recording the last votes`
   }
   return (
     <div data-testid='no-results'>
       <Callout tone={phase === 'canceled' ? 'warn' : 'info'} title={title}>
         <p>{body}</p>
-        {phase !== 'canceled' && !request && phase !== 'ended' && phase !== 'closed' ? (
+        {phase === 'closing' ? (
+          <p className='mt-1'>
+            <Trans>
+              Voting has ended, but until the grace window closes, <Timestamp value={view.row.graceEnd} />, batches of
+              votes cast before the end can still be recorded. The registry accepts the results only after that, so they
+              count every recorded vote.
+            </Trans>
+          </p>
+        ) : phase !== 'canceled' && !request && phase !== 'ended' ? (
           <p className='mt-1'>
             {endTime ? (
               paused ? (

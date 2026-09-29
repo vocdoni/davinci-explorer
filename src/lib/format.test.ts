@@ -7,6 +7,7 @@ import {
   formatCompact,
   formatDate,
   formatDuration,
+  formatSeconds,
   formatGwei,
   formatList,
   formatNumber,
@@ -55,6 +56,10 @@ describe('numbers and units', () => {
     expect(formatDuration(600)).toBe('10 min')
     expect(formatDuration(3600 + 300)).toBe('1 h 5 min')
     expect(formatDuration(86400 * 2)).toBe('2 d')
+    expect(formatSeconds(150)).toBe('2 min 30 s')
+    expect(formatSeconds(180)).toBe('3 min')
+    expect(formatSeconds(45)).toBe('45 s')
+    expect(formatSeconds(3600 + 90)).toBe('1 h 1 min')
     expect(formatDuration(86400 + 3600 * 3)).toBe('1 d 3 h')
   })
 

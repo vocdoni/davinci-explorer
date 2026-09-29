@@ -29,8 +29,9 @@ export function Results({ ex }: { ex: LearnExamples }) {
         </P>
         <P>
           <Trans>
-            An election can get its results once it is Ended, or once its end time has passed while it is Ready or
-            Paused. How the total is decrypted and proven depends on{' '}
+            An election can get its results once its voting time is over and the{' '}
+            <A to={`${paths.learn('settlement')}#after-the-end`}>grace window</A> after it has closed, so the results
+            count every recorded vote. How the total is decrypted and proven depends on{' '}
             <A to={paths.learn('key-modes')}>who holds the key</A>.
           </Trans>
         </P>
@@ -46,8 +47,9 @@ export function Results({ ex }: { ex: LearnExamples }) {
       <Section id='sequencer-key-a-results-proof' title={t`Sequencer key: a results proof`}>
         <P>
           <Trans>
-            Once the election has ended and its state is final, the sequencer holding the key decrypts the total. It
-            then proves the decryption with a second program, the results program, which checks:
+            Once the election has ended and its grace window has closed, so its state is final, the sequencer holding
+            the key decrypts the total. It then proves the decryption with a second program, the results program, which
+            checks:
           </Trans>
         </P>
         <NumberedList
@@ -88,9 +90,9 @@ export function Results({ ex }: { ex: LearnExamples }) {
           </P>
           <P>
             <Trans>
-              <C>setProcessResults</C> then requires a sequencer-key process that has ended,{' '}
-              <Formula expr='ok = 1, fail_mask = 0' />, a state root equal to the process’s <C>latestStateRoot</C>, and
-              a PLONK proof verified against <C>resultsProgramVK</C>.
+              <C>setProcessResults</C> then requires a sequencer-key process that has ended and whose grace window has
+              closed (<C>GraceOpen</C> otherwise), <Formula expr='ok = 1, fail_mask = 0' />, a state root equal to the
+              process’s <C>latestStateRoot</C>, and a PLONK proof verified against <C>resultsProgramVK</C>.
             </Trans>
           </P>
         </Details>
@@ -106,9 +108,9 @@ export function Results({ ex }: { ex: LearnExamples }) {
           className='my-4 [&_li]:text-[14px]'
           items={[
             <Trans key='request'>
-              After the end, anyone can ask for the decryption; sequencers ask on their own shortly after the end. The
-              registry checks that the encrypted total is the one in the election’s final state, and moves the election
-              to Ended, which the organizer can no longer change.
+              Once the grace window after the end has closed, anyone can ask for the decryption; sequencers ask on their
+              own shortly after. The registry checks that the encrypted total is the one in the election’s final state,
+              and moves the election to Ended, which the organizer can no longer change.
             </Trans>,
             <Trans key='skip'>
               It skips fields that never received anything (they count as 0, and only an election that never counted a
@@ -137,8 +139,9 @@ export function Results({ ex }: { ex: LearnExamples }) {
             <li>
               <Trans>
                 <C>requestResultsDecryption</C> takes the accumulator and its inclusion proof; sequencers call it on
-                their first heartbeat after the end. The registry checks every coordinate is below the field and that
-                the accumulator is leaf <C>0x04</C> under <C>latestStateRoot</C>.
+                their first heartbeat after the grace window closes, and before that it reverts with <C>GraceOpen</C>.
+                The registry checks every coordinate is below the field and that the accumulator is leaf <C>0x04</C>{' '}
+                under <C>latestStateRoot</C>.
               </Trans>
             </li>
             <li>
@@ -156,7 +159,7 @@ export function Results({ ex }: { ex: LearnExamples }) {
             <li>
               <Trans>
                 <C>finalizeResultsFromDKG</C> reads the plaintexts. Until every ciphertext is combined it reverts with{' '}
-                <C>ResultsNotReady</C>.
+                <C>ResultsNotReady</C> (<C>GraceOpen</C> while the grace window is open).
               </Trans>
             </li>
           </OL>

@@ -19,6 +19,7 @@ const KIND: Record<FeedKind, { label: MessageDescriptor; tone: BadgeTone }> = {
   metadata: { label: msg({ message: 'description', context: 'activity kind' }), tone: 'neutral' },
   duration: { label: msg({ message: 'duration', context: 'activity kind' }), tone: 'neutral' },
   'max-voters': { label: msg({ message: 'limit', context: 'activity kind' }), tone: 'neutral' },
+  grace: { label: msg({ message: 'grace window', context: 'activity kind' }), tone: 'neutral' },
 }
 
 /** The newest registry events, network-wide. */

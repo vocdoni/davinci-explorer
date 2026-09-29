@@ -53,7 +53,7 @@ export function ProcessesPage() {
   const now = useChainNow()
   // A start or an end an election that is over will never reach: no countdown to it.
   const unreached = useCallback(
-    (row: ProcessRow, time: number | null) => votingOver(row, now) && now != null && time != null && time > now,
+    (row: ProcessRow, time: number | null) => votingOver(row) && now != null && time != null && time > now,
     [now]
   )
   const columns = useMemo<AnyColumnDef<ProcessRow>[]>(
@@ -95,7 +95,7 @@ export function ProcessesPage() {
         header: t`Phase`,
         accessorKey: 'phase',
         cell: ({ row }) => <ProcessPhaseBadge phase={row.original.phase} size='sm' />,
-        meta: { width: '120px' },
+        meta: { width: '160px' },
       },
       {
         id: 'keyMode',
@@ -178,7 +178,7 @@ export function ProcessesPage() {
         meta: {
           width: '110px',
           align: 'right',
-          headerTooltip: t`When voting ends: the start time plus the duration. Ending early brings it forward.`,
+          headerTooltip: t`When voting ends: the start time plus the duration. Ending early, or moving the end earlier with notice, brings it forward.`,
         },
       },
     ],
@@ -275,9 +275,9 @@ export function ProcessesPage() {
             )}
             <Explain className='ml-1'>
               <Trans>
-                The phase combines the status on the chain with the clock. After its end time an election still reads
-                Ready on the chain until someone ends it or publishes the results; the explorer shows that as Voting
-                closed.
+                The phase combines the status on the chain with the clock. Right after its end an election is Closing:
+                for a short grace window the registry still records batches of votes cast before the end. Once that
+                window closes it is Ended, results pending, even though the chain may still read Ready.
               </Trans>
             </Explain>
           </p>

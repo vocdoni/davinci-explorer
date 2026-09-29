@@ -86,11 +86,11 @@ export function VerifyPanel({ detail }: { detail: TransitionDetail }) {
           <div className='flex flex-col gap-2 text-[12px] leading-relaxed text-ash'>
             <p>
               <Trans>
-                <code>submitStateTransition</code> first checks that the process is open and inside its voting window,
-                then runs these checks in this order and reverts on the first that fails. The explorer redoes each one
-                it can from the event, the call’s data and the previous batch. The commands need only an RPC node,
-                Foundry’s <code>cast</code> and coreutils, and every one reads the node’s address from <code>$RPC</code>
-                :
+                <code>submitStateTransition</code> first checks that the process is open, or past its end with its grace
+                window still open (<code>getProcessGraceEnd</code>), then runs these checks in this order and reverts on
+                the first that fails. The explorer redoes each one it can from the event, the call’s data and the
+                previous batch. The commands need only an RPC node, Foundry’s <code>cast</code> and coreutils, and every
+                one reads the node’s address from <code>$RPC</code>:
               </Trans>
             </p>
             <CodeBlock code={`export RPC=${rpc}`} label={t`Copy the RPC variable`} />

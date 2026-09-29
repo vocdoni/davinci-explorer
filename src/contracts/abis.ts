@@ -1,6 +1,8 @@
 // Contract ABIs. `abi/*.json` are copies of the sequencer's
 // https://github.com/vocdoni/davinci-sequencer/tree/main/sequencer/abi (forge
-// output of davinci-contracts, branch `zkvm`); refresh them together. The DKG
+// output of davinci-contracts, branch `zkvm`); refresh them together. The
+// registry's has the grace window (`grace`, `lastVoteAt`, `getProcessGraceEnd`,
+// `ProcessGraceChanged` and the five window settings). The DKG
 // fragments are the parts of davinci-dkg's DKGManager / DKGAppManager the
 // explorer reads, from davinci-contracts `src/interfaces/dkg/`.
 
@@ -19,6 +21,7 @@ export const REGISTRY_EVENT_NAMES = [
   'ProcessResultsSet',
   'ProcessDurationChanged',
   'ProcessMaxVotersChanged',
+  'ProcessGraceChanged',
   'CensusUpdated',
   'ProcessMetadataUpdated',
   'ResultsDecryptionRequested',

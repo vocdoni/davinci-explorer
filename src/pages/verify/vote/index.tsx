@@ -5,7 +5,7 @@ import { CodeBlock, Disclosure } from '~components/code'
 import { Formula } from '~components/Formula'
 import { Term } from '~components/Term'
 import { useRuntimeConfig } from '~config/config-context'
-import { useChain, useChainNow, useIndexer, useProcess, useTransition, type ProcessView } from '~data/hooks'
+import { useChain, useIndexer, useProcess, useTransition, type ProcessView } from '~data/hooks'
 import { votingOver } from '~indexer/selectors'
 import { useMetadataCheck, useTrackerProof, useTransitionBlobs, useVoteInclusion, useVoteStatus } from '~data/queries'
 import { useServices } from '~data/context'
@@ -141,7 +141,6 @@ function VoteFrame({
 function VoteChecks({ pid, voteId, choose }: { pid: string; voteId: bigint; choose: ReactNode }) {
   const { t } = useLingui()
   const chain = useChain()
-  const now = useChainNow()
   const { status: indexer } = useIndexer()
   const services = useServices()
   const view = useProcess(pid)
@@ -167,7 +166,7 @@ function VoteChecks({ pid, voteId, choose }: { pid: string; voteId: bigint; choo
   })
   const reported = statuses.flatMap((s) => (s.status.data ? [s.status.data.status] : []))
   // Not while the indexer catches up: its clock runs ahead of the batches it has read.
-  const over = view != null && !indexing && votingOver(view.row, now)
+  const over = view != null && !indexing && votingOver(view.row)
   const settled = settledOutcome(known, inclusion, view?.transitions.length ?? 0, reported, over)
   const checks = detail
     ? batchChecks(detail, {

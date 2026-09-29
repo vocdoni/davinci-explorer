@@ -17,7 +17,7 @@ import type { CensusOriginName, KeyModeName, ProcessStatusName } from '~protocol
 export type { Address, Hex, RegistryEventName }
 
 /** Bumped whenever the shape below changes; a mismatch drops the cache. */
-export const STORE_VERSION = 4
+export const STORE_VERSION = 5
 
 /** `bytes31` process id, lowercase. */
 export type ProcessId = Hex
@@ -39,6 +39,8 @@ export interface EventDataMap {
   ProcessResultsSet: { sender: Address; result: bigint[] }
   ProcessDurationChanged: { duration: number }
   ProcessMaxVotersChanged: { maxVoters: number }
+  /** Seconds. */
+  ProcessGraceChanged: { grace: number }
   CensusUpdated: { censusRoot: Hex; censusURI: string }
   ProcessMetadataUpdated: { metadataURI: string; metadataHash: Hex }
   ResultsDecryptionRequested: { epochId: Hex; aid: Hex; firstIndex: number; count: number }
@@ -127,6 +129,10 @@ export interface ProcessState {
   keyMode: KeyModeName
   /** Null in sequencer key mode. */
   dkg: DkgProcessInfo | null
+  /** The grace window: seconds past the end, or past the last batch, that batches still settle. */
+  grace: number
+  /** Unix seconds of the last settled transition; 0 before the first. */
+  lastVoteAt: number
 }
 
 export interface StatusChange {
@@ -202,6 +208,8 @@ export interface ProcessEntity {
   statusChanges: StatusChange[]
   durationChanges: ValueChange<number>[]
   maxVotersChanges: ValueChange<number>[]
+  /** `ProcessGraceChanged`: the organizer's `setProcessGrace`, in seconds. */
+  graceChanges: ValueChange<number>[]
   censusUpdates: ValueChange<{ root: Hex; uri: string }>[]
   /** Every metadata document the process had, oldest first; the last is the current one. */
   metadataHistory: MetadataVersion[]
@@ -288,6 +296,15 @@ export interface RegistryInfo {
   /** The adapter's `manager()` / `appManager()`; null while the read fails. */
   dkgManager: Address | null
   dkgAppManager: Address | null
+  /** The grace window a new process starts with, in seconds. */
+  defaultGrace: number
+  /** The bounds `setProcessGrace` accepts, in seconds. */
+  graceFloor: number
+  graceCeil: number
+  /** The cap on the grace window past the end, in seconds. */
+  graceMaxTotal: number
+  /** The least notice, in seconds, for moving an end earlier. */
+  noticeMin: number
   readAtBlock: number
 }
 

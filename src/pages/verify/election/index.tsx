@@ -6,10 +6,11 @@ import { KeyModeBadge, ProcessPhaseBadge, Term, UnverifiedMark } from '~componen
 import { CodeBlock, Disclosure } from '~components/code'
 import { useRuntimeConfig } from '~config/config-context'
 import { useDataSource } from '~data/context'
-import { useChain, useChainNow, useIndexer, useProcess, useStore, type ProcessView } from '~data/hooks'
+import { useChain, useIndexer, useProcess, useStore, type ProcessView } from '~data/hooks'
 import { useMetadataCheck } from '~data/queries'
 import { transitionDetail, votingOver, type TransitionDetail } from '~indexer/selectors'
 import { Callout, Card, SkeletonText } from '~kit'
+import { formatSeconds } from '~lib/format'
 import { publicRpc } from '~pages/contracts/model'
 import { metadataTitle } from '~pages/process/metadata'
 import { useCreation, votingEnd } from '~pages/process/ending'
@@ -17,6 +18,7 @@ import { revealedBeforeEnd } from '~pages/process/reveal'
 import { useDkgResultsChecks, useSequencerResultsChecks, type ResultsCheck } from '~pages/process/results-checks'
 import {
   GET_PROCESS,
+  graceEndCommand,
   metadataHashCommand,
   metadataHistoryCommand,
   observerCommand,
@@ -188,7 +190,6 @@ function ElectionChecks({ pid }: { pid: string }) {
   const store = useStore()
   const source = useDataSource()
   const chain = useChain()
-  const now = useChainNow()
   const { status: indexer } = useIndexer()
   const view = useProcess(pid)
   const metadata = useMetadataCheck(view?.process.state?.metadataURI, view?.process.state?.metadataHash)
@@ -254,7 +255,7 @@ function ElectionChecks({ pid }: { pid: string }) {
   const described = loaded ? metadataCheckStatus(metadata.status) : 'pending'
   const history = view.process.metadataHistory
   const changed = history.length > 1 ? metadataHistoryStatus(history) : null
-  const batches = batchesStatus(verdicts, votingOver(view.row, now))
+  const batches = batchesStatus(verdicts, votingOver(view.row))
   const rootChain = chainStatus(view.rootChain, loaded)
   const published = publishedStatus(view.process.results != null, phase)
   const resultChecks: ResultsCheck[] = keyMode === 'sequencer' ? sequencerResults.checks : dkgResults.checks
@@ -365,7 +366,8 @@ function ElectionRedo({ view }: { view: ProcessView }) {
             <Trans>
               The first command prints the registry’s record of the election: its status, key, list of voters, counts
               and current state fingerprint (state root). The second lists every recorded batch with the fingerprints it
-              went from and to.
+              went from and to. The third prints when the grace window closes, as a unix time: batches recorded after
+              the end and before it are in the list too, and the registry accepts the results only from then on.
             </Trans>
           </p>
         </Prose>
@@ -377,6 +379,7 @@ function ElectionRedo({ view }: { view: ProcessView }) {
             `cast logs --from-block ${view.process.createdBlock} --address ${registry} \\`,
             `  "${TRANSITION_EVENT}" \\`,
             `  ${pid} --rpc-url $RPC`,
+            graceEndCommand({ registry, processId: pid }),
           ].join('\n')}
           label={t`Copy the commands`}
         />
@@ -499,6 +502,10 @@ function ElectionProves({ keyMode }: { keyMode: KeyModeName | null }) {
 /** What the organizer can still do to a process, and what the key modes ask of them (the organizer's guide). */
 function OrganizerControls() {
   const { t } = useLingui()
+  const registry = useChain().registry
+  const notice = registry ? formatSeconds(registry.noticeMin) : null
+  const floor = registry ? formatSeconds(registry.graceFloor) : null
+  const ceil = registry ? formatSeconds(registry.graceCeil) : null
   const LINK = 'text-emerald hover:underline'
   return (
     <Disclosure summary={t`For organizers: your controls, and getting the results`} testId='organizer-controls'>
@@ -510,18 +517,42 @@ function OrganizerControls() {
           <li>
             <Trans>
               <code>setProcessStatus</code>: from Ready or Paused, to Paused, Ready, Canceled or Ended. Pausing stops
-              batches from being recorded but not the clock; votes can still queue at a sequencer and be recorded after
-              you resume. Ending by hand also shortens the duration to the time elapsed. Canceled and Results are final.
+              batches from being recorded but not the clock, and only until the end: you cannot pause after it, and a
+              pause still on at the end lets the grace window record batches as usual. Votes can queue at a sequencer
+              and be recorded after you resume. Ending by hand sets the end to that moment, and only after the start
+              (cancel before it). Canceled and Results are final.
             </Trans>
           </li>
           <li>
-            <Trans>
-              <code>setProcessDuration</code>: only longer, while Ready or Paused and before the current end.
-            </Trans>
+            {notice ? (
+              <Trans>
+                <code>setProcessDuration</code>: while Ready or Paused and before the current end, a later end, or an
+                earlier one at least {notice} away, so that everyone sees the new end before it arrives.
+              </Trans>
+            ) : (
+              <Trans>
+                <code>setProcessDuration</code>: while Ready or Paused and before the current end, a later end, or an
+                earlier one with the registry’s minimum notice, so that everyone sees the new end before it arrives.
+              </Trans>
+            )}
+          </li>
+          <li>
+            {floor && ceil ? (
+              <Trans>
+                <code>setProcessGrace</code>: the grace window, from {floor} to {ceil}, while Ready or Paused and before
+                the end.
+              </Trans>
+            ) : (
+              <Trans>
+                <code>setProcessGrace</code>: the grace window, within the registry’s bounds, while Ready or Paused and
+                before the end.
+              </Trans>
+            )}
           </li>
           <li>
             <Trans>
-              <code>setProcessMaxVoters</code>: while Ready or Paused, never below the voters already counted.
+              <code>setProcessMaxVoters</code>: while Ready or Paused and before the end, never below the voters already
+              counted.
             </Trans>
           </li>
           <li>
@@ -540,11 +571,12 @@ function OrganizerControls() {
         </ul>
         <p>
           <Trans>
-            No batch is recorded after the end time. With a sequencer key, the node that holds the key publishes the
-            results once the election has ended; it is the only one that can. With a key committee (a DKG key) anyone
-            can ask the committee to decrypt, and sequencers do on their first heartbeat after the end; in locked mode
-            the decryption waits for your reveal (<code>revealProcessKey</code> on the registry). The results tab shows
-            how the results were produced.
+            Batches are still recorded for a short grace window after the end, so votes cast before it are counted, and
+            no results are accepted until that window closes (<code>getProcessGraceEnd</code>). With a sequencer key,
+            the node that holds the key publishes the results then; it is the only one that can. With a key committee (a
+            DKG key) anyone can ask the committee to decrypt, and sequencers do on their first heartbeat after the
+            window closes; in locked mode the decryption waits for your reveal (<code>revealProcessKey</code> on the
+            registry). The results tab shows how the results were produced.
           </Trans>
         </p>
         <ul className='flex list-disc flex-col gap-1.5 pl-5'>

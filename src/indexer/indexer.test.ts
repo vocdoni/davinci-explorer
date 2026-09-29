@@ -47,6 +47,8 @@ function rawProcess(s: ProcessState) {
     dkgZeroSkipped: s.dkg?.zeroSkipped ?? 0,
     dkgResultsRequested: s.dkg?.resultsRequested ?? false,
     dkgAid: s.dkg?.aid ?? `0x${'00'.repeat(32)}`,
+    grace: s.grace,
+    lastVoteAt: BigInt(s.lastVoteAt),
   }
 }
 
@@ -136,6 +138,11 @@ function fakeClient(opts: FakeOptions = {}) {
           case 'ballotVKHash':
           case 'ziskVerifier':
           case 'dkgAdapter':
+          case 'defaultGrace':
+          case 'graceFloor':
+          case 'graceCeil':
+          case 'graceMaxTotal':
+          case 'noticeMin':
             return ok(registry[c.functionName])
           case 'manager':
             return ok(registry.dkgManager)
@@ -380,6 +387,11 @@ function miniChain() {
           case 'rootCVadcopFinal':
           case 'ballotVKHash':
           case 'ziskVerifier':
+          case 'defaultGrace':
+          case 'graceFloor':
+          case 'graceCeil':
+          case 'graceMaxTotal':
+          case 'noticeMin':
             return ok(registry[c.functionName])
           case 'processCount':
             return ok(1)

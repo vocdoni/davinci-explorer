@@ -3,19 +3,19 @@ import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { SortingState } from '@tanstack/react-table'
 import { Link } from 'react-router'
-import { CheckMark, Explain, NativeAmount, Term, Timestamp, TxLink } from '~components'
+import { AfterEndBadge, CheckMark, Explain, NativeAmount, Term, Timestamp, TxLink } from '~components'
 import { useDataSource } from '~data/context'
-import { useChainNow, type ProcessView } from '~data/hooks'
+import type { ProcessView } from '~data/hooks'
 import { votingOver, type TransitionRow } from '~indexer/selectors'
 import { Address, BlockCell, Card, CardHeader, DataTable, EmptyState, Hash, Panel, type AnyColumnDef } from '~kit'
 import { cn } from '~lib/cn'
 import { formatNumber } from '~lib/format'
 import { paths } from '~routes/paths'
+import { GraceNote } from '../GraceNote'
 
 export function TransitionsTab({ view }: { view: ProcessView }) {
   const { t } = useLingui()
   const source = useDataSource()
-  const now = useChainNow()
   const { process: p, transitions, rootChain } = view
   const pid = p.id
 
@@ -48,8 +48,16 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
         id: 'time',
         header: t`Time`,
         accessorFn: (r) => r.timestamp ?? 0,
-        cell: ({ row }) => <Timestamp value={row.original.timestamp} className='text-[12px]' />,
-        meta: { width: '110px' },
+        cell: ({ row }) => (
+          <span className='inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5'>
+            <Timestamp value={row.original.timestamp} className='text-[12px]' />
+            {row.original.afterEnd ? <AfterEndBadge size='sm' /> : null}
+          </span>
+        ),
+        meta: {
+          width: '130px',
+          headerTooltip: t`When the batch was recorded. A batch recorded after the election’s end, in its grace window, is marked.`,
+        },
       },
       {
         id: 'tx',
@@ -188,6 +196,8 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
         <RootChainList view={view} />
       </Panel>
 
+      <GraceNote view={view} />
+
       <Card flush className='overflow-hidden'>
         <CardHeader
           title={t`Batches`}
@@ -222,7 +232,7 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
           virtualized={transitions.length > 50}
           maxHeight={transitions.length > 15 ? 600 : 100_000}
           empty={
-            votingOver(view.row, now) ? (
+            votingOver(view.row) ? (
               <EmptyState
                 title={t`No batch was recorded`}
                 description={t`Voting is over and no sequencer recorded a batch, so no vote was counted.`}

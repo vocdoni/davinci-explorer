@@ -110,7 +110,7 @@ export function checkCopy(id: RecheckId, censusOrigin: CensusOriginName | null):
         meaning: msg`The registry’s counts of voters and changed votes move exactly as the proof says.`,
         enforced: msg({
           message:
-            'The registry adds the new voters (votes minus changed votes, registers 18 and 19) to `votersCount` and refuses a batch that would pass `maxVoters` (`MaxVotersReached`). It adds the changed votes to `overwrittenVotesCount` and emits the new totals in `ProcessStateTransitioned`.',
+            'The registry refuses a batch without a vote (`EmptyTransition`), adds the new voters (votes minus changed votes, registers 18 and 19) to `votersCount` and refuses a batch that would pass `maxVoters` (`MaxVotersReached`). It adds the changed votes to `overwrittenVotesCount`, sets `lastVoteAt` to the block time, which moves the grace window after the end, and emits the new totals in `ProcessStateTransitioned`.',
         }),
         formula: 'votersCount += VotersCount − OverwrittenVotesCount',
         recheck: msg({

@@ -23,12 +23,17 @@ const PHASE: Record<
   upcoming: { label: msg`Upcoming`, tone: 'info', description: msg`Voting has not started yet.` },
   open: { label: msg`Open`, tone: 'ok', dot: true, status: 'ready' },
   paused: { label: msg`Paused`, tone: 'warn', status: 'paused' },
-  closed: {
-    label: msg`Voting closed`,
+  closing: {
+    label: msg`Closing`,
     tone: 'warn',
-    description: msg`The voting time is over. The registry still reads Ready until someone ends the election or publishes the results.`,
+    dot: true,
+    description: msg`The voting time is over, but for a short grace window batches of votes cast before the end can still be recorded. The results come after it closes.`,
   },
-  ended: { label: msg`Ended`, tone: 'neutral', status: 'ended' },
+  ended: {
+    label: msg`Ended, results pending`,
+    tone: 'neutral',
+    description: msg`Voting is over and the grace window has closed, so no more votes can be recorded. The results are not published yet.`,
+  },
   canceled: { label: msg`Canceled`, tone: 'danger', status: 'canceled' },
   results: { label: msg`Results`, tone: 'done', status: 'results' },
 }
@@ -48,6 +53,22 @@ export function ProcessPhaseBadge({ phase, size }: { phase: ProcessPhase; size?:
       <span className='inline-flex max-w-full'>
         <Badge tone={p.tone} dot={p.dot} size={size}>
           {i18n._(p.label)}
+        </Badge>
+      </span>
+    </Tooltip>
+  )
+}
+
+/** A batch recorded after its election's end, in the grace window: information, not a warning. */
+export function AfterEndBadge({ size }: { size?: 'sm' | 'md' }) {
+  const { t } = useLingui()
+  return (
+    <Tooltip
+      content={t`Recorded after the election’s end, during the grace window that lets batches of votes cast before the end be recorded.`}
+    >
+      <span className='inline-flex max-w-full'>
+        <Badge tone='info' size={size}>
+          {t`after the end`}
         </Badge>
       </span>
     </Tooltip>

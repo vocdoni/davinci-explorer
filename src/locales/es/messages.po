@@ -261,20 +261,22 @@ msgid "Paused"
 msgstr "En pausa"
 
 #: src/components/badges.tsx
-#: src/pages/process/timeline.ts
 #: src/pages/processes/filters.ts
-msgid "Voting closed"
-msgstr "Votación cerrada"
+msgid "Closing"
+msgstr "En cierre"
 
 #: src/components/badges.tsx
-msgid "The voting time is over. The registry still reads Ready until someone ends the election or publishes the results."
-msgstr "El periodo de votación ha terminado. El registro la sigue mostrando en estado Listo hasta que alguien finalice la votación o publique los resultados."
+msgid "The voting time is over, but for a short grace window batches of votes cast before the end can still be recorded. The results come after it closes."
+msgstr "El periodo de votación ha terminado, pero durante un breve periodo de gracia aún se pueden anotar lotes de votos emitidos antes del final. Los resultados llegan cuando se cierra."
 
 #: src/components/badges.tsx
 #: src/pages/processes/filters.ts
-#: src/protocol/types.ts
-msgid "Ended"
-msgstr "Finalizado"
+msgid "Ended, results pending"
+msgstr "Finalizado, resultados pendientes"
+
+#: src/components/badges.tsx
+msgid "Voting is over and the grace window has closed, so no more votes can be recorded. The results are not published yet."
+msgstr "La votación ha terminado y el periodo de gracia se ha cerrado, así que ya no se pueden anotar más votos. Los resultados aún no se han publicado."
 
 #: src/components/badges.tsx
 #: src/pages/process/timeline.ts
@@ -301,6 +303,14 @@ msgstr "Cancelado"
 #: src/protocol/types.ts
 msgid "Results"
 msgstr "Resultados"
+
+#: src/components/badges.tsx
+msgid "Recorded after the election’s end, during the grace window that lets batches of votes cast before the end be recorded."
+msgstr "Anotado tras el final de la votación, durante el periodo de gracia que permite anotar los lotes de votos emitidos antes del final."
+
+#: src/components/badges.tsx
+msgid "after the end"
+msgstr "tras el final"
 
 #: src/components/blob/BlobCellView.tsx
 msgid "not zero"
@@ -849,6 +859,28 @@ msgid "The state root before the first transition, computed by the registry at c
 msgstr "La raíz de estado antes de la primera transición, que el registro calcula en la creación a partir de seis hojas: el id de proceso, el modo de papeleta, el hash de la clave de cifrado, un acumulador vacío, el origen del censo y el hash de la VK de las papeletas."
 
 #: src/content/glossary.ts
+#: src/pages/contracts/index.tsx
+#: src/pages/process/tabs/OverviewTab.tsx
+#: src/pages/process/timeline.ts
+msgid "Grace window"
+msgstr "Periodo de gracia"
+
+#: src/content/glossary.ts
+msgid "A short time after an election’s end during which batches of votes cast before the end can still be recorded. The results wait until it closes."
+msgstr "Un breve tiempo tras el final de una votación durante el cual aún se pueden anotar lotes de votos emitidos antes del final. Los resultados esperan a que se cierre."
+
+#: src/content/glossary.ts
+msgid "Sequencers collect votes and record them in batches, so a vote cast just before the end can still be on its way when the end passes. The registry keeps accepting batches after the end until the grace window closes, `getProcessGraceEnd`, as below: `grace` seconds after the end or after the last batch, whichever is later, and never more than `graceMaxTotal` after the end. `lastVoteAt` is the time of the last recorded batch. Every batch recorded after the end moves the window later, and once it closes nothing is recorded again. The results calls revert with `GraceOpen` until then. The registry cannot tell when a vote was cast, so a sequencer could include one cast after the end; the window is short and capped, and each batch’s time is public."
+msgstr "Los secuenciadores recogen los votos y los anotan por lotes, así que un voto emitido justo antes del final aún puede estar en camino cuando el final llega. El registro sigue aceptando lotes tras el final hasta que se cierra el periodo de gracia, `getProcessGraceEnd`, como se indica abajo: `grace` segundos después del final o del último lote, lo que ocurra más tarde, y nunca más de `graceMaxTotal` después del final. `lastVoteAt` es la hora del último lote anotado. Cada lote anotado tras el final retrasa el cierre, y una vez cerrado ya no se anota nada más. Hasta entonces, las llamadas de resultados revierten con `GraceOpen`. El registro no puede saber cuándo se emitió un voto, así que un secuenciador podría incluir uno emitido tras el final; el periodo es breve y tiene un límite, y la hora de cada lote es pública."
+
+#: src/content/glossary.ts
+#: src/content/glossary.ts
+#: src/content/glossary.ts
+#: src/pages/learn/topics.ts
+msgid "What the chain checks for each batch"
+msgstr "Qué comprueba la cadena en cada lote"
+
+#: src/content/glossary.ts
 msgid "Program (guest)"
 msgstr "Programa (guest)"
 
@@ -1152,12 +1184,6 @@ msgid "A sequencer settles a batch by sending `submitStateTransition` with the p
 msgstr "Un secuenciador liquida un lote enviando `submitStateTransition` con la prueba, los valores públicos y los blobs. La liquidación no requiere permiso: cualquiera puede enviar la transacción, y las comprobaciones del registro deciden si se acepta. Un lote liquidado es una transición de estado."
 
 #: src/content/glossary.ts
-#: src/content/glossary.ts
-#: src/pages/learn/topics.ts
-msgid "What the chain checks for each batch"
-msgstr "Qué comprueba la cadena en cada lote"
-
-#: src/content/glossary.ts
 msgid "Silent refresh"
 msgstr "Renovación silenciosa"
 
@@ -1445,8 +1471,20 @@ msgid "End time changed"
 msgstr "Hora de cierre modificada"
 
 #: src/indexer/selectors.ts
+msgid "End moved earlier"
+msgstr "Hora de cierre adelantada"
+
+#: src/indexer/selectors.ts
+msgid "End moved later"
+msgstr "Hora de cierre retrasada"
+
+#: src/indexer/selectors.ts
 msgid "Voter limit set to {maxVoters}"
 msgstr "Límite de votantes fijado en {maxVoters}"
+
+#: src/indexer/selectors.ts
+msgid "Grace window set to {grace}"
+msgstr "Periodo de gracia fijado en {grace}"
 
 #: src/indexer/selectors.ts
 #: src/pages/kit/index.tsx
@@ -1870,6 +1908,98 @@ msgstr "El DKGAppManager no tiene ningún registrador configurado: cualquier con
 #: src/pages/contracts/DkgPanel.tsx
 msgid "Each registration takes one of the epoch’s {poolKeys} pool keys. Once one key or fewer is left, the contract allows the next epoch early and the nodes create it; if the keys run out first, creating elections with a committee key waits for it (about one epoch setup)."
 msgstr "Cada inscripción toma una de las {poolKeys} claves de la reserva de la época. Cuando queda una clave o ninguna, el contrato permite adelantar la siguiente época y los nodos la crean; si las claves se agotan antes, la creación de votaciones con clave de comité espera a que exista (más o menos lo que tarda en prepararse una época)."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Grace window of a new election"
+msgstr "Periodo de gracia de una votación nueva"
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "How long a new election keeps recording batches of votes after its end, counted from the end or from the last batch recorded after it."
+msgstr "Cuánto tiempo sigue una votación nueva anotando lotes de votos tras su final, contado desde el final o desde el último lote anotado después de él."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Sequencers record votes in batches, so votes cast just before the end can still be on their way when it passes. The window lets them count, and the results wait until it closes."
+msgstr "Los secuenciadores anotan los votos por lotes, así que los votos emitidos justo antes del final aún pueden estar en camino cuando este llega. El periodo permite que cuenten, y los resultados esperan a que se cierre."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Every <0>newProcess</0> starts with <1>grace = defaultGrace</1>. Transitions settle while the block time is below <2>getProcessGraceEnd(processId)</2>, below; <3>setProcessResults</3>, <4>requestResultsDecryption</4> and <5>finalizeResultsFromDKG</5> revert with <6>GraceOpen</6> until then."
+msgstr "Cada <0>newProcess</0> empieza con <1>grace = defaultGrace</1>. Las transiciones se liquidan mientras la hora del bloque es inferior a <2>getProcessGraceEnd(processId)</2>, abajo; <3>setProcessResults</3>, <4>requestResultsDecryption</4> y <5>finalizeResultsFromDKG</5> revierten con <6>GraceOpen</6> hasta entonces."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Shortest grace window"
+msgstr "Periodo de gracia más corto"
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "The shortest grace window an organizer can set for an election."
+msgstr "El periodo de gracia más corto que un organizador puede fijar para una votación."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "It leaves the batches still on their way enough time to be recorded after the end."
+msgstr "Deja a los lotes que aún están en camino tiempo suficiente para anotarse tras el final."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "<0>setProcessGrace</0> reverts with <1>InvalidGrace</1> below it. The registry could only be deployed with its settings in this order:"
+msgstr "<0>setProcessGrace</0> revierte con <1>InvalidGrace</1> por debajo de él. El registro solo se pudo desplegar con sus ajustes en este orden:"
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Longest grace window"
+msgstr "Periodo de gracia más largo"
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "The longest grace window an organizer can set for an election."
+msgstr "El periodo de gracia más largo que un organizador puede fijar para una votación."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "It keeps the wait between the end and the results short."
+msgstr "Mantiene breve la espera entre el final y los resultados."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "<0>setProcessGrace(processId, grace)</0> accepts a value between the two bounds, only while the process is Ready or Paused and before its end, and emits <1>ProcessGraceChanged</1>."
+msgstr "<0>setProcessGrace(processId, grace)</0> acepta un valor entre los dos límites, solo mientras el proceso está en estado Listo o En pausa y antes de su final, y emite <1>ProcessGraceChanged</1>."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Latest close after the end"
+msgstr "Cierre más tardío tras el final"
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "However many batches keep arriving, the grace window closes at most this long after the end."
+msgstr "Por muchos lotes que sigan llegando, el periodo de gracia se cierra como mucho este tiempo después del final."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Each batch recorded after the end moves the window later. The cap keeps anyone from holding the results back, and bounds how long a vote cast after the end could slip in: the registry cannot tell when a vote was cast."
+msgstr "Cada lote anotado tras el final retrasa el cierre. El límite impide que nadie retenga los resultados, y acota durante cuánto tiempo podría colarse un voto emitido tras el final: el registro no puede saber cuándo se emitió un voto."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "<0>lastVoteAt</0> is the block time of the last settled transition. Each one after the end extends the window by <1>grace</1> from its own time, up to <2>end + graceMaxTotal</2>. A transition must add a vote (<3>EmptyTransition</3> otherwise), so a batch of silent refreshes alone cannot extend it."
+msgstr "<0>lastVoteAt</0> es la hora del bloque de la última transición liquidada. Cada una tras el final alarga el periodo <1>grace</1> segundos desde su propia hora, hasta <2>end + graceMaxTotal</2>. Una transición debe añadir un voto (si no, <3>EmptyTransition</3>), así que un lote de solo renovaciones silenciosas no puede alargarlo."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Notice to move an end earlier"
+msgstr "Antelación para adelantar el final"
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "An organizer can move the end of an election earlier, but only to a time at least this far away."
+msgstr "Un organizador puede adelantar el final de una votación, pero solo a una hora que esté al menos a esta distancia."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Everyone, the sequencers included, sees the new end before it arrives, so no vote accepted under the old end is left out. It is what lets a live meeting announce that voting closes in one minute."
+msgstr "Todos, secuenciadores incluidos, ven el nuevo final antes de que llegue, así que ningún voto aceptado con el final anterior queda fuera. Es lo que permite que una reunión en directo anuncie que la votación se cierra en un minuto."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "<0>setProcessDuration</0> accepts a shorter duration only when the new end is at least <1>noticeMin</1> seconds after the call, and emits <2>ProcessDurationChanged</2>. <3>setProcessStatus(ENDED)</3> still ends voting at once."
+msgstr "<0>setProcessDuration</0> acepta una duración más corta solo si el nuevo final queda al menos <1>noticeMin</1> segundos después de la llamada, y emite <2>ProcessDurationChanged</2>. <3>setProcessStatus(ENDED)</3> sigue terminando la votación al instante."
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Closing an election"
+msgstr "Cierre de una votación"
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "Grace window and notice"
+msgstr "Periodo de gracia y antelación"
+
+#: src/pages/contracts/GracePanel.tsx
+msgid "How the registry closes an election. After the end it keeps recording batches of votes cast before it for a short <0>grace window</0>, and accepts the results only once that window closes. These settings were fixed when the registry was deployed."
+msgstr "Cómo cierra el registro una votación. Tras el final sigue anotando lotes de votos emitidos antes de él durante un breve <0>periodo de gracia</0>, y solo acepta los resultados cuando ese periodo se cierra. Estos ajustes se fijaron al desplegar el registro."
 
 #: src/pages/contracts/ParametersPanel.tsx
 msgid "Proof verifier"
@@ -2713,7 +2843,6 @@ msgid "results"
 msgstr "con resultados"
 
 #: src/pages/kit/index.tsx
-#: src/pages/overview/ProcessesPanel.tsx
 msgctxt "process phase"
 msgid "ended"
 msgstr "finalizados"
@@ -3260,8 +3389,8 @@ msgid "Anyone may record batches (settlement is permissionless), so several sequ
 msgstr "Cualquiera puede anotar lotes (la liquidación no requiere permiso), así que varios secuenciadores pueden atender una misma votación. Un secuenciador que pierde una carrera, y un <0>observador</0> que nunca anota lotes, reconstruyen cada lote a partir de sus datos publicados y solo lo aceptan si al reproducirlo obtienen la nueva huella que anotó el registro. Cualquiera puede hacer lo mismo, sin preguntar a ningún secuenciador, para comprobar que lo que se contó es lo que se anotó."
 
 #: src/pages/learn/content/HowItWorks.tsx
-msgid "When voting ends, the <0>encrypted total</0> is decrypted and published as the results. The protocol decrypts only that final total, never a single ballot. The key holder could still decrypt any ballot or any earlier total from the published data, which is why the key mode matters."
-msgstr "Cuando termina la votación, el <0>total cifrado</0> se descifra y se publica como resultados. El protocolo solo descifra ese total final, nunca una papeleta concreta. Aun así, el titular de la clave podría descifrar cualquier papeleta o cualquier total anterior a partir de los datos publicados, y por eso importa el modo de clave."
+msgid "When voting ends, and the short <0>grace window</0> that lets the last batches in has closed, the <1>encrypted total</1> is decrypted and published as the results. The protocol decrypts only that final total, never a single ballot. The key holder could still decrypt any ballot or any earlier total from the published data, which is why the key mode matters."
+msgstr "Cuando termina la votación y se cierra el breve <0>periodo de gracia</0> que deja entrar los últimos lotes, el <1>total cifrado</1> se descifra y se publica como resultados. El protocolo solo descifra ese total final, nunca una papeleta concreta. Aun así, el titular de la clave podría descifrar cualquier papeleta o cualquier total anterior a partir de los datos publicados, y por eso importa el modo de clave."
 
 #: src/pages/learn/content/HowItWorks.tsx
 msgid "With a sequencer key, the sequencer that holds the key decrypts the total and proves the decryption with a second program. The registry checks that proof, and that it was made on the election’s final state."
@@ -3476,8 +3605,8 @@ msgid "Each batch adds its ballots to one <0>encrypted total</0>, with one encry
 msgstr "Cada lote suma sus papeletas a un único <0>total cifrado</0>, con un número cifrado por campo de la papeleta. El resultado <1/> es la suma del campo <2/> en todas las papeletas contadas. El protocolo solo descifra el total final, nunca una papeleta concreta. El titular de la clave podría descifrar cualquier total anterior o cualquier papeleta de los datos publicados."
 
 #: src/pages/learn/content/Results.tsx
-msgid "An election can get its results once it is Ended, or once its end time has passed while it is Ready or Paused. How the total is decrypted and proven depends on <0>who holds the key</0>."
-msgstr "Una votación puede obtener sus resultados cuando está en estado Finalizado, o cuando ha pasado su hora de cierre estando en estado Listo o En pausa. Cómo se descifra y se demuestra el total depende de <0>quién tiene la clave</0>."
+msgid "An election can get its results once its voting time is over and the <0>grace window</0> after it has closed, so the results count every recorded vote. How the total is decrypted and proven depends on <1>who holds the key</1>."
+msgstr "Una votación puede obtener sus resultados cuando su periodo de votación ha terminado y el <0>periodo de gracia</0> posterior se ha cerrado, de modo que los resultados cuentan todos los votos anotados. Cómo se descifra y se demuestra el total depende de <1>quién tiene la clave</1>."
 
 #: src/pages/learn/content/Results.tsx
 msgid "The accumulator is state leaf <0>0x04</0>: 16 ElGamal ciphertexts, one per ballot field."
@@ -3488,8 +3617,8 @@ msgid "Sequencer key: a results proof"
 msgstr "Clave del secuenciador: una prueba de resultados"
 
 #: src/pages/learn/content/Results.tsx
-msgid "Once the election has ended and its state is final, the sequencer holding the key decrypts the total. It then proves the decryption with a second program, the results program, which checks:"
-msgstr "Una vez terminada la votación y con su estado ya definitivo, el secuenciador que tiene la clave descifra el total. Después demuestra el descifrado con un segundo programa, el programa de resultados, que comprueba:"
+msgid "Once the election has ended and its grace window has closed, so its state is final, the sequencer holding the key decrypts the total. It then proves the decryption with a second program, the results program, which checks:"
+msgstr "Una vez terminada la votación y cerrado su periodo de gracia, con su estado ya definitivo, el secuenciador que tiene la clave descifra el total. Después demuestra el descifrado con un segundo programa, el programa de resultados, que comprueba:"
 
 #: src/pages/learn/content/Results.tsx
 msgid "that the key and the encrypted total it used are the ones in the election’s final state;"
@@ -3516,8 +3645,8 @@ msgid "The results guest checks that the encryption key (leaf <0>0x03</0>) and t
 msgstr "El guest de resultados comprueba que la clave de cifrado (hoja <0>0x03</0>) y el acumulador (hoja <1>0x04</1>) son hojas del árbol de estado final, verifica una <2>prueba de Chaum–Pedersen</2> por texto cifrado que demuestra que cada texto en claro es el descifrado correcto bajo esa clave, y comprueba que cada coordenada y cada escalar están dentro de rango."
 
 #: src/pages/learn/content/Results.tsx
-msgid "<0>setProcessResults</0> then requires a sequencer-key process that has ended, <1/>, a state root equal to the process’s <2>latestStateRoot</2>, and a PLONK proof verified against <3>resultsProgramVK</3>."
-msgstr "<0>setProcessResults</0> exige después un proceso con clave del secuenciador que haya terminado, <1/>, una raíz de estado igual al <2>latestStateRoot</2> del proceso y una prueba PLONK verificada con <3>resultsProgramVK</3>."
+msgid "<0>setProcessResults</0> then requires a sequencer-key process that has ended and whose grace window has closed (<1>GraceOpen</1> otherwise), <2/>, a state root equal to the process’s <3>latestStateRoot</3>, and a PLONK proof verified against <4>resultsProgramVK</4>."
+msgstr "<0>setProcessResults</0> exige después un proceso con clave del secuenciador que haya terminado y cuyo periodo de gracia se haya cerrado (si no, <1>GraceOpen</1>), <2/>, una raíz de estado igual al <3>latestStateRoot</3> del proceso y una prueba PLONK verificada con <4>resultsProgramVK</4>."
 
 #: src/pages/learn/content/Results.tsx
 msgid "Committee key: decryption in shares"
@@ -3528,8 +3657,8 @@ msgid "With a committee key there is no second program. The registry and the key
 msgstr "Con una clave de comité no hay segundo programa. Las comprobaciones las hacen el registro y el comité de claves:"
 
 #: src/pages/learn/content/Results.tsx
-msgid "After the end, anyone can ask for the decryption; sequencers ask on their own shortly after the end. The registry checks that the encrypted total is the one in the election’s final state, and moves the election to Ended, which the organizer can no longer change."
-msgstr "Tras el final, cualquiera puede pedir el descifrado; los secuenciadores lo piden por su cuenta poco después del final. El registro comprueba que el total cifrado es el del estado final de la votación y pasa la votación a Finalizado, un estado que el organizador ya no puede cambiar."
+msgid "Once the grace window after the end has closed, anyone can ask for the decryption; sequencers ask on their own shortly after. The registry checks that the encrypted total is the one in the election’s final state, and moves the election to Ended, which the organizer can no longer change."
+msgstr "Una vez cerrado el periodo de gracia tras el final, cualquiera puede pedir el descifrado; los secuenciadores lo piden por su cuenta poco después. El registro comprueba que el total cifrado es el del estado final de la votación y pasa la votación a Finalizado, un estado que el organizador ya no puede cambiar."
 
 #: src/pages/learn/content/Results.tsx
 msgid "It skips fields that never received anything (they count as 0, and only an election that never counted a ballot has them) and sends the rest to the committee."
@@ -3548,8 +3677,8 @@ msgid "There is no results proof in the committee modes: the committee’s proof
 msgstr "En los modos de comité no hay prueba de resultados: la sustituyen las pruebas de cada paso del comité y la comprobación que hace el propio registro del total cifrado. Por eso los resultados de la votación dependen de que el comité siga disponible: una vez entregado el total cifrado, no hay alternativa."
 
 #: src/pages/learn/content/Results.tsx
-msgid "<0>requestResultsDecryption</0> takes the accumulator and its inclusion proof; sequencers call it on their first heartbeat after the end. The registry checks every coordinate is below the field and that the accumulator is leaf <1>0x04</1> under <2>latestStateRoot</2>."
-msgstr "<0>requestResultsDecryption</0> recibe el acumulador y su prueba de inclusión; los secuenciadores la llaman en su primer ciclo tras el final. El registro comprueba que cada coordenada es menor que el módulo del cuerpo y que el acumulador es la hoja <1>0x04</1> bajo <2>latestStateRoot</2>."
+msgid "<0>requestResultsDecryption</0> takes the accumulator and its inclusion proof; sequencers call it on their first heartbeat after the grace window closes, and before that it reverts with <1>GraceOpen</1>. The registry checks every coordinate is below the field and that the accumulator is leaf <2>0x04</2> under <3>latestStateRoot</3>."
+msgstr "<0>requestResultsDecryption</0> recibe el acumulador y su prueba de inclusión; los secuenciadores la llaman en su primer ciclo tras el cierre del periodo de gracia, y antes revierte con <1>GraceOpen</1>. El registro comprueba que cada coordenada es menor que el módulo del cuerpo y que el acumulador es la hoja <2>0x04</2> bajo <3>latestStateRoot</3>."
 
 #: src/pages/learn/content/Results.tsx
 msgid "Skipped fields are the identity in both halves. The rest go to the committee through the adapter, and the registry emits <0>ResultsDecryptionRequested</0>."
@@ -3560,8 +3689,8 @@ msgid "Each partial decryption carries a Groth16 proof against the member’s co
 msgstr "Cada descifrado parcial lleva una prueba Groth16 con respecto a la parte comprometida del miembro, y la combinación lleva otra. El texto en claro se guarda en la DKG."
 
 #: src/pages/learn/content/Results.tsx
-msgid "<0>finalizeResultsFromDKG</0> reads the plaintexts. Until every ciphertext is combined it reverts with <1>ResultsNotReady</1>."
-msgstr "<0>finalizeResultsFromDKG</0> lee los textos en claro. Hasta que todos los textos cifrados están combinados, revierte con <1>ResultsNotReady</1>."
+msgid "<0>finalizeResultsFromDKG</0> reads the plaintexts. Until every ciphertext is combined it reverts with <1>ResultsNotReady</1> (<2>GraceOpen</2> while the grace window is open)."
+msgstr "<0>finalizeResultsFromDKG</0> lee los textos en claro. Hasta que todos los textos cifrados están combinados, revierte con <1>ResultsNotReady</1> (con <2>GraceOpen</2> mientras el periodo de gracia está abierto)."
 
 #: src/pages/learn/content/Results.tsx
 msgid "There is no results PLONK in the DKG modes. DKG liveness is election liveness."
@@ -3580,8 +3709,8 @@ msgid "Next: check it yourself, as a <0>voter</0>, an <1>organizer</1> or an <2>
 msgstr "Siguiente: compruébalo por tu cuenta, como <0>votante</0>, <1>organizador</1> o <2>auditor</2>."
 
 #: src/pages/learn/content/Settlement.tsx
-msgid "The registry records a batch only if the election is open, the proof is valid and says every check passed, the batch starts from the latest state, its voters were checked against the right list of voters, the voter limit holds and the published data matches the proof. If any check fails the transaction is refused and nothing changes."
-msgstr "El registro solo anota un lote si la votación está abierta, la prueba es válida e indica que se han superado todas las comprobaciones, el lote parte del último estado, sus votantes se comprobaron con la lista de votantes correcta, se respeta el límite de votantes y los datos publicados coinciden con la prueba. Si falla cualquier comprobación, la transacción se rechaza y no cambia nada."
+msgid "The registry records a batch only if the election is open or has just ended (a short grace window lets the last batches in), the proof is valid and says every check passed, the batch starts from the latest state, its voters were checked against the right list of voters, the voter limit holds and the published data matches the proof. If any check fails the transaction is refused and nothing changes."
+msgstr "El registro solo anota un lote si la votación está abierta o acaba de terminar (un breve periodo de gracia deja entrar los últimos lotes), la prueba es válida e indica que se han superado todas las comprobaciones, el lote parte del último estado, sus votantes se comprobaron con la lista de votantes correcta, se respeta el límite de votantes y los datos publicados coinciden con la prueba. Si falla cualquier comprobación, la transacción se rechaza y no cambia nada."
 
 #: src/pages/learn/content/Settlement.tsx
 msgid "The call"
@@ -3600,8 +3729,8 @@ msgid "The checks, in order"
 msgstr "Las comprobaciones, en orden"
 
 #: src/pages/learn/content/Settlement.tsx
-msgid "The election exists, is open and is inside its voting window."
-msgstr "La votación existe, está abierta y está dentro de su periodo de votación."
+msgid "The election exists and is open, or its end has passed but its grace window has not closed yet."
+msgstr "La votación existe y está abierta, o su final ya ha pasado pero su periodo de gracia aún no se ha cerrado."
 
 #: src/pages/learn/content/Settlement.tsx
 msgid "The proof’s public values have the right size and say every check passed."
@@ -3620,8 +3749,8 @@ msgid "The number of voters before the batch matches the registry’s own count.
 msgstr "El número de votantes antes del lote coincide con el contador del propio registro. La prueba no puede ver todo el estado, así que el registro aporta ese dato."
 
 #: src/pages/learn/content/Settlement.tsx
-msgid "The batch does not take the election past its maximum number of voters."
-msgstr "El lote no hace que la votación supere su número máximo de votantes."
+msgid "The batch carries at least one vote, and does not take the election past its maximum number of voters."
+msgstr "El lote contiene al menos un voto, y no hace que la votación supere su número máximo de votantes."
 
 #: src/pages/learn/content/Settlement.tsx
 msgid "The published data matches the proof: the right number of data blobs, and a fingerprint of them equal to the one in the proof."
@@ -3644,8 +3773,8 @@ msgid "The exact checks"
 msgstr "Las comprobaciones exactas"
 
 #: src/pages/learn/content/Settlement.tsx
-msgid "The process exists, is Ready and is inside its voting window."
-msgstr "El proceso existe, está en estado Listo y está dentro de su periodo de votación."
+msgid "The process exists, is Ready, Ended, or Paused past its end, and <0/>."
+msgstr "El proceso existe, está en estado Listo, Finalizado, o En pausa pasado su final, y <0/>."
 
 #: src/pages/learn/content/Settlement.tsx
 msgid "<0>publicValues</0> is 512 bytes, the guest’s <1>ok</1> is 1 and its <2>fail_mask</2> is 0."
@@ -3664,6 +3793,10 @@ msgid "<0>occupied_before</0> equals <1>votersCount</1>, the number of distinct 
 msgstr "<0>occupied_before</0> es igual a <1>votersCount</1>, el número de casillas de papeleta distintas escritas hasta ahora. El guest no puede ver el árbol, así que el registro fija ese valor."
 
 #: src/pages/learn/content/Settlement.tsx
+msgid "<0/> (<1>EmptyTransition</1> otherwise) and <2/>."
+msgstr "<0/> (si no, <1>EmptyTransition</1>) y <2/>."
+
+#: src/pages/learn/content/Settlement.tsx
 msgid "There is at least one blob, the three blob arrays have <0>n_blobs</0> entries each, the transaction carries no blob past them, and <1/> equals the blob digest in the public values."
 msgstr "Hay al menos un blob, las tres listas de blobs tienen <0>n_blobs</0> entradas cada una, la transacción no lleva ningún blob más allá de ellas y <1/> es igual al digest de los blobs de los valores públicos."
 
@@ -3676,8 +3809,48 @@ msgid "Every blob opens to its <0/> at <1/>, checked with the point-evaluation p
 msgstr "Cada blob se abre a su <0/> en <1/>, lo que se comprueba mediante el precompilado de evaluación de punto con los hashes de blob de la transacción. El id de proceso se rellena hasta 32 bytes, la raíz anterior al lote se toma con sus bytes invertidos, el compromiso ocupa 48 bytes y <2/> es el orden del cuerpo escalar de BLS12-381."
 
 #: src/pages/learn/content/Settlement.tsx
-msgid "On success <0>latestStateRoot</0> becomes the root after, <1>votersCount</1> grows by <2/>, <3>overwrittenVotesCount</3> by the overwrites and <4>batchNumber</4> by one, and the registry emits <5>ProcessStateTransitioned</5>."
-msgstr "Si todo va bien, <0>latestStateRoot</0> pasa a ser la raíz posterior, <1>votersCount</1> aumenta en <2/>, <3>overwrittenVotesCount</3> en el número de sobrescrituras y <4>batchNumber</4> en uno, y el registro emite <5>ProcessStateTransitioned</5>."
+msgid "On success <0>latestStateRoot</0> becomes the root after, <1>votersCount</1> grows by <2/>, <3>overwrittenVotesCount</3> by the overwrites and <4>batchNumber</4> by one, <5>lastVoteAt</5> becomes the block time, and the registry emits <6>ProcessStateTransitioned</6>."
+msgstr "Si todo va bien, <0>latestStateRoot</0> pasa a ser la raíz posterior, <1>votersCount</1> aumenta en <2/>, <3>overwrittenVotesCount</3> en el número de sobrescrituras y <4>batchNumber</4> en uno, <5>lastVoteAt</5> pasa a ser la hora del bloque, y el registro emite <6>ProcessStateTransitioned</6>."
+
+#: src/pages/learn/content/Settlement.tsx
+msgid "After the end: the grace window"
+msgstr "Tras el final: el periodo de gracia"
+
+#: src/pages/learn/content/Settlement.tsx
+msgid "Voting closes at the end time, but votes cast just before it can still be waiting at a sequencer, or in a batch being proved. So the registry keeps recording batches for a short <0>grace window</0> after the end, and accepts the results only once that window has closed. The results then count every vote that made it in."
+msgstr "La votación se cierra a la hora de cierre, pero los votos emitidos justo antes aún pueden estar esperando en un secuenciador, o en un lote que se está demostrando. Por eso el registro sigue anotando lotes durante un breve <0>periodo de gracia</0> tras el final, y solo acepta los resultados cuando ese periodo se ha cerrado. Así, los resultados cuentan todos los votos que llegaron a tiempo."
+
+#: src/pages/learn/content/Settlement.tsx
+msgid "Each batch recorded after the end keeps the window open a little longer, so it stays open while batches keep arriving close together, but never past a fixed limit after the end. Nobody can close it early, the organizer included, and a pause does not stop it."
+msgstr "Cada lote anotado tras el final mantiene el periodo abierto un poco más, así que sigue abierto mientras los lotes lleguen seguidos, pero nunca más allá de un límite fijo tras el final. Nadie puede cerrarlo antes, tampoco el organizador, y una pausa no lo detiene."
+
+#: src/pages/learn/content/Settlement.tsx
+msgid "<0>What you trust here.</0> The registry cannot tell when a vote was cast, so while the window is open a sequencer could also slip in a vote cast after the end. That is bounded by the window’s limit, and it is visible: every batch’s time is public, and the explorer marks each batch recorded after the end."
+msgstr "<0>En qué confías aquí.</0> El registro no puede saber cuándo se emitió un voto, así que, mientras el periodo está abierto, un secuenciador también podría colar un voto emitido tras el final. Eso está acotado por el límite del periodo, y es visible: la hora de cada lote es pública, y el explorador marca cada lote anotado tras el final."
+
+#: src/pages/learn/content/Settlement.tsx
+msgid "Moving the end earlier"
+msgstr "Adelantar el final"
+
+#: src/pages/learn/content/Settlement.tsx
+msgid "Before the end, the organizer can move it later, or earlier with notice: the new end must be at least a minimum time away, so every sequencer sees it before it arrives and no vote they already accepted is left out. That is how a live meeting can announce that voting closes in one minute. Ending the election at once (status Ended) still works, and the grace window follows either kind of end."
+msgstr "Antes del final, el organizador puede retrasarlo, o adelantarlo con antelación: el nuevo final debe quedar al menos a una distancia mínima, para que todos los secuenciadores lo vean antes de que llegue y no quede fuera ningún voto que ya hayan aceptado. Así es como una reunión en directo puede anunciar que la votación se cierra en un minuto. Terminar la votación al instante (estado Finalizado) sigue siendo posible, y el periodo de gracia sigue a cualquiera de los dos finales."
+
+#: src/pages/learn/content/Settlement.tsx
+msgid "With <0/>, <1>getProcessGraceEnd(processId)</1> returns it. <2>lastVoteAt</2> is the block time of the last settled transition (0 before the first), and a transition must add a vote, so a batch of silent refreshes alone cannot extend the window. <3>grace</3> starts at the registry’s <4>defaultGrace</4>; the organizer may set it between <5>graceFloor</5> and <6>graceCeil</6> with <7>setProcessGrace</7> while the process is Ready or Paused and before its end (<8>ProcessGraceChanged</8>). <9>setProcessResults</9>, <10>requestResultsDecryption</10> and <11>finalizeResultsFromDKG</11> revert with <12>GraceOpen</12> until the block time reaches it."
+msgstr "Con <0/>, <1>getProcessGraceEnd(processId)</1> lo devuelve. <2>lastVoteAt</2> es la hora del bloque de la última transición liquidada (0 antes de la primera), y una transición debe añadir un voto, así que un lote de solo renovaciones silenciosas no puede alargar el periodo. <3>grace</3> empieza en el <4>defaultGrace</4> del registro; el organizador puede fijarlo entre <5>graceFloor</5> y <6>graceCeil</6> con <7>setProcessGrace</7> mientras el proceso está en estado Listo o En pausa y antes de su final (<8>ProcessGraceChanged</8>). <9>setProcessResults</9>, <10>requestResultsDecryption</10> y <11>finalizeResultsFromDKG</11> revierten con <12>GraceOpen</12> hasta que la hora del bloque lo alcanza."
+
+#: src/pages/learn/content/Settlement.tsx
+msgid "<0>setProcessDuration</0> accepts an earlier end at least <1>noticeMin</1> seconds after the call and emits <2>ProcessDurationChanged</2>. Past the end the duration and <3>grace</3> are fixed, and <4>setProcessStatus(ENDED)</4> no longer moves the end."
+msgstr "<0>setProcessDuration</0> acepta un final más temprano si queda al menos <1>noticeMin</1> segundos después de la llamada, y emite <2>ProcessDurationChanged</2>. Pasado el final, la duración y <3>grace</3> quedan fijados, y <4>setProcessStatus(ENDED)</4> ya no mueve el final."
+
+#: src/pages/learn/content/Settlement.tsx
+msgid "The batches of an election recorded after its end"
+msgstr "Los lotes de una votación anotados tras su final"
+
+#: src/pages/learn/content/Settlement.tsx
+msgid "This registry’s grace window and notice"
+msgstr "El periodo de gracia y la antelación de este registro"
 
 #: src/pages/learn/content/Settlement.tsx
 msgid "What the registry reads from the proof"
@@ -3946,8 +4119,8 @@ msgid "What every batch publishes next to its transaction, how the proof ties it
 msgstr "Qué publica cada lote junto a su transacción, cómo lo vincula la prueba al lote y cómo cualquiera reconstruye el estado a partir de ello."
 
 #: src/pages/learn/topics.ts
-msgid "The checks the registry runs, in order, before it records a batch of votes, and what it reads from the proof."
-msgstr "Las comprobaciones que hace el registro, en orden, antes de anotar un lote de votos, y qué lee de la prueba."
+msgid "The checks the registry runs, in order, before it records a batch of votes, what it reads from the proof, and the grace window after the end."
+msgstr "Las comprobaciones que hace el registro, en orden, antes de anotar un lote de votos, qué lee de la prueba, y el periodo de gracia tras el final."
 
 #: src/pages/learn/topics.ts
 msgid "How the encrypted total is decrypted when voting ends, and how each way of doing it is proven."
@@ -4025,6 +4198,11 @@ msgstr "duración"
 msgctxt "activity kind"
 msgid "limit"
 msgstr "límite"
+
+#: src/pages/overview/ActivityPanel.tsx
+msgctxt "activity kind"
+msgid "grace window"
+msgstr "periodo de gracia"
 
 #: src/pages/overview/ActivityPanel.tsx
 msgid "Recent activity"
@@ -4152,8 +4330,13 @@ msgstr "en pausa"
 
 #: src/pages/overview/ProcessesPanel.tsx
 msgctxt "process phase"
-msgid "voting closed"
-msgstr "votación cerrada"
+msgid "closing"
+msgstr "en cierre"
+
+#: src/pages/overview/ProcessesPanel.tsx
+msgctxt "process phase"
+msgid "ended, results pending"
+msgstr "finalizados, resultados pendientes"
 
 #: src/pages/overview/ProcessesPanel.tsx
 msgctxt "process phase"
@@ -4282,6 +4465,34 @@ msgstr "bloque {lastBlock}"
 #: src/pages/overview/index.tsx
 msgid "no registry events yet"
 msgstr "aún no hay eventos en el registro"
+
+#: src/pages/process/GraceNote.tsx
+msgid "{batches, plural, one {# batch} other {# batches}} with {votes, plural, one {# vote} other {# votes}} recorded after the end"
+msgstr "{batches, plural, one {# lote anotado} other {# lotes anotados}} tras el final, con {votes, plural, one {# voto} other {# votos}}"
+
+#: src/pages/process/GraceNote.tsx
+msgid "The grace window is open"
+msgstr "El periodo de gracia está abierto"
+
+#: src/pages/process/GraceNote.tsx
+msgid "Sequencers record votes in batches, so votes cast just before the end can still be on their way when it passes. The registry keeps recording batches for a short <0>grace window</0> after the end, and accepts the results only once it closes."
+msgstr "Los secuenciadores anotan los votos por lotes, así que los votos emitidos justo antes del final aún pueden estar en camino cuando este llega. El registro sigue anotando lotes durante un breve <0>periodo de gracia</0> tras el final, y solo acepta los resultados cuando se cierra."
+
+#: src/pages/process/GraceNote.tsx
+msgid "It closes <0/>, later if another batch arrives, and at {cap} at the latest."
+msgstr "Se cierra <0/>, más tarde si llega otro lote, y como muy tarde el {cap}."
+
+#: src/pages/process/GraceNote.tsx
+msgid "It closes <0/>, later if another batch arrives."
+msgstr "Se cierra <0/>, más tarde si llega otro lote."
+
+#: src/pages/process/GraceNote.tsx
+msgid "The registry cannot tell when a vote was cast, so a sequencer could also include a vote cast after the end. That is bounded: the window closes at most {maxTotal} after the end, and every batch’s time is public, as in the list below."
+msgstr "El registro no puede saber cuándo se emitió un voto, así que un secuenciador también podría incluir un voto emitido tras el final. Está acotado: el periodo se cierra como mucho {maxTotal} después del final, y la hora de cada lote es pública, como en la lista de abajo."
+
+#: src/pages/process/GraceNote.tsx
+msgid "The registry cannot tell when a vote was cast, so a sequencer could also include a vote cast after the end. That is bounded: the window is short and capped, and every batch’s time is public, as in the list below."
+msgstr "El registro no puede saber cuándo se emitió un voto, así que un secuenciador también podría incluir un voto emitido tras el final. Está acotado: el periodo es breve y tiene un límite, y la hora de cada lote es pública, como en la lista de abajo."
 
 #: src/pages/process/Lifecycle.tsx
 msgid "in progress"
@@ -5120,8 +5331,12 @@ msgid "The organizer paused voting, which is due to end <0/>."
 msgstr "El organizador ha pausado la votación, que debe terminar el <0/>."
 
 #: src/pages/process/tabs/OverviewTab.tsx
-msgid "Voting has ended; the results are not published yet."
-msgstr "La votación ha terminado; los resultados aún no se han publicado."
+msgid "Voting closed <0/>. Batches of votes cast before then can still be recorded until the <1>grace window</1> closes, <2/>, and the results come after."
+msgstr "La votación se cerró el <0/>. Los lotes de votos emitidos antes aún se pueden anotar hasta que se cierre el <1>periodo de gracia</1>, <2/>, y los resultados llegan después."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "Voting has ended and the grace window has closed; the results are not published yet."
+msgstr "La votación ha terminado y el periodo de gracia se ha cerrado; los resultados aún no se han publicado."
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "The organizer canceled this election, so there will be no results."
@@ -5343,8 +5558,8 @@ msgid "Start"
 msgstr "Inicio"
 
 #: src/pages/process/tabs/OverviewTab.tsx
-msgid "The start time plus the duration. Votes are recorded only between the start and the end."
-msgstr "La hora de inicio más la duración. Los votos solo se anotan entre el inicio y el fin."
+msgid "The start time plus the duration. Voting closes at the end; batches of votes cast before it can still be recorded during the grace window that follows."
+msgstr "La hora de inicio más la duración. La votación se cierra al final; los lotes de votos emitidos antes aún se pueden anotar durante el periodo de gracia que le sigue."
 
 #: src/pages/process/tabs/OverviewTab.tsx
 #: src/pages/processes/index.tsx
@@ -5364,8 +5579,12 @@ msgid "Duration changes"
 msgstr "Cambios de duración"
 
 #: src/pages/process/tabs/OverviewTab.tsx
-msgid "Before the end, the organizer can only make voting last longer. Ending it early (status Ended) sets the duration to the time since the start."
-msgstr "Antes del final, el organizador solo puede alargar la votación. Terminarla antes (estado Finalizado) fija la duración en el tiempo transcurrido desde el inicio."
+msgid "Before the end, the organizer can make voting last longer, or move the end earlier with at least {notice} of notice. Ending it at once (status Ended) sets the duration to the time since the start."
+msgstr "Antes del final, el organizador puede alargar la votación, o adelantar el final con al menos {notice} de antelación. Terminarla al instante (estado Finalizado) fija la duración en el tiempo transcurrido desde el inicio."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "Before the end, the organizer can make voting last longer, or move the end earlier with some notice. Ending it at once (status Ended) sets the duration to the time since the start."
+msgstr "Antes del final, el organizador puede alargar la votación, o adelantar el final con cierta antelación. Terminarla al instante (estado Finalizado) fija la duración en el tiempo transcurrido desde el inicio."
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "The duration has not changed since creation."
@@ -5388,6 +5607,14 @@ msgid "ended by the organizer: duration {duration}, ended {ends}"
 msgstr "terminada por el organizador: duración {duration}, terminó el {ends}"
 
 #: src/pages/process/tabs/OverviewTab.tsx
+msgid "end moved earlier to {ends}, with {warned} of notice: duration {duration}"
+msgstr "final adelantado al {ends}, con {warned} de antelación: duración {duration}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "end moved earlier to {ends}: duration {duration}"
+msgstr "final adelantado al {ends}: duración {duration}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "duration {duration}, ends {ends}"
 msgstr "duración {duration}, termina el {ends}"
 
@@ -5396,8 +5623,8 @@ msgid "Pauses"
 msgstr "Pausas"
 
 #: src/pages/process/tabs/OverviewTab.tsx
-msgid "The organizer can pause voting and resume it until the end. While it is paused the registry records no batch, and the end time does not move."
-msgstr "El organizador puede pausar la votación y reanudarla hasta el final. Mientras está en pausa, el registro no anota ningún lote, y la hora de cierre no se mueve."
+msgid "The organizer can pause voting and resume it until the end. While it is paused the registry records no batch and the end time does not move. A pause ends with the voting time: in the grace window the registry records batches again."
+msgstr "El organizador puede pausar la votación y reanudarla hasta el final. Mientras está en pausa, el registro no anota ningún lote y la hora de cierre no se mueve. Una pausa termina con el periodo de votación: en el periodo de gracia, el registro vuelve a anotar lotes."
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "Voting is paused."
@@ -5424,6 +5651,50 @@ msgid "resumed by the organizer"
 msgstr "reanudada por el organizador"
 
 #: src/pages/process/tabs/OverviewTab.tsx
+msgid "How long after the end, or after the last batch recorded past it, the registry still records batches of votes cast before the end. The results wait until it closes."
+msgstr "Cuánto tiempo después del final, o del último lote anotado tras él, sigue el registro anotando lotes de votos emitidos antes del final. Los resultados esperan a que se cierre."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "set by the organizer; the registry’s default is {byDefault}"
+msgstr "fijado por el organizador; el valor por defecto del registro es {byDefault}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "set by the organizer"
+msgstr "fijado por el organizador"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "the registry’s default"
+msgstr "el valor por defecto del registro"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "When the registry stops recording batches and starts accepting the results. Each batch recorded after the end moves it later, never past a fixed cap after the end."
+msgstr "Cuándo deja el registro de anotar lotes y empieza a aceptar los resultados. Cada lote anotado tras el final lo retrasa, nunca más allá de un límite fijo tras el final."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "Grace window closes"
+msgstr "Cierre del periodo de gracia"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "closed; nothing can be recorded after it"
+msgstr "cerrado; después ya no se puede anotar nada"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "or later if more batches arrive, until {cap} at most"
+msgstr "o más tarde si llegan más lotes, como mucho hasta el {cap}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "Batches the registry recorded after the end, during the grace window. Each batch’s time is public, on the batches tab."
+msgstr "Lotes que el registro anotó tras el final, durante el periodo de gracia. La hora de cada lote es pública, en la pestaña Lotes."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "Recorded after the end"
+msgstr "Anotados tras el final"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "{batches, plural, one {# batch} other {# batches}}, {votes, plural, one {# vote} other {# votes}}"
+msgstr "{batches, plural, one {# lote} other {# lotes}}, {votes, plural, one {# voto} other {# votos}}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "Limits"
 msgstr "Límites"
 
@@ -5436,8 +5707,8 @@ msgid "Voters so far, of the maximum"
 msgstr "Votantes hasta ahora, del máximo"
 
 #: src/pages/process/tabs/OverviewTab.tsx
-msgid "The most voters this election accepts: the registry refuses a batch that would go above it. The organizer can change it while the election is open or paused, but never below the voters so far."
-msgstr "El máximo de votantes que acepta esta votación: el registro rechaza cualquier lote que lo supere. El organizador puede cambiarlo mientras la votación está abierta o en pausa, pero nunca por debajo de los votantes que ya hay."
+msgid "The most voters this election accepts: the registry refuses a batch that would go above it. The organizer can change it while the election is open or paused, until the end, but never below the voters so far."
+msgstr "El máximo de votantes que acepta esta votación: el registro rechaza cualquier lote que lo supere. El organizador puede cambiarlo mientras la votación está abierta o en pausa, hasta el final, pero nunca por debajo de los votantes que ya hay."
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "Max voters"
@@ -5548,8 +5819,8 @@ msgid "Only for an election with a sequencer key that is not canceled and has no
 msgstr "Solo para una votación con clave del secuenciador que no esté cancelada y aún no tenga resultados (<0>setProcessResults</0>)."
 
 #: src/pages/process/tabs/ResultsTab.tsx
-msgid "The election must have ended: status Ended, or its end time passed."
-msgstr "La votación tiene que haber terminado: estado Finalizado, o su hora de cierre ya pasada."
+msgid "The election must have ended, by status or by time, and its grace window must have closed, so no batch can come after the results (<0>GraceOpen</0> otherwise)."
+msgstr "La votación tiene que haber terminado, por estado o por tiempo, y su periodo de gracia tiene que haberse cerrado, para que ningún lote llegue después de los resultados (si no, <0>GraceOpen</0>)."
 
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "The results program must report that every one of its checks passed: <0/>."
@@ -5568,8 +5839,8 @@ msgid "The registry then stores one total per field in use (the first <0>numFiel
 msgstr "Después, el registro guarda un total por cada campo en uso (los primeros <0>numFields</0> valores de la prueba) y pone el estado en Resultados."
 
 #: src/pages/process/tabs/ResultsTab.tsx
-msgid "Only for an election with a committee key that is not canceled, has no results and was not sent before, once voting has ended by status or by time (<0>requestResultsDecryption</0>)."
-msgstr "Solo para una votación con clave de comité que no esté cancelada, no tenga resultados y no se haya enviado antes, una vez terminada la votación por estado o por tiempo (<0>requestResultsDecryption</0>)."
+msgid "Only for an election with a committee key that is not canceled, has no results and was not sent before, once voting has ended by status or by time and its grace window has closed (<0>requestResultsDecryption</0>)."
+msgstr "Solo para una votación con clave de comité que no esté cancelada, no tenga resultados y no se haya enviado antes, una vez terminada la votación por estado o por tiempo y cerrado su periodo de gracia (<0>requestResultsDecryption</0>)."
 
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "The <0>encrypted total</0> sent must be the one in the latest state, with every number in range, so nobody can get anything else decrypted."
@@ -5652,16 +5923,16 @@ msgid "The organizer changed the description while voting was open, so votes cas
 msgstr "El organizador cambió la descripción con la votación abierta, así que los votos emitidos antes del cambio se emitieron con la versión anterior y sus nombres de opciones. Todas las versiones están en el historial de la descripción, en la pestaña <0>Resumen</0>."
 
 #: src/pages/process/tabs/ResultsTab.tsx
-msgid "After voting ends, the key holder (normally the sequencer node that issued the key) decrypts the encrypted total, proves the results with the results program and publishes them (setProcessResults). Only the key holder can."
-msgstr "Cuando termina la votación, el titular de la clave (normalmente el nodo secuenciador que emitió la clave) descifra el total cifrado, demuestra los resultados con el programa de resultados y los publica (setProcessResults). Solo puede hacerlo el titular de la clave."
+msgid "After voting ends and its grace window closes, the key holder (normally the sequencer node that issued the key) decrypts the encrypted total, proves the results with the results program and publishes them (setProcessResults). Only the key holder can."
+msgstr "Cuando termina la votación y se cierra su periodo de gracia, el titular de la clave (normalmente el nodo secuenciador que emitió la clave) descifra el total cifrado, demuestra los resultados con el programa de resultados y los publica (setProcessResults). Solo puede hacerlo el titular de la clave."
 
 #: src/pages/process/tabs/ResultsTab.tsx
-msgid "After voting ends, anyone can send the encrypted total to the key committee (requestResultsDecryption); sequencers do it on their first heartbeat after the end. Enough members then decrypt it together, field by field, and anyone can store the results on the chain (finalizeResultsFromDKG)."
-msgstr "Cuando termina la votación, cualquiera puede enviar el total cifrado al comité de claves (requestResultsDecryption); los secuenciadores lo hacen en su primer ciclo tras el final. Después, suficientes miembros lo descifran juntos, campo a campo, y cualquiera puede guardar los resultados en la cadena (finalizeResultsFromDKG)."
+msgid "After voting ends and its grace window closes, anyone can send the encrypted total to the key committee (requestResultsDecryption); sequencers do it on their first heartbeat after that. Enough members then decrypt it together, field by field, and anyone can store the results on the chain (finalizeResultsFromDKG)."
+msgstr "Cuando termina la votación y se cierra su periodo de gracia, cualquiera puede enviar el total cifrado al comité de claves (requestResultsDecryption); los secuenciadores lo hacen en su primer ciclo a partir de entonces. Después, suficientes miembros lo descifran juntos, campo a campo, y cualquiera puede guardar los resultados en la cadena (finalizeResultsFromDKG)."
 
 #: src/pages/process/tabs/ResultsTab.tsx
-msgid "After voting ends, anyone can send the encrypted total to the key committee (requestResultsDecryption); sequencers do it on their first heartbeat after the end. The committee can decrypt it only after the organizer reveals the organizer secret (revealProcessKey); then anyone can store the results on the chain (finalizeResultsFromDKG)."
-msgstr "Cuando termina la votación, cualquiera puede enviar el total cifrado al comité de claves (requestResultsDecryption); los secuenciadores lo hacen en su primer ciclo tras el final. El comité solo puede descifrarlo después de que el organizador revele el secreto del organizador (revealProcessKey); entonces cualquiera puede guardar los resultados en la cadena (finalizeResultsFromDKG)."
+msgid "After voting ends and its grace window closes, anyone can send the encrypted total to the key committee (requestResultsDecryption); sequencers do it on their first heartbeat after that. The committee can decrypt it only after the organizer reveals the organizer secret (revealProcessKey); then anyone can store the results on the chain (finalizeResultsFromDKG)."
+msgstr "Cuando termina la votación y se cierra su periodo de gracia, cualquiera puede enviar el total cifrado al comité de claves (requestResultsDecryption); los secuenciadores lo hacen en su primer ciclo a partir de entonces. El comité solo puede descifrarlo después de que el organizador revele el secreto del organizador (revealProcessKey); entonces cualquiera puede guardar los resultados en la cadena (finalizeResultsFromDKG)."
 
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "No results yet"
@@ -5690,6 +5961,14 @@ msgstr "El total cifrado se ha enviado al comité de claves. Cuando suficientes 
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "Voting is over; results pending"
 msgstr "La votación ha terminado; resultados pendientes"
+
+#: src/pages/process/tabs/ResultsTab.tsx
+msgid "Recording the last votes"
+msgstr "Anotando los últimos votos"
+
+#: src/pages/process/tabs/ResultsTab.tsx
+msgid "Voting has ended, but until the grace window closes, <0/>, batches of votes cast before the end can still be recorded. The registry accepts the results only after that, so they count every recorded vote."
+msgstr "La votación ha terminado, pero hasta que se cierre el periodo de gracia, <0/>, aún se pueden anotar lotes de votos emitidos antes del final. El registro solo acepta los resultados después, para que cuenten todos los votos anotados."
 
 #: src/pages/process/tabs/ResultsTab.tsx
 msgid "The election ends <0/>, and it is paused now."
@@ -5782,6 +6061,10 @@ msgstr "El estado del descifrado de cada campo está en la pestaña <0>Clave de 
 #: src/pages/process/tabs/TransitionsTab.tsx
 msgid "Position among the election’s batches, from 0."
 msgstr "Posición entre los lotes de la votación, desde 0."
+
+#: src/pages/process/tabs/TransitionsTab.tsx
+msgid "When the batch was recorded. A batch recorded after the election’s end, in its grace window, is marked."
+msgstr "Cuándo se anotó el lote. Se marca cada lote anotado tras el final de la votación, en su periodo de gracia."
 
 #: src/pages/process/tabs/TransitionsTab.tsx
 msgid "The sequencer that sent the batch. Anyone may send one: the registry trusts the proof, not the sender."
@@ -6079,16 +6362,16 @@ msgid "No batch recorded yet"
 msgstr "Aún no se ha anotado ningún lote"
 
 #: src/pages/process/timeline.ts
+msgid "Voting closed"
+msgstr "Votación cerrada"
+
+#: src/pages/process/timeline.ts
 msgid "Voting closes"
 msgstr "Cierre de la votación"
 
 #: src/pages/process/timeline.ts
 msgid "Canceled by the organizer"
 msgstr "Cancelado por el organizador"
-
-#: src/pages/process/timeline.ts
-msgid "End time passed; the chain still reads Ready"
-msgstr "Hora de cierre pasada; la cadena sigue en estado Listo"
 
 #: src/pages/process/timeline.ts
 msgid "Paused by the organizer"
@@ -6099,6 +6382,10 @@ msgid "Ended by the organizer"
 msgstr "Finalizado por el organizador"
 
 #: src/pages/process/timeline.ts
+msgid "Moved earlier by the organizer"
+msgstr "Adelantado por el organizador"
+
+#: src/pages/process/timeline.ts
 msgid "End time reached"
 msgstr "Hora de cierre alcanzada"
 
@@ -6107,12 +6394,33 @@ msgid "End time"
 msgstr "Hora de cierre"
 
 #: src/pages/process/timeline.ts
-msgid "Published on the chain"
-msgstr "Publicados en la cadena"
-
 #: src/pages/process/timeline.ts
 msgid "None: canceled"
 msgstr "Sin resultados: cancelado"
+
+#: src/pages/process/timeline.ts
+msgid "{graceBatches, plural, one {# batch recorded in it} other {# batches recorded in it}}"
+msgstr "{graceBatches, plural, one {# lote anotado en él} other {# lotes anotados en él}}"
+
+#: src/pages/process/timeline.ts
+msgid "No batch after the end"
+msgstr "Ningún lote tras el final"
+
+#: src/pages/process/timeline.ts
+msgid "Recording the last batches"
+msgstr "Anotando los últimos lotes"
+
+#: src/pages/process/timeline.ts
+msgid "{grace} for batches still on their way"
+msgstr "{grace} para los lotes aún en camino"
+
+#: src/pages/process/timeline.ts
+msgid "For batches still on their way"
+msgstr "Para los lotes aún en camino"
+
+#: src/pages/process/timeline.ts
+msgid "Published on the chain"
+msgstr "Publicados en la cadena"
 
 #: src/pages/process/timeline.ts
 msgid "Sent to the committee to decrypt"
@@ -6125,8 +6433,8 @@ msgid "Pending"
 msgstr "Pendiente"
 
 #: src/pages/process/timeline.ts
-msgid "After the end"
-msgstr "Tras el final"
+msgid "After the grace window"
+msgstr "Tras el periodo de gracia"
 
 #: src/pages/processes/filters.ts
 msgid "Ready (any time)"
@@ -6174,8 +6482,8 @@ msgid "Canceled: voting will not reach its end time"
 msgstr "Cancelada: la votación no llegará a su hora de cierre"
 
 #: src/pages/processes/index.tsx
-msgid "When voting ends: the start time plus the duration. Ending early brings it forward."
-msgstr "Cuándo termina la votación: la hora de inicio más la duración. Terminarla antes la adelanta."
+msgid "When voting ends: the start time plus the duration. Ending early, or moving the end earlier with notice, brings it forward."
+msgstr "Cuándo termina la votación: la hora de inicio más la duración. Terminarla antes, o adelantar el final con antelación, la adelanta."
 
 #: src/pages/processes/index.tsx
 msgid "Every voting process on the registry"
@@ -6226,8 +6534,8 @@ msgid "<0>{count, plural, one {# process} other {# processes}}</0> on the regist
 msgstr "<0>{count, plural, one {# proceso} other {# procesos}}</0> en el registro, del más reciente al más antiguo."
 
 #: src/pages/processes/index.tsx
-msgid "The phase combines the status on the chain with the clock. After its end time an election still reads Ready on the chain until someone ends it or publishes the results; the explorer shows that as Voting closed."
-msgstr "La fase combina el estado en la cadena con el reloj. Pasada su hora de cierre, una votación sigue en estado Listo en la cadena hasta que alguien la finaliza o publica los resultados; el explorador lo muestra como Votación cerrada."
+msgid "The phase combines the status on the chain with the clock. Right after its end an election is Closing: for a short grace window the registry still records batches of votes cast before the end. Once that window closes it is Ended, results pending, even though the chain may still read Ready."
+msgstr "La fase combina el estado en la cadena con el reloj. Justo después de su final, una votación está En cierre: durante un breve periodo de gracia, el registro aún anota lotes de votos emitidos antes del final. Cuando ese periodo se cierra, pasa a Finalizado, resultados pendientes, aunque la cadena aún la muestre en estado Listo."
 
 #: src/pages/processes/index.tsx
 #: src/pages/processes/index.tsx
@@ -7247,6 +7555,10 @@ msgstr "El registro lo aceptó después de verificar su prueba. Aquí se superan
 msgid "Its data is published in {nBlobs, plural, one {# data blob} other {# data blobs}}, so anyone can rebuild the election’s <0>state</0> from it without trusting whoever sent it."
 msgstr "Sus datos se publican en {nBlobs, plural, one {# blob de datos} other {# blobs de datos}}, así que cualquiera puede reconstruir a partir de ellos el <0>estado</0> de la votación sin confiar en quien lo envió."
 
+#: src/pages/transition/Summary.tsx
+msgid "It was recorded {after} after the election’s end, in its <0>grace window</0>: batches of votes cast before the end can still be recorded for a short while after it."
+msgstr "Se anotó {after} después del final de la votación, en su <0>periodo de gracia</0>: los lotes de votos emitidos antes del final aún se pueden anotar durante un breve tiempo después."
+
 #: src/pages/transition/VerifyPanel.tsx
 msgid "Checked by the registry on the chain: the transaction would have failed otherwise. The explorer does not redo it."
 msgstr "Lo comprobó el registro en la cadena: si no, la transacción habría fallado. El explorador no lo repite."
@@ -7273,8 +7585,8 @@ msgid "Before accepting this batch, the registry made the checks below, in this 
 msgstr "Antes de aceptar este lote, el registro hizo las comprobaciones de abajo, en este orden, y habría rechazado el lote en la primera que fallara. El explorador repite cada comprobación que puede a partir de datos públicos. Abre «Cómo se comprueba» bajo una comprobación para ver la regla y un comando que la repite en tu propio ordenador."
 
 #: src/pages/transition/VerifyPanel.tsx
-msgid "<0>submitStateTransition</0> first checks that the process is open and inside its voting window, then runs these checks in this order and reverts on the first that fails. The explorer redoes each one it can from the event, the call’s data and the previous batch. The commands need only an RPC node, Foundry’s <1>cast</1> and coreutils, and every one reads the node’s address from <2>$RPC</2>:"
-msgstr "<0>submitStateTransition</0> comprueba primero que el proceso está abierto y dentro de su periodo de votación, y luego hace estas comprobaciones en este orden y revierte en la primera que falla. El explorador repite cada una que puede a partir del evento, los datos de la llamada y el lote anterior. Los comandos solo necesitan un nodo RPC, <1>cast</1> de Foundry y coreutils, y todos leen la dirección del nodo de <2>$RPC</2>:"
+msgid "<0>submitStateTransition</0> first checks that the process is open, or past its end with its grace window still open (<1>getProcessGraceEnd</1>), then runs these checks in this order and reverts on the first that fails. The explorer redoes each one it can from the event, the call’s data and the previous batch. The commands need only an RPC node, Foundry’s <2>cast</2> and coreutils, and every one reads the node’s address from <3>$RPC</3>:"
+msgstr "<0>submitStateTransition</0> comprueba primero que el proceso está abierto, o que ha pasado su final con su periodo de gracia aún abierto (<1>getProcessGraceEnd</1>), y luego hace estas comprobaciones en este orden y revierte en la primera que falla. El explorador repite cada una que puede a partir del evento, los datos de la llamada y el lote anterior. Los comandos solo necesitan un nodo RPC, <2>cast</2> de Foundry y coreutils, y todos leen la dirección del nodo de <3>$RPC</3>:"
 
 #: src/pages/transition/VerifyPanel.tsx
 #: src/pages/verify/election/index.tsx
@@ -7402,8 +7714,8 @@ msgid "The registry’s counts of voters and changed votes move exactly as the p
 msgstr "Los contadores de votantes y de votos cambiados del registro avanzan exactamente como dice la prueba."
 
 #: src/pages/transition/checks.ts
-msgid "The registry adds the new voters (votes minus changed votes, registers 18 and 19) to `votersCount` and refuses a batch that would pass `maxVoters` (`MaxVotersReached`). It adds the changed votes to `overwrittenVotesCount` and emits the new totals in `ProcessStateTransitioned`."
-msgstr "El registro suma los votantes nuevos (votos menos votos cambiados, registros 18 y 19) a `votersCount` y rechaza un lote que superaría `maxVoters` (`MaxVotersReached`). Suma los votos cambiados a `overwrittenVotesCount` y emite los nuevos totales en `ProcessStateTransitioned`."
+msgid "The registry refuses a batch without a vote (`EmptyTransition`), adds the new voters (votes minus changed votes, registers 18 and 19) to `votersCount` and refuses a batch that would pass `maxVoters` (`MaxVotersReached`). It adds the changed votes to `overwrittenVotesCount`, sets `lastVoteAt` to the block time, which moves the grace window after the end, and emits the new totals in `ProcessStateTransitioned`."
+msgstr "El registro rechaza un lote sin ningún voto (`EmptyTransition`), suma los votantes nuevos (votos menos votos cambiados, registros 18 y 19) a `votersCount` y rechaza un lote que superaría `maxVoters` (`MaxVotersReached`). Suma los votos cambiados a `overwrittenVotesCount`, fija `lastVoteAt` en la hora del bloque, lo que retrasa el periodo de gracia tras el final, y emite los nuevos totales en `ProcessStateTransitioned`."
 
 #: src/pages/transition/checks.ts
 msgid "List the process’s batch events. Each log’s data is `oldStateRoot`, `newStateRoot`, `newVotersCount`, `newOverwrittenVotesCount` and `nBlobs`, 32 bytes each: from one log to the next, `newVotersCount` grows by the batch’s new voters, and the same list shows each batch starting where the last one ended."
@@ -8455,12 +8767,28 @@ msgid "The encrypted total went to the key committee for decryption; the results
 msgstr "El total cifrado ha pasado al comité de claves para que lo descifre; los resultados llegarán cuando esté descifrado."
 
 #: src/pages/verify/election/checks.tsx
-msgid "Not yet: the results come after the vote ends, on {end}."
-msgstr "Todavía no: los resultados llegan después de que termine la votación, el {end}."
+msgid "Not yet: voting is over, and the registry has accepted the results since the grace window closed on {graceEnd}."
+msgstr "Todavía no: la votación ha terminado, y el registro acepta los resultados desde que se cerró el periodo de gracia, el {graceEnd}."
+
+#: src/pages/verify/election/checks.tsx
+msgid "Not yet: voting has ended, and the registry accepts the results once the grace window closes, on {graceEnd}, or later if more batches are recorded."
+msgstr "Todavía no: la votación ha terminado, y el registro acepta los resultados cuando se cierre el periodo de gracia, el {graceEnd}, o más tarde si se anotan más lotes."
+
+#: src/pages/verify/election/checks.tsx
+msgid "Not yet: the results come after the vote ends, on {end}, and a short grace window after it."
+msgstr "Todavía no: los resultados llegan después de que termine la votación, el {end}, y de un breve periodo de gracia posterior."
 
 #: src/pages/verify/election/checks.tsx
 msgid "Not yet: the results come after the vote ends."
 msgstr "Todavía no: los resultados llegan después de que termine la votación."
+
+#: src/pages/verify/election/checks.tsx
+msgid "After the end the registry still records batches of votes cast before it, for a short <0>grace window</0>, and refuses the results until the window closes (the call reverts with <1>GraceOpen</1>), so they count every recorded vote."
+msgstr "Tras el final, el registro aún anota lotes de votos emitidos antes de él durante un breve <0>periodo de gracia</0>, y rechaza los resultados hasta que el periodo se cierra (la llamada revierte con <1>GraceOpen</1>), para que cuenten todos los votos anotados."
+
+#: src/pages/verify/election/checks.tsx
+msgid "The registry’s answer is the unix time the window closes, or closed."
+msgstr "La respuesta del registro es la hora unix en que el periodo se cierra, o se cerró."
 
 #: src/pages/verify/election/checks.tsx
 msgid "The results were proven correct"
@@ -8607,8 +8935,8 @@ msgid "Read the election and its batches"
 msgstr "Leer la votación y sus lotes"
 
 #: src/pages/verify/election/index.tsx
-msgid "The first command prints the registry’s record of the election: its status, key, list of voters, counts and current state fingerprint (state root). The second lists every recorded batch with the fingerprints it went from and to."
-msgstr "El primer comando imprime la ficha del registro de la votación: su estado en el registro, su clave, su lista de votantes, sus cifras y la huella de su estado actual (raíz de estado). El segundo lista cada lote anotado con las huellas de las que partió y a las que llegó."
+msgid "The first command prints the registry’s record of the election: its status, key, list of voters, counts and current state fingerprint (state root). The second lists every recorded batch with the fingerprints it went from and to. The third prints when the grace window closes, as a unix time: batches recorded after the end and before it are in the list too, and the registry accepts the results only from then on."
+msgstr "El primer comando imprime la ficha del registro de la votación: su estado en el registro, su clave, su lista de votantes, sus cifras y la huella de su estado actual (raíz de estado). El segundo lista cada lote anotado con las huellas de las que partió y a las que llegó. El tercero imprime cuándo se cierra el periodo de gracia, como hora unix: los lotes anotados tras el final y antes de ella también están en la lista, y el registro solo acepta los resultados a partir de entonces."
 
 #: src/pages/verify/election/index.tsx
 msgid "Check the description"
@@ -8684,16 +9012,28 @@ msgid "Only the organizer can make these calls; each one shows up in the electio
 msgstr "Solo el organizador puede hacer estas llamadas; cada una aparece en el historial de la votación."
 
 #: src/pages/verify/election/index.tsx
-msgid "<0>setProcessStatus</0>: from Ready or Paused, to Paused, Ready, Canceled or Ended. Pausing stops batches from being recorded but not the clock; votes can still queue at a sequencer and be recorded after you resume. Ending by hand also shortens the duration to the time elapsed. Canceled and Results are final."
-msgstr "<0>setProcessStatus</0>: desde Listo o En pausa, a En pausa, Listo, Cancelado o Finalizado. Pausar impide anotar lotes, pero no detiene el reloj; los votos pueden seguir en cola en un secuenciador y anotarse después de reanudar. Finalizar a mano también acorta la duración al tiempo transcurrido. Cancelado y Resultados son definitivos."
+msgid "<0>setProcessStatus</0>: from Ready or Paused, to Paused, Ready, Canceled or Ended. Pausing stops batches from being recorded but not the clock, and only until the end: you cannot pause after it, and a pause still on at the end lets the grace window record batches as usual. Votes can queue at a sequencer and be recorded after you resume. Ending by hand sets the end to that moment, and only after the start (cancel before it). Canceled and Results are final."
+msgstr "<0>setProcessStatus</0>: desde Listo o En pausa, a En pausa, Listo, Cancelado o Finalizado. Pausar impide anotar lotes, pero no detiene el reloj, y solo hasta el final: no puedes pausar después, y una pausa que siga activa al final deja que el periodo de gracia anote lotes como siempre. Los votos pueden esperar en cola en un secuenciador y anotarse después de reanudar. Finalizar a mano fija el final en ese momento, y solo después del inicio (antes, cancela). Cancelado y Resultados son definitivos."
 
 #: src/pages/verify/election/index.tsx
-msgid "<0>setProcessDuration</0>: only longer, while Ready or Paused and before the current end."
-msgstr "<0>setProcessDuration</0>: solo para alargarla, en estado Listo o En pausa y antes del final actual."
+msgid "<0>setProcessDuration</0>: while Ready or Paused and before the current end, a later end, or an earlier one at least {notice} away, so that everyone sees the new end before it arrives."
+msgstr "<0>setProcessDuration</0>: en estado Listo o En pausa y antes del final actual, un final más tardío, o uno más temprano al menos a {notice} de distancia, para que todos vean el nuevo final antes de que llegue."
 
 #: src/pages/verify/election/index.tsx
-msgid "<0>setProcessMaxVoters</0>: while Ready or Paused, never below the voters already counted."
-msgstr "<0>setProcessMaxVoters</0>: en estado Listo o En pausa, nunca por debajo de los votantes ya contados."
+msgid "<0>setProcessDuration</0>: while Ready or Paused and before the current end, a later end, or an earlier one with the registry’s minimum notice, so that everyone sees the new end before it arrives."
+msgstr "<0>setProcessDuration</0>: en estado Listo o En pausa y antes del final actual, un final más tardío, o uno más temprano con la antelación mínima del registro, para que todos vean el nuevo final antes de que llegue."
+
+#: src/pages/verify/election/index.tsx
+msgid "<0>setProcessGrace</0>: the grace window, from {floor} to {ceil}, while Ready or Paused and before the end."
+msgstr "<0>setProcessGrace</0>: el periodo de gracia, de {floor} a {ceil}, en estado Listo o En pausa y antes del final."
+
+#: src/pages/verify/election/index.tsx
+msgid "<0>setProcessGrace</0>: the grace window, within the registry’s bounds, while Ready or Paused and before the end."
+msgstr "<0>setProcessGrace</0>: el periodo de gracia, dentro de los límites del registro, en estado Listo o En pausa y antes del final."
+
+#: src/pages/verify/election/index.tsx
+msgid "<0>setProcessMaxVoters</0>: while Ready or Paused and before the end, never below the voters already counted."
+msgstr "<0>setProcessMaxVoters</0>: en estado Listo o En pausa y antes del final, nunca por debajo de los votantes ya contados."
 
 #: src/pages/verify/election/index.tsx
 msgid "<0>setProcessCensus</0>: only for an updatable Merkle census (origin 2), before the end. Batches proven against the old list are no longer accepted."
@@ -8704,8 +9044,8 @@ msgid "<0>setProcessMetadata</0>: a new document address and its SHA-256, while 
 msgstr "<0>setProcessMetadata</0>: una nueva dirección del documento y su SHA-256, en estado Listo o En pausa y antes del final; después, la descripción queda congelada. Todas las versiones quedan en el historial, y un cambio hecho con la votación abierta se señala a todo el que compruebe la votación."
 
 #: src/pages/verify/election/index.tsx
-msgid "No batch is recorded after the end time. With a sequencer key, the node that holds the key publishes the results once the election has ended; it is the only one that can. With a key committee (a DKG key) anyone can ask the committee to decrypt, and sequencers do on their first heartbeat after the end; in locked mode the decryption waits for your reveal (<0>revealProcessKey</0> on the registry). The results tab shows how the results were produced."
-msgstr "No se anota ningún lote después de la hora de cierre. Con clave del secuenciador, el nodo que tiene la clave publica los resultados cuando la votación ha terminado; es el único que puede hacerlo. Con un comité de claves (una clave DKG), cualquiera puede pedir al comité que descifre, y los secuenciadores lo hacen en su primer ciclo tras el final; en modo bloqueado, el descifrado espera a tu revelación (<0>revealProcessKey</0> en el registro). La pestaña Resultados muestra cómo se obtuvieron los resultados."
+msgid "Batches are still recorded for a short grace window after the end, so votes cast before it are counted, and no results are accepted until that window closes (<0>getProcessGraceEnd</0>). With a sequencer key, the node that holds the key publishes the results then; it is the only one that can. With a key committee (a DKG key) anyone can ask the committee to decrypt, and sequencers do on their first heartbeat after the window closes; in locked mode the decryption waits for your reveal (<1>revealProcessKey</1> on the registry). The results tab shows how the results were produced."
+msgstr "Tras el final aún se anotan lotes durante un breve periodo de gracia, para que cuenten los votos emitidos antes de él, y no se acepta ningún resultado hasta que ese periodo se cierra (<0>getProcessGraceEnd</0>). Con clave del secuenciador, el nodo que tiene la clave publica entonces los resultados; es el único que puede hacerlo. Con un comité de claves (una clave DKG), cualquiera puede pedir al comité que descifre, y los secuenciadores lo hacen en su primer ciclo tras el cierre del periodo; en modo bloqueado, el descifrado espera a tu revelación (<1>revealProcessKey</1> en el registro). La pestaña Resultados muestra cómo se obtuvieron los resultados."
 
 #: src/pages/verify/election/index.tsx
 msgid "Keep the organizer secret of a locked election. Without it the committee never decrypts the results."
@@ -8982,8 +9322,8 @@ msgid "Voting is over and no batch of votes was recorded for this election, so n
 msgstr "La votación ha terminado y no se anotó ningún lote de votos, así que no se contó ningún voto en ella."
 
 #: src/pages/verify/vote/checks.tsx
-msgid "A sequencer had your vote, but voting ended before a batch recorded it, so it was not counted."
-msgstr "Un secuenciador tenía tu voto, pero la votación terminó antes de que un lote lo anotara, así que no se contó."
+msgid "A sequencer had your vote, but the grace window after the end closed before a batch recorded it, so it was not counted."
+msgstr "Un secuenciador tenía tu voto, pero el periodo de gracia tras el final se cerró antes de que un lote lo anotara, así que no se contó."
 
 #: src/pages/verify/vote/checks.tsx
 msgid "Looking through the election’s recorded batches for your vote id, newest first…"
@@ -9073,6 +9413,10 @@ msgid "The transaction lists one fingerprint (versioned hash) per data blob; a b
 msgstr "La transacción lista una huella (hash versionado) por blob de datos; un nodo beacon sirve el blob con ese hash durante unas dos semanas después del bloque."
 
 #: src/pages/verify/vote/checks.tsx
+msgid "Batches can be recorded until the election’s end, and after it for a short <0>grace window</0> that lets votes cast before the end arrive. The registry answers when that window closes, as a unix time; after it, no batch is recorded."
+msgstr "Se pueden anotar lotes hasta el final de la votación, y después durante un breve <0>periodo de gracia</0> que deja llegar los votos emitidos antes del final. El registro responde cuándo se cierra ese periodo, como hora unix; después, no se anota ningún lote."
+
+#: src/pages/verify/vote/checks.tsx
 msgid "Batches read, newest first"
 msgstr "Lotes leídos, de más reciente a más antiguo"
 
@@ -9134,8 +9478,16 @@ msgid "The election was canceled, so no results will be published."
 msgstr "La votación se canceló, así que no se publicarán resultados."
 
 #: src/pages/verify/vote/checks.tsx
-msgid "The results are not published yet. They come after the vote ends, on {end}."
-msgstr "Los resultados aún no se han publicado. Llegan después de que termine la votación, el {end}."
+msgid "The results are not published yet. Voting is over, and they can be published at any time now."
+msgstr "Los resultados aún no se han publicado. La votación ha terminado, y ya se pueden publicar en cualquier momento."
+
+#: src/pages/verify/vote/checks.tsx
+msgid "The results are not published yet. They come once the grace window after the end closes, on {graceEnd}, or later if more batches are recorded."
+msgstr "Los resultados aún no se han publicado. Llegan cuando se cierre el periodo de gracia tras el final, el {graceEnd}, o más tarde si se anotan más lotes."
+
+#: src/pages/verify/vote/checks.tsx
+msgid "The results are not published yet. They come after the vote ends, on {end}, and a short grace window after it."
+msgstr "Los resultados aún no se han publicado. Llegan después de que termine la votación, el {end}, y de un breve periodo de gracia posterior."
 
 #: src/pages/verify/vote/checks.tsx
 msgid "The results are not published yet. They come after the vote ends."
@@ -9766,16 +10118,20 @@ msgid "Ready"
 msgstr "Listo"
 
 #: src/protocol/types.ts
-msgid "Open for voting: votes are collected and recorded on the chain until the end time."
-msgstr "Se puede votar: los votos se recogen y se anotan en la cadena hasta la hora de cierre."
+msgid "Open for voting: votes are collected and recorded on the chain until the end time, and for a short grace window after it."
+msgstr "Se puede votar: los votos se recogen y se anotan en la cadena hasta la hora de cierre, y durante un breve periodo de gracia posterior."
 
 #: src/protocol/types.ts
 msgid "The organizer paused voting. Votes may wait at a sequencer, but none are recorded until voting resumes."
 msgstr "El organizador ha pausado la votación. Los votos pueden esperar en un secuenciador, pero no se anota ninguno hasta que se reanude la votación."
 
 #: src/protocol/types.ts
-msgid "Voting is closed and the recorded votes are final. The results are not published yet."
-msgstr "La votación está cerrada y los votos anotados son definitivos. Los resultados aún no se han publicado."
+msgid "Ended"
+msgstr "Finalizado"
+
+#: src/protocol/types.ts
+msgid "Voting is closed. Votes cast before the end can still be recorded during the grace window; the results are published after it."
+msgstr "La votación está cerrada. Los votos emitidos antes del final aún se pueden anotar durante el periodo de gracia; los resultados se publican después."
 
 #: src/protocol/types.ts
 msgid "The organizer canceled the election. No results will be published."

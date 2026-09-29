@@ -56,7 +56,7 @@ export const TOPICS: TopicMeta[] = [
   {
     slug: 'settlement',
     title: msg`What the chain checks for each batch`,
-    summary: msg`The checks the registry runs, in order, before it records a batch of votes, and what it reads from the proof.`,
+    summary: msg`The checks the registry runs, in order, before it records a batch of votes, what it reads from the proof, and the grace window after the end.`,
     group: 'protocol',
   },
   {

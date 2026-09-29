@@ -11,6 +11,8 @@ const ORG0 = '42fc20654efd78c6887ff0bd1cc50c9ec1dab589'
 const OPEN = pid(ORG0, 1)
 /** "Board election 2026": sequencer key, zkVM results. */
 const RESULTS = pid(ORG0, 0)
+/** "Assembly motion": past its end, grace window open. */
+const CLOSING = pid('7e5f4552091a69125d5dfcb7b8c2659029395bdf', 3)
 
 async function demo(page: Page, path: string) {
   const sep = path.includes('?') ? '&' : '?'
@@ -107,5 +109,23 @@ test.describe('process page in Spanish', () => {
     const metadata = page.getByTestId('tab-overview').getByTestId('process-metadata')
     await expect(metadata).toContainText('un proceso sintético de la red de demostración')
     await expect(metadata).toContainText('Opción 4')
+  })
+})
+
+test.describe('the grace window in Spanish and Catalan', () => {
+  test('a closing process: its phase, lifecycle and the batches recorded after the end', async ({ page }) => {
+    await demo(page, `/processes/${CLOSING}/transitions`)
+    await speak(page, 'es')
+    const root = page.getByTestId('page-process')
+    await expect(root.getByText('En cierre', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('process-lifecycle')).toContainText('Periodo de gracia')
+    await expect(page.getByTestId('grace-note')).toContainText('2 lotes anotados tras el final')
+    await expect(page.getByTestId('tab-transitions').getByText('tras el final', { exact: true })).toHaveCount(2)
+
+    await speak(page, 'ca')
+    await expect(page.getByTestId('page-process').getByText('En tancament', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('grace-note')).toContainText('2 lots anotats després del final')
+    await page.getByRole('tab', { name: /^Resum/ }).click()
+    await expect(page.getByTestId('tab-overview')).toContainText('Tancament del període de gràcia')
   })
 })

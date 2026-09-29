@@ -57,7 +57,7 @@ const SAMPLE_TX = `0x${'9f'.repeat(32)}`
 const SAMPLE_ROOT = `0x${'0bc9dc8e'.repeat(8)}`
 const SAMPLE_URI = 'https://metadata.example.org/processes/0x42fc20654efd78c6887ff0bd1cc50c9ec1dab589/metadata.json'
 const SAMPLE_FILE_URI = 'file:///var/lib/davinci/census/0x42fc20654efd78c6887ff0bd1cc50c9ec1dab589/census.json'
-const PHASES: ProcessPhase[] = ['upcoming', 'open', 'paused', 'closed', 'ended', 'canceled', 'results', 'loading']
+const PHASES: ProcessPhase[] = ['upcoming', 'open', 'paused', 'closing', 'ended', 'canceled', 'results', 'loading']
 const KEY_MODES: KeyModeName[] = ['sequencer', 'dkg-automatic', 'dkg-locked']
 const CENSUS_ORIGINS: CensusOriginName[] = ['merkle-static', 'merkle-dynamic', 'onchain-dynamic', 'csp']
 

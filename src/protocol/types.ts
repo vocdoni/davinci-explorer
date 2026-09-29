@@ -44,12 +44,18 @@ const info = (label: MessageDescriptor, description: MessageDescriptor): EnumInf
   withText({}, { label, description })
 
 export const PROCESS_STATUS_INFO: Record<ProcessStatusName, EnumInfo> = {
-  ready: info(msg`Ready`, msg`Open for voting: votes are collected and recorded on the chain until the end time.`),
+  ready: info(
+    msg`Ready`,
+    msg`Open for voting: votes are collected and recorded on the chain until the end time, and for a short grace window after it.`
+  ),
   paused: info(
     msg`Paused`,
     msg`The organizer paused voting. Votes may wait at a sequencer, but none are recorded until voting resumes.`
   ),
-  ended: info(msg`Ended`, msg`Voting is closed and the recorded votes are final. The results are not published yet.`),
+  ended: info(
+    msg`Ended`,
+    msg`Voting is closed. Votes cast before the end can still be recorded during the grace window; the results are published after it.`
+  ),
   canceled: info(msg`Canceled`, msg`The organizer canceled the election. No results will be published.`),
   results: info(
     msg`Results`,

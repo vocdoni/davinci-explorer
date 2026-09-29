@@ -5,10 +5,11 @@
 
 import { plural, t } from '@lingui/core/macro'
 import type { Address, Hex } from 'viem'
-import { formatNumber } from '~lib/format'
+import { formatNumber, formatSeconds } from '~lib/format'
 import { blobsDigest, parseVoteId, versionedHash } from '~protocol/blob'
 import { isProcessId } from '~protocol/process-id'
 import { decodeBatchPublicValues, publicsPassed, type BatchPublics } from '~protocol/publics'
+import { graceCap, graceEnd } from '~protocol/grace'
 import { matchRelease, type DeploymentPins, type ReleaseMatch } from '~protocol/releases'
 import { PROCESS_STATUS_INFO, type CensusOriginName, type KeyModeName, type ProcessStatusName } from '~protocol/types'
 import { paths } from '~routes/paths'
@@ -42,39 +43,40 @@ export function chainNow(store: IndexerStore): number | null {
 // ── processes ────────────────────────────────────────────────────────────────
 
 /**
- * Where a process stands, combining the on-chain status with the clock: the
- * registry leaves a process READY after its end time until someone ends it
- * or posts results, so `closed` means "READY but past the end".
+ * Where a process stands, combining the on-chain status with the clock. Past
+ * its end the registry still records batches until the grace window closes
+ * (`closing`), then accepts the results (`ended`: over, results pending),
+ * whether the status reads Ready, Paused or Ended: a pause does not outlive
+ * the end, and the status stays as it was until someone posts results.
  */
-export type ProcessPhase = 'loading' | 'upcoming' | 'open' | 'paused' | 'closed' | 'ended' | 'canceled' | 'results'
-
-export function processPhase(p: ProcessEntity, now: number | null): ProcessPhase {
-  const s = p.state
-  if (!s) return 'loading'
-  switch (s.status) {
-    case 'results':
-      return 'results'
-    case 'canceled':
-      return 'canceled'
-    case 'ended':
-      return 'ended'
-    case 'paused':
-      return 'paused'
-    case 'ready':
-      if (now != null && now < s.startTime) return 'upcoming'
-      if (now != null && now >= s.startTime + s.duration) return 'closed'
-      return 'open'
-  }
-}
+export type ProcessPhase = 'loading' | 'upcoming' | 'open' | 'paused' | 'closing' | 'ended' | 'canceled' | 'results'
 
 /**
- * No batch can be recorded any more: the election is over, or paused past its
- * end (the registry records a batch only for a Ready election, before its end).
+ * `graceEnd` is `getProcessGraceEnd` (`processGraceEnd`); while it is unknown
+ * (the registry's settings are not read yet) a process past its end reads as
+ * over.
  */
-export function votingOver(row: Pick<ProcessRow, 'phase' | 'endTime'>, now: number | null): boolean {
-  const { phase, endTime } = row
-  if (phase === 'closed' || phase === 'ended' || phase === 'canceled' || phase === 'results') return true
-  return phase === 'paused' && endTime != null && now != null && now >= endTime
+export function processPhase(p: ProcessEntity, now: number | null, graceEnd: number | null): ProcessPhase {
+  const s = p.state
+  if (!s) return 'loading'
+  if (s.status === 'results' || s.status === 'canceled') return s.status
+  if (now == null) return s.status === 'ready' ? 'open' : s.status
+  if (now >= s.startTime + s.duration) return graceEnd != null && now < graceEnd ? 'closing' : 'ended'
+  if (s.status === 'paused') return 'paused'
+  // Ending sets the end to that moment, so an Ended process before its end is one the clock has not caught up with.
+  if (s.status === 'ended') return 'closing'
+  return now < s.startTime ? 'upcoming' : 'open'
+}
+
+/** When the process's grace window closes (`getProcessGraceEnd`); null until the process and the registry are read. */
+export function processGraceEnd(store: IndexerStore, p: ProcessEntity): number | null {
+  const maxTotal = store.chain.registry?.graceMaxTotal
+  return p.state && maxTotal != null ? graceEnd(p.state, maxTotal) : null
+}
+
+/** No batch can be recorded any more: the grace window has closed, or the election is canceled or has results. */
+export function votingOver(row: Pick<ProcessRow, 'phase'>): boolean {
+  return row.phase === 'ended' || row.phase === 'canceled' || row.phase === 'results'
 }
 
 export interface ProcessRow {
@@ -95,6 +97,15 @@ export interface ProcessRow {
   maxVoters: number | null
   startTime: number | null
   endTime: number | null
+  /** Seconds a batch may follow the end, or the last batch, and still be recorded. */
+  grace: number | null
+  /** When the grace window closes, as it stands (`getProcessGraceEnd`): each batch after the end moves it later. */
+  graceEnd: number | null
+  /** The latest the window can close, however many batches land. */
+  graceCap: number | null
+  /** Batches recorded after the end, during the grace window, and the votes they carried. */
+  graceBatches: number
+  graceVotes: number
   createdBlock: number
   createdAt: number | null
   transitions: number
@@ -105,11 +116,21 @@ export interface ProcessRow {
 export function processRow(store: IndexerStore, p: ProcessEntity): ProcessRow {
   const s = p.state
   const last = p.transitions.length ? store.transitions[p.transitions[p.transitions.length - 1]!] : undefined
+  const windowEnd = processGraceEnd(store, p)
+  const maxTotal = store.chain.registry?.graceMaxTotal
+  let graceBatches = 0
+  let graceVotes = 0
+  for (const key of p.transitions) {
+    const t = store.transitions[key]!
+    if (!settledAfterEnd(store, p, t)) continue
+    graceBatches += 1
+    graceVotes += t.newVoters + t.overwrites
+  }
   return {
     id: p.id,
     organizer: p.organizer,
     status: s?.status ?? null,
-    phase: processPhase(p, chainNow(store)),
+    phase: processPhase(p, chainNow(store), windowEnd),
     keyMode: s?.keyMode ?? null,
     censusOrigin: s?.census.origin ?? null,
     numFields: s?.ballotMode.numFields ?? null,
@@ -120,6 +141,11 @@ export function processRow(store: IndexerStore, p: ProcessEntity): ProcessRow {
     maxVoters: s?.maxVoters ?? null,
     startTime: s?.startTime ?? null,
     endTime: s ? s.startTime + s.duration : null,
+    grace: s?.grace ?? null,
+    graceEnd: windowEnd,
+    graceCap: s && maxTotal != null ? graceCap(s, maxTotal) : null,
+    graceBatches,
+    graceVotes,
     createdBlock: p.createdBlock,
     createdAt: p.createdAt ?? blockTimestamp(store, p.createdBlock),
     transitions: p.transitions.length,
@@ -137,14 +163,37 @@ export interface ProcessFilter {
   query?: string
 }
 
-/** Every process, newest first, filtered. */
+/**
+ * A batch recorded after the process's end, in its grace window: its block
+ * time at or past the end. The end cannot move once it has passed, so this
+ * never changes. A batch in the very block the organizer ended the process
+ * came after the end only if it was logged after the status change. Null
+ * while the block time or the process is not read.
+ */
+export function settledAfterEnd(store: IndexerStore, p: ProcessEntity, t: TransitionEntity): boolean | null {
+  const s = p.state
+  const ts = t.timestamp ?? store.blockTimes[t.block] ?? null
+  if (!s || ts == null) return null
+  const end = s.startTime + s.duration
+  if (ts !== end) return ts > end
+  const ended = p.events
+    .map((i) => store.events[i]!)
+    .find((e) => e.name === 'ProcessStatusChanged' && e.block === t.block && e.data.newStatus === 'ended')
+  return ended ? ended.logIndex < t.logIndex : true
+}
+
+// Statuses the list filters by; every other filter value is a phase.
+const STATUS_FILTERS = new Set<string>(['ready'])
+
+/** Every process, newest first, filtered: `ready` by the on-chain status, anything else by phase. */
 export function processRows(store: IndexerStore, filter: ProcessFilter = {}): ProcessRow[] {
   const organizer = filter.organizer?.toLowerCase()
   const query = filter.query?.trim().toLowerCase()
+  const byStatus = filter.status != null && STATUS_FILTERS.has(filter.status)
   const out: ProcessRow[] = []
   for (let i = store.processOrder.length - 1; i >= 0; i--) {
     const row = processRow(store, store.processes[store.processOrder[i]!]!)
-    if (filter.status && row.status !== filter.status && row.phase !== filter.status) continue
+    if (filter.status && (byStatus ? row.status : row.phase) !== filter.status) continue
     if (filter.keyMode && row.keyMode !== filter.keyMode) continue
     if (filter.censusOrigin && row.censusOrigin !== filter.censusOrigin) continue
     if (organizer && row.organizer !== organizer) continue
@@ -176,10 +225,13 @@ export interface TransitionRow {
   fee: bigint | null
   /** Root continuity with the previous transition (or the genesis root); null when unknown. */
   continuous: boolean | null
+  /** Recorded after the election's end, during its grace window; null while its time is unknown. */
+  afterEnd: boolean | null
 }
 
 export function transitionRow(store: IndexerStore, t: TransitionEntity, expectedBefore: Hex | null): TransitionRow {
   const tx = t.tx ? store.txDetails[txKey(t.tx)] : undefined
+  const p = store.processes[processKey(t.processId)]
   return {
     key: t.key,
     processId: t.processId,
@@ -198,6 +250,7 @@ export function transitionRow(store: IndexerStore, t: TransitionEntity, expected
     blobGasUsed: tx?.blobGasUsed ?? null,
     fee: tx?.fee ?? null,
     continuous: expectedBefore == null ? null : expectedBefore === t.rootBefore,
+    afterEnd: p ? settledAfterEnd(store, p, t) : null,
   }
 }
 
@@ -291,6 +344,10 @@ export interface TransitionDetail {
   transition: TransitionEntity
   row: TransitionRow
   process: ProcessEntity
+  /** The process's phase now. */
+  phase: ProcessPhase
+  /** The process's end: the batch was recorded this many seconds after it, when `row.afterEnd`. */
+  processEnd: number | null
   previous: TransitionEntity | null
   next: TransitionEntity | null
   tx: TxDetails | null
@@ -461,7 +518,19 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
     )
   )
 
-  return { transition: tr, row, process: p, previous, next, tx, publics, publicsError, checks }
+  return {
+    transition: tr,
+    row,
+    process: p,
+    phase: processPhase(p, chainNow(store), processGraceEnd(store, p)),
+    processEnd: p.state ? p.state.startTime + p.state.duration : null,
+    previous,
+    next,
+    tx,
+    publics,
+    publicsError,
+    checks,
+  }
 }
 
 // ── network ──────────────────────────────────────────────────────────────────
@@ -491,7 +560,7 @@ export function networkStats(store: IndexerStore): NetworkStats {
     upcoming: 0,
     open: 0,
     paused: 0,
-    closed: 0,
+    closing: 0,
     ended: 0,
     canceled: 0,
     results: 0,
@@ -542,7 +611,16 @@ export function networkStats(store: IndexerStore): NetworkStats {
 // ── activity ─────────────────────────────────────────────────────────────────
 
 export type FeedKind =
-  'created' | 'transition' | 'results' | 'status' | 'decryption' | 'census' | 'metadata' | 'duration' | 'max-voters'
+  | 'created'
+  | 'transition'
+  | 'results'
+  | 'status'
+  | 'decryption'
+  | 'census'
+  | 'metadata'
+  | 'duration'
+  | 'max-voters'
+  | 'grace'
 
 export interface FeedEntry {
   key: string
@@ -612,13 +690,41 @@ function feedEntry(store: IndexerStore, ev: IndexedEvent): FeedEntry | null {
       if (ev.tx != null && ev.tx === created) return null
       return { ...base, kind: 'metadata', label: t`New description published` }
     }
-    case 'ProcessDurationChanged':
-      return { ...base, kind: 'duration', label: t`End time changed` }
+    case 'ProcessDurationChanged': {
+      const before = durationBefore(store, ev)
+      return {
+        ...base,
+        kind: 'duration',
+        label:
+          before == null ? t`End time changed` : ev.data.duration < before ? t`End moved earlier` : t`End moved later`,
+      }
+    }
     case 'ProcessMaxVotersChanged': {
       const maxVoters = formatNumber(ev.data.maxVoters)
       return { ...base, kind: 'max-voters', label: t`Voter limit set to ${maxVoters}` }
     }
+    case 'ProcessGraceChanged': {
+      const grace = formatSeconds(ev.data.grace)
+      return { ...base, kind: 'grace', label: t`Grace window set to ${grace}` }
+    }
   }
+}
+
+/**
+ * The duration a `ProcessDurationChanged` replaced: the one set by the
+ * change before it, or the one the process was created with once its
+ * creation transaction is read.
+ */
+export function durationBefore(
+  store: IndexerStore,
+  change: { block: number; tx: Hex | null; processId: string }
+): number | null {
+  const p = store.processes[processKey(change.processId)]
+  if (!p) return null
+  const i = p.durationChanges.findIndex((c) => c.block === change.block && c.tx === change.tx)
+  if (i > 0) return p.durationChanges[i - 1]!.value
+  if (i < 0) return null
+  return p.createdTx ? (store.txDetails[txKey(p.createdTx)]?.initialDuration ?? null) : null
 }
 
 /** The newest `limit` events as feed entries, newest first. Pass a pid for one process. */

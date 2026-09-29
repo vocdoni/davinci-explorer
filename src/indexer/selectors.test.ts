@@ -14,6 +14,7 @@ import {
   releaseCheck,
   rootChain,
   searchStore,
+  settledAfterEnd,
   transitionByTx,
   transitionDetail,
   transitionRows,
@@ -22,7 +23,7 @@ import {
   type ProcessPhase,
 } from './selectors'
 import { txDetailsFrom } from './state'
-import type { Hex, IndexerStore, ProcessState } from './types'
+import type { Hex, IndexedEvent, IndexerStore, ProcessState } from './types'
 
 const fixture = demoFixture()
 const store = fixture.store
@@ -37,7 +38,12 @@ describe('processRows', () => {
 
   it('filters by status, phase, key mode, census, organizer and query', () => {
     expect(processRows(store, { status: 'results' }).every((r) => r.status === 'results')).toBe(true)
-    expect(processRows(store, { status: 'closed' }).every((r) => r.phase === 'closed')).toBe(true)
+    const closing = processRows(store, { status: 'closing' })
+    expect(closing.length).toBeGreaterThan(0)
+    expect(closing.every((r) => r.phase === 'closing')).toBe(true)
+    // A phase filter reads the phase, not the status: an Ended process still in its window is Closing.
+    expect(processRows(store, { status: 'ended' }).every((r) => r.phase === 'ended')).toBe(true)
+    expect(processRows(store, { status: 'ready' }).every((r) => r.status === 'ready')).toBe(true)
     expect(processRows(store, { keyMode: 'dkg-locked' }).every((r) => r.keyMode === 'dkg-locked')).toBe(true)
     expect(processRows(store, { censusOrigin: 'csp' }).every((r) => r.censusOrigin === 'csp')).toBe(true)
     const organizer = store.processes[store.processOrder[0]!]!.organizer
@@ -51,24 +57,142 @@ describe('processRows', () => {
 
 describe('votingOver', () => {
   it('is over once no batch can be recorded', () => {
-    const row = (phase: string, endTime: number | null = 2_000) => ({ phase: phase as ProcessPhase, endTime })
-    expect(['closed', 'ended', 'canceled', 'results'].every((p) => votingOver(row(p), 1_000))).toBe(true)
-    expect(['loading', 'upcoming', 'open', 'paused'].some((p) => votingOver(row(p), 1_000))).toBe(false)
-    // Paused past its end: only a Ready election records a batch, and only before its end.
-    expect(votingOver(row('paused'), 2_000)).toBe(true)
-    expect(votingOver(row('paused', null), 2_000)).toBe(false)
-    expect(votingOver(row('paused'), null)).toBe(false)
+    const row = (phase: string) => ({ phase: phase as ProcessPhase })
+    expect(['ended', 'canceled', 'results'].every((p) => votingOver(row(p)))).toBe(true)
+    // The grace window still records batches.
+    expect(['loading', 'upcoming', 'open', 'paused', 'closing'].some((p) => votingOver(row(p)))).toBe(false)
   })
 })
 
 describe('processPhase', () => {
-  it('reads the clock for a ready process', () => {
+  it('reads the clock and the grace window', () => {
     const p = structuredClone(store.processes[fixture.featured.openProcess]!)
     const s = p.state!
-    expect(processPhase(p, s.startTime - 1)).toBe('upcoming')
-    expect(processPhase(p, s.startTime + 1)).toBe('open')
-    expect(processPhase(p, s.startTime + s.duration)).toBe('closed')
-    expect(processPhase({ ...p, state: null }, 0)).toBe('loading')
+    const end = s.startTime + s.duration
+    const window = end + 180
+    expect(processPhase(p, s.startTime - 1, window)).toBe('upcoming')
+    expect(processPhase(p, s.startTime + 1, window)).toBe('open')
+    expect(processPhase(p, end, window)).toBe('closing')
+    expect(processPhase(p, window - 1, window)).toBe('closing')
+    expect(processPhase(p, window, window)).toBe('ended')
+    // The registry's settings not read yet: past the end reads as over.
+    expect(processPhase(p, end, null)).toBe('ended')
+    expect(processPhase({ ...p, state: null }, 0, window)).toBe('loading')
+  })
+
+  it('treats a pause and an early end like Ready once the end has passed', () => {
+    const p = structuredClone(store.processes[fixture.featured.openProcess]!)
+    const s = p.state!
+    const end = s.startTime + s.duration
+    const window = end + 180
+    s.status = 'paused'
+    expect(processPhase(p, end - 1, window)).toBe('paused')
+    // A pause does not outlive the end: the window records batches.
+    expect(processPhase(p, end + 1, window)).toBe('closing')
+    expect(processPhase(p, window, window)).toBe('ended')
+    s.status = 'ended'
+    expect(processPhase(p, end + 1, window)).toBe('closing')
+    expect(processPhase(p, window + 1, window)).toBe('ended')
+    s.status = 'results'
+    expect(processPhase(p, end + 1, window)).toBe('results')
+  })
+
+  it('has the demo’s grace window cases', () => {
+    const phase = (pid: string) => processRows(store).find((r) => r.id === pid)!.phase
+    expect(phase(fixture.featured.closingProcess)).toBe('closing')
+    expect(phase(fixture.featured.graceSettled)).toBe('ended')
+    expect(phase(fixture.featured.shortenedEnd)).toBe('open')
+  })
+})
+
+describe('the grace window', () => {
+  it('computes the registry’s grace end and follows the batches after the end', () => {
+    const pid = fixture.featured.closingProcess
+    const p = store.processes[pid]!
+    const s = p.state!
+    const end = s.startTime + s.duration
+    const row = processRows(store).find((r) => r.id === pid)!
+    expect(row.graceEnd).toBe(Math.min(end + 1_800, Math.max(end, s.lastVoteAt) + s.grace))
+    expect(row.graceCap).toBe(end + 1_800)
+    expect(row.grace).toBe(600)
+    const rows = transitionRows(store, pid)
+    const after = rows.filter((r) => r.afterEnd)
+    expect(after.length).toBe(row.graceBatches)
+    expect(row.graceBatches).toBe(2)
+    expect(row.graceVotes).toBe(after.reduce((n, r) => n + r.votes, 0))
+    expect(rows.filter((r) => r.afterEnd === false).length).toBe(rows.length - 2)
+    expect(s.lastVoteAt).toBe(rows[rows.length - 1]!.timestamp)
+  })
+
+  it('moves the window when a batch lands after the end', () => {
+    const s = clone(store)
+    const pid = fixture.featured.closingProcess
+    const p = s.processes[pid]!
+    const before = processRows(s).find((r) => r.id === pid)!.graceEnd!
+    const last = s.transitions[p.transitions[p.transitions.length - 1]!]!
+    const block = s.chain.headBlock + 1
+    const at = s.chain.headTimestamp! + 5
+    applyEvents(s, [
+      {
+        name: 'ProcessStateTransitioned',
+        block,
+        tx: `0x${'77'.repeat(32)}`,
+        logIndex: 0,
+        timestamp: at,
+        processId: pid,
+        data: {
+          sender: last.sender,
+          oldStateRoot: last.rootAfter,
+          newStateRoot: `0x${'78'.repeat(32)}`,
+          newVotersCount: last.votersCount + 1,
+          newOverwrittenVotesCount: last.overwrittenVotesCount,
+          nBlobs: 1,
+        },
+      },
+    ])
+    // The event is newer than the state read, so its block time moves `lastVoteAt` until the next read.
+    expect(p.state!.lastVoteAt).toBe(at)
+    const end = p.state!.startTime + p.state!.duration
+    const row = processRows(s).find((r) => r.id === pid)!
+    expect(row.graceEnd).toBe(Math.min(end + 1_800, at + p.state!.grace))
+    expect(row.graceEnd!).toBeGreaterThan(before)
+    expect(row.graceBatches).toBe(3)
+  })
+
+  it('tells a batch in the block the organizer ended the election by its log order', () => {
+    const s = clone(store)
+    const pid = fixture.featured.openProcess
+    const p = s.processes[pid]!
+    const t = s.transitions[p.transitions[p.transitions.length - 1]!]!
+    const ts = t.timestamp!
+    p.state!.duration = ts - p.state!.startTime
+    const ended = (logIndex: number): IndexedEvent => ({
+      name: 'ProcessStatusChanged',
+      block: t.block,
+      tx: `0x${'99'.repeat(32)}`,
+      logIndex,
+      timestamp: ts,
+      processId: pid,
+      data: { oldStatus: 'ready', newStatus: 'ended' },
+    })
+    const withEnd = (logIndex: number) => {
+      const c = clone(s)
+      c.events.push(ended(logIndex))
+      c.processes[pid]!.events.push(c.events.length - 1)
+      return settledAfterEnd(c, c.processes[pid]!, c.transitions[t.key]!)
+    }
+    expect(withEnd(t.logIndex + 1)).toBe(false)
+    expect(withEnd(t.logIndex - 1)).toBe(true)
+    // At the end time itself, with no end by the organizer, the batch is in the window.
+    expect(settledAfterEnd(s, p, t)).toBe(true)
+  })
+
+  it('names the direction an end moved in the activity feed', () => {
+    const labels = activityFeed(store, 500, fixture.featured.shortenedEnd).map((e) => e.label)
+    expect(labels).toContain('End moved earlier')
+    expect(activityFeed(store, 500, fixture.featured.closingProcess).map((e) => e.label)).toContain(
+      'Grace window set to 10 min'
+    )
   })
 })
 

@@ -142,18 +142,49 @@ describe('processLifecycle', () => {
   const states = (pid: string) => lifecycle(pid).map((s) => s.state)
 
   it('an open process is collecting transitions', () => {
-    expect(states(f.featured.openProcess)).toEqual(['done', 'done', 'current', 'upcoming', 'upcoming'])
+    expect(states(f.featured.openProcess)).toEqual(['done', 'done', 'current', 'upcoming', 'upcoming', 'upcoming'])
+    expect(lifecycle(f.featured.openProcess)[4]).toMatchObject({ detail: '3 min for batches still on their way' })
   })
 
   it('a process with results is done throughout', () => {
     const steps = lifecycle(f.featured.resultsProcess)
-    expect(steps.map((s) => s.state)).toEqual(['done', 'done', 'done', 'done', 'done'])
-    expect(steps[4]!.tx).toBe(f.store.processes[f.featured.resultsProcess]!.results!.tx)
+    expect(steps.map((s) => s.state)).toEqual(['done', 'done', 'done', 'done', 'done', 'done'])
+    expect(steps[5]!.tx).toBe(f.store.processes[f.featured.resultsProcess]!.results!.tx)
   })
 
   it('a tally waiting for the reveal shows the decryption request', () => {
     const steps = lifecycle(f.featured.awaitingReveal)
-    expect(steps[4]).toMatchObject({ state: 'current', detail: 'Sent to the committee to decrypt' })
+    expect(steps[5]).toMatchObject({ state: 'current', detail: 'Sent to the committee to decrypt' })
+  })
+
+  it('a process in its grace window is recording its last batches', () => {
+    const pid = f.featured.closingProcess
+    const steps = lifecycle(pid)
+    expect(steps.map((s) => s.state)).toEqual(['done', 'done', 'done', 'done', 'current', 'upcoming'])
+    expect(steps[4]).toMatchObject({
+      detail: 'Recording the last batches',
+      time: processRow(f.store, f.store.processes[pid]!).graceEnd,
+    })
+    expect(steps[5]).toMatchObject({ detail: 'After the grace window' })
+  })
+
+  it('a closed grace window counts what it let in, and the results are next', () => {
+    const steps = lifecycle(f.featured.graceSettled)
+    expect(steps[4]).toMatchObject({ state: 'done', detail: '2 batches recorded in it' })
+    expect(steps[5]).toMatchObject({ state: 'current', detail: 'Pending' })
+  })
+
+  it('shows an end the organizer moved earlier', () => {
+    const pid = f.featured.shortenedEnd
+    const change = f.store.processes[pid]!.durationChanges[0]!
+    const creation = f.store.txDetails[f.store.processes[pid]!.createdTx!]!
+    const process = f.store.processes[pid]!
+    const steps = processLifecycle(
+      { process, row: processRow(f.store, process), transitions: transitionRows(f.store, pid) },
+      now,
+      creation.initialDuration
+    )
+    expect(steps[3]).toMatchObject({ state: 'upcoming', detail: 'Moved earlier by the organizer', tx: change.tx })
   })
 
   it('counts batches and ballots in one phrase', () => {
@@ -180,22 +211,25 @@ describe('processLifecycle', () => {
     expect(lifecycle(upcoming)[2]).toMatchObject({ state: 'upcoming', detail: 'No batch recorded yet' })
   })
 
-  it('a process paused past its end collects no more batches', () => {
+  it('a paused process collects batches again once its end passes, until the window closes', () => {
     const pid = f.store.processOrder.find((k) => f.store.processes[k]!.state?.status === 'paused')!
     const process = f.store.processes[pid]!
     const row = processRow(f.store, process)
     const transitions = transitionRows(f.store, pid)
-    expect(processLifecycle({ process, row, transitions }, now)[2]!.state).toBe('current')
-    const past = processLifecycle({ process, row: { ...row, endTime: now! - 60 }, transitions }, now)
-    expect(past[2]!.state).toBe('done')
-    expect(processLifecycle({ process, row: { ...row, endTime: now! - 60 }, transitions: [] }, now)[2]).toMatchObject({
+    const paused = processLifecycle({ process, row, transitions }, now)
+    expect(paused[2]!.state).toBe('current')
+    expect(paused[3]!.detail).toBe('Paused by the organizer')
+    // Past the end a pause no longer holds: the phase is Closing, then Ended.
+    const closing = processLifecycle({ process, row: { ...row, phase: 'closing' }, transitions }, now)
+    expect(closing.map((s) => s.state).slice(2)).toEqual(['done', 'done', 'current', 'upcoming'])
+    expect(processLifecycle({ process, row: { ...row, phase: 'ended' }, transitions: [] }, now)[2]).toMatchObject({
       state: 'skipped',
       detail: 'No batch recorded',
     })
   })
 
-  it('a canceled process skips the end and the results', () => {
+  it('a canceled process skips the end, the grace window and the results', () => {
     const canceled = f.store.processOrder.find((k) => f.store.processes[k]!.state?.status === 'canceled')!
-    expect(states(canceled).slice(3)).toEqual(['skipped', 'skipped'])
+    expect(states(canceled).slice(3)).toEqual(['skipped', 'skipped', 'skipped'])
   })
 })

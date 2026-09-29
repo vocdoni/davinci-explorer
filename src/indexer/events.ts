@@ -98,6 +98,8 @@ export function normalizeLog(log: RawLog): IndexedEvent | null {
       return { ...envelope, name, data: { duration: num(a.duration) } }
     case 'ProcessMaxVotersChanged':
       return { ...envelope, name, data: { maxVoters: num(a.maxVoters) } }
+    case 'ProcessGraceChanged':
+      return { ...envelope, name, data: { grace: num(a.grace) } }
     case 'CensusUpdated':
       return { ...envelope, name, data: { censusRoot: hex(a.censusRoot), censusURI: String(a.censusURI ?? '') } }
     case 'ProcessMetadataUpdated':

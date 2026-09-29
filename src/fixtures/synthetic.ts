@@ -10,7 +10,9 @@
 //   locked), every census origin (fixed and updatable Merkle trees, on-chain
 //   census contract, CSP), transitions with one and several blobs, results
 //   from the zkVM and from the DKG committee, and a DKG-locked process whose
-//   tally waits for the organizer's reveal.
+//   tally waits for the organizer's reveal. One process is in its grace
+//   window now (batches still landing after the end), one had batches
+//   recorded in a window that has closed, and one had its end moved earlier.
 //
 // Every process commits to its metadata document by hash, and the fixture
 // serves the exact bytes it hashed; two processes change their document
@@ -193,6 +195,12 @@ export interface Fixture {
     metadataAfterVotes: Hex
     /** A URI that serves another document than the committed one. */
     metadataTampered: Hex
+    /** Past its end with the grace window open: batches still land, the organizer set a longer window. */
+    closingProcess: Hex
+    /** Its grace window closed after batches were recorded in it; results pending. */
+    graceSettled: Hex
+    /** The organizer moved its end earlier, with notice; still open. */
+    shortenedEnd: Hex
   }
 }
 
@@ -223,6 +231,14 @@ interface Spec {
   metadataUpdate?: { daysAfterCreation: number } | { afterTransition: number }
   /** The metadata URI serves another document than the one whose hash is on-chain. */
   metadataTampered?: boolean
+  /** Ends this many seconds before the head, instead of after `durationDays`. */
+  endSecondsAgo?: number
+  /** The last transitions, recorded this many seconds after the end, in the grace window. */
+  graceAfterEnd?: number[]
+  /** The organizer's `setProcessGrace`, in seconds, soon after creation. */
+  grace?: number
+  /** The organizer's `setProcessDuration` to a shorter window, in days, a day after creation. */
+  shortenedDays?: number
 }
 
 const SPECS: Spec[] = [
@@ -299,6 +315,7 @@ const SPECS: Spec[] = [
     end: 'open',
     organizer: 1,
     metadataUpdate: { afterTransition: 2 },
+    shortenedDays: 10,
   },
   {
     title: 'Union ballot',
@@ -367,11 +384,29 @@ const SPECS: Spec[] = [
     ballot: { type: 'rating', minValue: 1, maxValue: 5 },
     createdDaysAgo: 9,
     durationDays: 4,
-    transitions: 3,
+    transitions: 5,
     votes: [4, 10],
     overwriteShare: 0.1,
     end: 'closed',
     organizer: 0,
+    graceAfterEnd: [40, 150],
+  },
+  {
+    title: 'Assembly motion',
+    keyMode: 'sequencer',
+    census: 'merkle-static',
+    numFields: 2,
+    ballot: { type: 'single_choice' },
+    createdDaysAgo: 0.25,
+    durationDays: 0,
+    endSecondsAgo: 90,
+    transitions: 5,
+    votes: [4, 14],
+    overwriteShare: 0.1,
+    end: 'closed',
+    organizer: 1,
+    graceAfterEnd: [20, 65],
+    grace: 600,
   },
 ]
 
@@ -390,6 +425,7 @@ const TITLES: Record<string, { es: string; ca: string }> = {
   'Logo contest': { es: 'Concurso de logotipos', ca: 'Concurs de logotips' },
   'Annual assembly minutes': { es: 'Acta de la asamblea anual', ca: "Acta de l'assemblea anual" },
   'Tooling survey': { es: 'Encuesta sobre herramientas', ca: 'Enquesta sobre eines' },
+  'Assembly motion': { es: 'Moción de la asamblea', ca: "Moció de l'assemblea" },
 }
 
 type Localized = { default: string; es: string; ca: string }
@@ -461,6 +497,9 @@ const SEQUENCER_ADDRESSES: Address[] = [
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address
 const DAY = 86_400
+
+/** The demo registry's grace window settings: the production defaults, in seconds. */
+const GRACE = { defaultGrace: 180, graceFloor: 150, graceCeil: 600, graceMaxTotal: 1_800, noticeMin: 60 }
 
 function registersToPublicValues(regs: number[]): Hex {
   const out = new Uint8Array(PUBLIC_VALUES_LENGTH)
@@ -560,17 +599,21 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
     })
   }
 
+  /** Process ids in `SPECS` order; the store lists them by creation. */
+  const specPids: Hex[] = []
   SPECS.forEach((spec, specIndex) => {
     const organizer = ORGANIZERS[spec.organizer]!
     const nonce = nonces.get(organizer) ?? 0n
     nonces.set(organizer, nonce + 1n)
     const pid = computeProcessId(prefix, organizer, nonce)
+    specPids[specIndex] = pid
     const createdBlock = o.headBlock - Math.floor(spec.createdDaysAgo * blocksPerDay) - rng.int(0, 500)
     const createdTs = tsOf(createdBlock)
     const startTime = createdTs + Math.floor((spec.startDelayDays ?? 0.02) * DAY)
-    const duration = spec.durationDays * DAY
-    const endTime = startTime + duration
     const now = o.headTimestamp
+    const createdDuration = spec.endSecondsAgo != null ? now - spec.endSecondsAgo - startTime : spec.durationDays * DAY
+    const duration = spec.shortenedDays != null ? spec.shortenedDays * DAY : createdDuration
+    const endTime = startTime + duration
     const nf = spec.numFields
     const ballotMode = demoBallotMode(spec.ballot, nf)
     const censusRoots: Hex[] = [
@@ -614,7 +657,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
       initialCensusRoot: censusRoots[0]!,
       initialCensusURI:
         spec.census === 'csp' ? 'https://csp.example.org/' : `https://census.example.org/${pid.slice(2, 10)}/v1.json`,
-      initialDuration: duration,
+      initialDuration: createdDuration,
       initialMaxVoters: 1_000,
       initialStatus: 'ready',
     })
@@ -649,8 +692,32 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
       metadataFeatured.before = pid
     }
 
-    // Transitions spread over the part of the window that has passed.
+    // The organizer's changes to the window, made up without drawing from the random stream.
+    let grace = GRACE.defaultGrace
+    if (spec.grace != null) {
+      grace = spec.grace
+      emit({
+        name: 'ProcessGraceChanged',
+        block: createdBlock + 30,
+        tx: madeUpTx(`${pid}:grace`),
+        processId: pid,
+        data: { grace },
+      })
+    }
+    if (spec.shortenedDays != null) {
+      emit({
+        name: 'ProcessDurationChanged',
+        block: createdBlock + blocksPerDay,
+        tx: madeUpTx(`${pid}:duration`),
+        processId: pid,
+        data: { duration },
+      })
+    }
+
+    // Transitions spread over the part of the window that has passed; the
+    // last `graceAfterEnd` ones land after the end, in the grace window.
     const windowEnd = Math.min(endTime, now - 600)
+    const afterEnd = spec.graceAfterEnd ?? []
     const occupied: bigint[] = []
     const allVoteIds: bigint[] = []
     let root = genesisRoot
@@ -660,7 +727,9 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
     const censusUpdateAt = spec.censusUpdates ? Math.floor(spec.transitions / 2) : -1
     const nTransitions =
       spec.end === 'upcoming' ? 0 : Math.max(0, Math.round(spec.transitions * (spec.transitions > 10 ? o.scale : 1)))
+    const beforeEnd = nTransitions - afterEnd.length
     let lastBlock = createdBlock
+    let lastVoteAt = 0
     for (let i = 0; i < nTransitions; i++) {
       if (i === censusUpdateAt) {
         const updateBlock = lastBlock + rng.int(20, 200)
@@ -682,9 +751,14 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
         lastBlock = updateBlock
       }
       const t0 = Math.max(startTime, createdTs) + 60
-      const ts = t0 + Math.floor(((windowEnd - t0) * (i + 1)) / (nTransitions + 1)) + rng.int(0, 300)
+      const jitter = rng.int(0, 300)
+      const ts =
+        i < beforeEnd
+          ? t0 + Math.floor(((windowEnd - t0) * (i + 1)) / (beforeEnd + 1)) + jitter
+          : endTime + afterEnd[i - beforeEnd]!
       const block = Math.max(lastBlock + 3, blockOf(ts))
       lastBlock = block
+      lastVoteAt = tsOf(block)
 
       const big = spec.bigTransition && i === nTransitions - 3
       const n = big ? 200 : rng.int(spec.votes[0], spec.votes[1])
@@ -791,7 +865,9 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
     let finalDuration = duration
     const result: bigint[] = []
     const tally = () => Array.from({ length: nf }, () => BigInt(rng.int(0, Math.max(1, voters) * 3)))
-    const afterEnd = Math.max(lastBlock + 10, blockOf(endTime) + rng.int(30, 400))
+    // Results only once the grace window has closed, as the registry requires.
+    const graceEnd = Math.min(endTime + GRACE.graceMaxTotal, Math.max(endTime, lastVoteAt) + grace)
+    const resultsBlock = Math.max(lastBlock + 10, blockOf(graceEnd) + rng.int(30, 400))
     switch (spec.end) {
       case 'paused': {
         status = 'paused'
@@ -843,14 +919,14 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
           const tx = rng.hex(32)
           emit({
             name: 'ProcessStatusChanged',
-            block: afterEnd,
+            block: resultsBlock,
             tx,
             processId: pid,
             data: { oldStatus: 'ready', newStatus: 'results' },
           })
           emit({
             name: 'ProcessResultsSet',
-            block: afterEnd,
+            block: resultsBlock,
             tx,
             processId: pid,
             data: { sender: SEQUENCER_ADDRESSES[0]!, result },
@@ -863,7 +939,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
             words[11 + 2 * i] = Number(v >> 32n)
           })
           words[42] = 0xffffffff
-          addTx(tx, SEQUENCER_ADDRESSES[0]!, afterEnd, {
+          addTx(tx, SEQUENCER_ADDRESSES[0]!, resultsBlock, {
             functionName: 'setProcessResults',
             gasUsed: 402_000n,
             publicValues: registersToPublicValues(words),
@@ -875,23 +951,23 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
           d.ciphertexts = result.map((v, i) => ({ index: 1 + i, completed: true, plaintext: v }))
           emit({
             name: 'ProcessStatusChanged',
-            block: afterEnd,
+            block: resultsBlock,
             tx: requestTx,
             processId: pid,
             data: { oldStatus: 'ready', newStatus: 'ended' },
           })
           emit({
             name: 'ResultsDecryptionRequested',
-            block: afterEnd,
+            block: resultsBlock,
             tx: requestTx,
             processId: pid,
             data: { epochId: d.epochId, aid: d.aid, firstIndex: 1, count: nf },
           })
-          addTx(requestTx, SEQUENCER_ADDRESSES[1]!, afterEnd, {
+          addTx(requestTx, SEQUENCER_ADDRESSES[1]!, resultsBlock, {
             functionName: 'requestResultsDecryption',
             gasUsed: 910_000n,
           })
-          const finalBlock = afterEnd + rng.int(20, 80)
+          const finalBlock = resultsBlock + rng.int(20, 80)
           const finalTx = rng.hex(32)
           emit({
             name: 'ProcessStatusChanged',
@@ -922,19 +998,22 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
         const tx = rng.hex(32)
         emit({
           name: 'ProcessStatusChanged',
-          block: afterEnd,
+          block: resultsBlock,
           tx,
           processId: pid,
           data: { oldStatus: 'ready', newStatus: 'ended' },
         })
         emit({
           name: 'ResultsDecryptionRequested',
-          block: afterEnd,
+          block: resultsBlock,
           tx,
           processId: pid,
           data: { epochId: d.epochId, aid: d.aid, firstIndex: 1, count: nf },
         })
-        addTx(tx, SEQUENCER_ADDRESSES[1]!, afterEnd, { functionName: 'requestResultsDecryption', gasUsed: 880_000n })
+        addTx(tx, SEQUENCER_ADDRESSES[1]!, resultsBlock, {
+          functionName: 'requestResultsDecryption',
+          gasUsed: 880_000n,
+        })
         status = 'ended'
         break
       }
@@ -1001,6 +1080,8 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
             resultsRequested: spec.end === 'results' || spec.end === 'awaiting-reveal',
           }
         : null,
+      grace,
+      lastVoteAt,
     })
   })
 
@@ -1028,6 +1109,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
     dkgAdapter: '0xde30000000000000000000000000000000000003',
     dkgManager: '0xde30000000000000000000000000000000000004',
     dkgAppManager: '0xde30000000000000000000000000000000000005',
+    ...GRACE,
     readAtBlock: o.headBlock,
   }
   applyRegistryInfo(store, registryInfo)
@@ -1075,6 +1157,9 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
       metadataBeforeStart: metadataFeatured.before!,
       metadataAfterVotes: metadataFeatured.after!,
       metadataTampered: metadataFeatured.tampered!,
+      closingProcess: specPids[SPECS.findIndex((s) => s.endSecondsAgo != null)]!,
+      graceSettled: specPids[SPECS.findIndex((s) => s.end === 'closed' && s.endSecondsAgo == null)]!,
+      shortenedEnd: specPids[SPECS.findIndex((s) => s.shortenedDays != null)]!,
     },
   }
 }

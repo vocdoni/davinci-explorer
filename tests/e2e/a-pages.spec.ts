@@ -57,7 +57,7 @@ test.describe('overview', () => {
 test.describe('processes list', () => {
   test('filters live in the URL', async ({ page }) => {
     await demo(page, '/processes')
-    await expect(page.getByTestId('process-count')).toHaveText('10 processes')
+    await expect(page.getByTestId('process-count')).toHaveText('11 processes')
     await page.getByLabel('Phase').selectOption('results')
     await expect(page).toHaveURL(/status=results/)
     await expect(page.getByTestId('process-count')).toHaveText('2 processes')
@@ -65,7 +65,7 @@ test.describe('processes list', () => {
     await expect(page).toHaveURL(/keyMode=dkg-automatic/)
     await expect(page.getByTestId('process-count')).toHaveText('1 process')
     await page.getByRole('button', { name: 'Clear filters' }).first().click()
-    await expect(page.getByTestId('process-count')).toHaveText('10 processes')
+    await expect(page.getByTestId('process-count')).toHaveText('11 processes')
 
     await demo(page, '/processes?census=csp')
     await expect(page.getByLabel('List of voters')).toHaveValue('csp')

@@ -17,8 +17,8 @@ const PHASES: Array<{ phase: ProcessPhase; label: MessageDescriptor }> = [
   { phase: 'upcoming', label: msg({ message: 'upcoming', context: 'process phase' }) },
   { phase: 'open', label: msg({ message: 'open', context: 'process phase' }) },
   { phase: 'paused', label: msg({ message: 'paused', context: 'process phase' }) },
-  { phase: 'closed', label: msg({ message: 'voting closed', context: 'process phase' }) },
-  { phase: 'ended', label: msg({ message: 'ended', context: 'process phase' }) },
+  { phase: 'closing', label: msg({ message: 'closing', context: 'process phase' }) },
+  { phase: 'ended', label: msg({ message: 'ended, results pending', context: 'process phase' }) },
   { phase: 'results', label: msg({ message: 'results', context: 'process phase' }) },
   { phase: 'canceled', label: msg({ message: 'canceled', context: 'process phase' }) },
 ]

@@ -111,6 +111,8 @@ function state(overrides: Partial<ProcessState> = {}): ProcessState {
     },
     keyMode: 'sequencer',
     dkg: null,
+    grace: 180,
+    lastVoteAt: 0,
     ...overrides,
   }
 }
@@ -176,6 +178,30 @@ describe('applyEvents', () => {
     applyProcessState(store, PID, state({ status: 'results' }), 200)
     applyProcessState(store, PID, state({ status: 'paused' }), 150)
     expect(store.processes[PID]!.state!.status).toBe('results')
+  })
+
+  it('moves the grace window with each batch and keeps the organizer’s grace changes', () => {
+    const store = createEmptyStore({ chainId: 100, registryAddress: REGISTRY, startBlock: 50 })
+    const events = baseEvents()
+    applyEvents(store, events.slice(0, 1))
+    applyProcessState(store, PID, state(), 105)
+    const grace: IndexedEvent = {
+      name: 'ProcessGraceChanged',
+      block: 106,
+      tx: tx(106),
+      logIndex: 0,
+      timestamp: null,
+      processId: PID,
+      data: { grace: 600 },
+    }
+    applyEvents(store, [grace, ...events.slice(1, 3).map((e) => ({ ...e, timestamp: e.block * 10 }))])
+    const p = store.processes[PID]!
+    expect(p.graceChanges.map((c) => c.value)).toEqual([600])
+    expect(p.state!.grace).toBe(600)
+    // The registry stamps the last batch's block time.
+    expect(p.state!.lastVoteAt).toBe(1_200)
+    applyBlockTimes(store, { 106: 1_060 })
+    expect(p.graceChanges[0]!.timestamp).toBe(1_060)
   })
 
   it('keeps the DKG decryption fields of one request together', () => {
@@ -279,6 +305,16 @@ describe('metadata history', () => {
       metadataURI: 'ipfs://bafy',
       metadataHash: `0x${'ab'.repeat(32)}`,
     })
+  })
+
+  it('reads the organizer’s grace window change', () => {
+    const ev = normalizeLog({
+      eventName: 'ProcessGraceChanged',
+      args: { processId: PID, grace: 600 },
+      blockNumber: 11n,
+      logIndex: 0,
+    })
+    expect(ev?.name === 'ProcessGraceChanged' && ev.data).toEqual({ grace: 600 })
   })
 })
 

@@ -11,7 +11,7 @@ import { PIN_LABELS } from '~protocol/releases'
 import { PIN_DETAILS } from './model'
 import { Code, TechnicalToggle } from './parts'
 
-interface Param {
+export interface Param {
   id: string
   title: string
   /** How the value is read: code, never translated, shown with `Formula`. */
@@ -176,47 +176,54 @@ export function ParametersPanel({
         </div>
       }
     >
-      <ul className='-my-3 divide-y divide-charcoal'>
-        {params.map((p) => (
-          <li
-            key={p.id}
-            data-testid={`param-${p.id}`}
-            className='grid gap-x-8 gap-y-2 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'
-          >
-            <div className='min-w-0'>
-              <div className='text-[13px] font-semibold text-ghost'>{p.title}</div>
-              <div className='mt-0.5 text-[12px]'>
-                <Formula expr={p.source} />
-              </div>
-              <div className='mt-2 min-w-0'>{p.value}</div>
-              {p.hint ? <div className='mt-1 text-[11px] text-ash'>{p.hint}</div> : null}
-            </div>
-            <div className='min-w-0 text-[12px] leading-relaxed text-ash'>
-              <p>
-                <span className='text-pewter'>
-                  <Trans>What it is.</Trans>
-                </span>{' '}
-                <span className='text-silver'>{p.what}</span>
-              </p>
-              <p className='mt-1'>
-                <span className='text-pewter'>
-                  <Trans>Why it matters.</Trans>
-                </span>{' '}
-                {p.why}
-              </p>
-              {technical && (p.detail || p.formula) ? (
-                <div
-                  className='mt-2 border-l-2 border-charcoal pl-3 [&_code]:text-[0.88em] [&_code]:text-pewter'
-                  data-testid='param-detail'
-                >
-                  {p.detail ? <p>{p.detail}</p> : null}
-                  {p.formula ? <Formula block expr={p.formula} className='mt-1.5' /> : null}
-                </div>
-              ) : null}
-            </div>
-          </li>
-        ))}
-      </ul>
+      <ParamList params={params} technical={technical} />
     </Panel>
+  )
+}
+
+/** One row per value: its name, how it is read and the value; what it is and why it matters; the mechanism when `technical`. */
+export function ParamList({ params, technical }: { params: Param[]; technical: boolean }) {
+  return (
+    <ul className='-my-3 divide-y divide-charcoal'>
+      {params.map((p) => (
+        <li
+          key={p.id}
+          data-testid={`param-${p.id}`}
+          className='grid gap-x-8 gap-y-2 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'
+        >
+          <div className='min-w-0'>
+            <div className='text-[13px] font-semibold text-ghost'>{p.title}</div>
+            <div className='mt-0.5 text-[12px]'>
+              <Formula expr={p.source} />
+            </div>
+            <div className='mt-2 min-w-0'>{p.value}</div>
+            {p.hint ? <div className='mt-1 text-[11px] text-ash'>{p.hint}</div> : null}
+          </div>
+          <div className='min-w-0 text-[12px] leading-relaxed text-ash'>
+            <p>
+              <span className='text-pewter'>
+                <Trans>What it is.</Trans>
+              </span>{' '}
+              <span className='text-silver'>{p.what}</span>
+            </p>
+            <p className='mt-1'>
+              <span className='text-pewter'>
+                <Trans>Why it matters.</Trans>
+              </span>{' '}
+              {p.why}
+            </p>
+            {technical && (p.detail || p.formula) ? (
+              <div
+                className='mt-2 border-l-2 border-charcoal pl-3 [&_code]:text-[0.88em] [&_code]:text-pewter'
+                data-testid='param-detail'
+              >
+                {p.detail ? <p>{p.detail}</p> : null}
+                {p.formula ? <Formula block expr={p.formula} className='mt-1.5' /> : null}
+              </div>
+            ) : null}
+          </div>
+        </li>
+      ))}
+    </ul>
   )
 }

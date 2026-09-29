@@ -1,6 +1,6 @@
 // Contract state the events do not carry: `getProcess` structs, genesis
-// roots, the registry immutables, the verifier code hash, settlement
-// transactions and block times.
+// roots, the registry immutables (the pins and the grace window settings),
+// the verifier code hash, settlement transactions and block times.
 //
 // Contract reads go through `multicall` against the canonical Multicall3
 // address (deployed on Gnosis, Ethereum and pre-deployed by Anvil); a chain
@@ -94,6 +94,8 @@ export function normalizeProcess(raw: Record<string, unknown>): ProcessState {
             zeroSkipped: num(raw.dkgZeroSkipped),
             resultsRequested: Boolean(raw.dkgResultsRequested),
           },
+    grace: num(raw.grace),
+    lastVoteAt: num(raw.lastVoteAt),
   }
 }
 
@@ -205,6 +207,11 @@ export class StateReader {
       'ballotVKHash',
       'ziskVerifier',
       'dkgAdapter',
+      'defaultGrace',
+      'graceFloor',
+      'graceCeil',
+      'graceMaxTotal',
+      'noticeMin',
     ] as const
     const results = await this.read(names.map((n) => this.registry(n)))
     const value = (n: (typeof names)[number]) => {
@@ -234,6 +241,11 @@ export class StateReader {
       dkgAdapter,
       dkgManager,
       dkgAppManager,
+      defaultGrace: num(value('defaultGrace')),
+      graceFloor: num(value('graceFloor')),
+      graceCeil: num(value('graceCeil')),
+      graceMaxTotal: num(value('graceMaxTotal')),
+      noticeMin: num(value('noticeMin')),
       readAtBlock: blockNumber,
     }
   }

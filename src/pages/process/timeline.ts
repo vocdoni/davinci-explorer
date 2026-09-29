@@ -1,19 +1,19 @@
 // The lifecycle strip of a process page: created → start → batches → end
-// → results, each step done, in progress, still ahead, or skipped (a canceled
-// process never ends normally and never gets results).
+// → grace window → results, each step done, in progress, still ahead, or
+// skipped (a canceled process never ends normally and never gets results).
 
 import { plural, t } from '@lingui/core/macro'
 import type { ProcessView } from '~data/hooks'
 import { votingOver } from '~indexer/selectors'
-import type { Hex } from '~indexer/types'
+import type { Hex, ProcessEntity, ValueChange } from '~indexer/types'
 import { organizerEnd } from './ending'
-import { formatNumber } from '~lib/format'
+import { formatNumber, formatSeconds } from '~lib/format'
 
 export type StepState = 'done' | 'current' | 'upcoming' | 'skipped'
 
 /** `label` and `detail` are in the active language: build the steps while rendering. */
 export interface LifecycleStep {
-  id: 'created' | 'start' | 'transitions' | 'end' | 'results'
+  id: 'created' | 'start' | 'transitions' | 'end' | 'grace' | 'results'
   label: string
   state: StepState
   /** Unix seconds, when the step has a time. */
@@ -35,13 +35,18 @@ export function processLifecycle(
   const started = row.startTime != null && now != null && now >= row.startTime
   const last = transitions[transitions.length - 1]
   const ballots = transitions.reduce((sum, t) => sum + t.votes, 0)
-  const ended = phase === 'ended' || phase === 'results' || phase === 'closed'
-  const over = votingOver(row, now)
+  // The voting time is over; the grace window may still be open.
+  const ended = phase === 'closing' || phase === 'ended' || phase === 'results'
+  // The grace window has closed too: no batch can come.
+  const over = votingOver(row)
   // An organizer end after the planned end only moved the recorded end: voting had closed.
   const end = organizerEnd(p, initialDuration)
   const endChange = end && end.early !== false ? end.change : null
+  const earlier = !endChange ? endMovedEarlier(p, initialDuration) : null
   const block = formatNumber(p.createdBlock)
   const batches = transitions.length
+  const grace = row.grace != null ? formatSeconds(row.grace) : null
+  const graceBatches = row.graceBatches
 
   const steps: LifecycleStep[] = [
     {
@@ -64,7 +69,7 @@ export function processLifecycle(
       id: 'transitions',
       label: t`Batches`,
       state:
-        !over && (phase === 'open' || phase === 'paused')
+        phase === 'open' || phase === 'paused'
           ? 'current'
           : transitions.length > 0
             ? 'done'
@@ -87,16 +92,34 @@ export function processLifecycle(
       time: canceled ? (cancel?.timestamp ?? null) : end?.early === false ? end.plannedEnd : row.endTime,
       detail: canceled
         ? t`Canceled by the organizer`
-        : phase === 'closed'
-          ? t`End time passed; the chain still reads Ready`
-          : phase === 'paused'
-            ? t`Paused by the organizer`
-            : endChange
-              ? t`Ended by the organizer`
+        : phase === 'paused'
+          ? t`Paused by the organizer`
+          : endChange
+            ? t`Ended by the organizer`
+            : earlier
+              ? t`Moved earlier by the organizer`
               : ended
                 ? t`End time reached`
                 : t`End time`,
-      tx: canceled ? (cancel?.tx ?? null) : (endChange?.tx ?? null),
+      tx: canceled ? (cancel?.tx ?? null) : (endChange?.tx ?? earlier?.tx ?? null),
+    },
+    {
+      id: 'grace',
+      label: t`Grace window`,
+      state: canceled ? 'skipped' : over ? 'done' : ended ? 'current' : 'upcoming',
+      time: canceled || !ended ? null : row.graceEnd,
+      detail: canceled
+        ? t`None: canceled`
+        : over
+          ? graceBatches > 0
+            ? t`${plural(graceBatches, { one: '# batch recorded in it', other: '# batches recorded in it' })}`
+            : t`No batch after the end`
+          : ended
+            ? t`Recording the last batches`
+            : grace
+              ? t`${grace} for batches still on their way`
+              : t`For batches still on their way`,
+      tx: null,
     },
   ]
 
@@ -125,11 +148,26 @@ export function processLifecycle(
           : {
               id: 'results',
               label: t`Results`,
-              state: ended ? 'current' : 'upcoming',
+              state: over ? 'current' : 'upcoming',
               time: null,
-              detail: ended ? t`Pending` : t`After the end`,
+              detail: over ? t`Pending` : t`After the grace window`,
               tx: null,
             }
   )
   return steps
+}
+
+/**
+ * The organizer's latest move of the end to an earlier time, with notice
+ * (`setProcessDuration` with a shorter duration); an end by status is
+ * `organizerEnd`. Null when the end only ever moved later.
+ */
+export function endMovedEarlier(p: ProcessEntity, initialDuration: number | null): ValueChange<number> | null {
+  let before = initialDuration
+  let out: ValueChange<number> | null = null
+  for (const c of p.durationChanges) {
+    if (before != null && c.value < before) out = c
+    before = c.value
+  }
+  return out
 }

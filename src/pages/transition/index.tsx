@@ -3,7 +3,7 @@ import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, useParams } from 'react-router'
 import { HashLink, MissingEntity, ProcessIdLink, Term } from '~components'
-import { useChainNow, useTransition, useTransitions } from '~data/hooks'
+import { useTransition, useTransitions } from '~data/hooks'
 import { useTransitionBlobs } from '~data/queries'
 import { buttonClasses, ChevronLeftIcon, ChevronRightIcon, SectionHeader, Stack } from '~kit'
 import { cn } from '~lib/cn'
@@ -33,7 +33,6 @@ export function TransitionPage() {
   const detail = useTransition(pid, i)
   const all = useTransitions(pid)
   const blobs = useTransitionBlobs(pid, i)
-  const now = useChainNow()
 
   if (!pid || i == null || !detail) return <MissingEntity what='transition' index={param} processId={pid} />
   const { previous, next, process } = detail
@@ -78,7 +77,7 @@ export function TransitionPage() {
         }
       />
       <TransitionInShort detail={detail} />
-      <TransitionSummary detail={detail} blobs={blobs} now={now} total={all.length} />
+      <TransitionSummary detail={detail} blobs={blobs} total={all.length} />
       <nav aria-label={t`Sections`} className='-mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px]'>
         {SECTIONS.map(([id, label]) => (
           <HashLink key={id} id={id} className='text-ash transition-colors hover:text-emerald'>

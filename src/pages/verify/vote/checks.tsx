@@ -9,7 +9,7 @@ import { Link } from 'react-router'
 import { CheckMark, ProcessPhaseBadge, Term, TxLink, UnverifiedMark } from '~components'
 import { CodeBlock, Disclosure } from '~components/code'
 import { Formula } from '~components/Formula'
-import type { ProcessView } from '~data/hooks'
+import { useChain, type ProcessView } from '~data/hooks'
 import type {
   DecodedTransitionBlobs,
   MetadataCheck,
@@ -23,7 +23,7 @@ import { formatTimestamp } from '~lib/format'
 import { formatVoteId } from '~protocol/blob'
 import { SMT_LEVELS } from '~protocol/limits'
 import { paths } from '~routes/paths'
-import { GET_PROCESS, metadataHashCommand } from '~pages/transition/commands'
+import { GET_PROCESS, graceEndCommand, metadataHashCommand } from '~pages/transition/commands'
 import { changedWhileOpen } from '~pages/process/metadata'
 import type { ResultsCheck } from '~pages/process/results-checks'
 import { CheckCard, Compared, HowPart, RedoCommand, StatusDisc } from '../checklist'
@@ -216,6 +216,7 @@ export function SettledCard({
   over?: boolean
 }) {
   const { t } = useLingui()
+  const registry = useChain().registryAddress
   const origin = blobOrigin(blobs)
   const url = blobs?.sourceUrl
   const unread = inclusion.errors.length
@@ -269,7 +270,10 @@ export function SettledCard({
       break
     case 'missed':
       summary = (
-        <Trans>A sequencer had your vote, but voting ended before a batch recorded it, so it was not counted.</Trans>
+        <Trans>
+          A sequencer had your vote, but the grace window after the end closed before a batch recorded it, so it was not
+          counted.
+        </Trans>
       )
       break
     case 'reading':
@@ -410,6 +414,17 @@ export function SettledCard({
                 </Trans>
               }
               code={`cast tx ${found.tx} blobVersionedHashes --rpc-url $RPC`}
+            />
+          ) : settled.reason !== 'no-election' ? (
+            <RedoCommand
+              note={
+                <Trans>
+                  Batches can be recorded until the election’s end, and after it for a short{' '}
+                  <Term id='grace-window'>grace window</Term> that lets votes cast before the end arrive. The registry
+                  answers when that window closes, as a unix time; after it, no batch is recorded.
+                </Trans>
+              }
+              code={graceEndCommand({ registry, processId: pid })}
             />
           ) : null}
         </>
@@ -567,6 +582,8 @@ export function ResultCard({
   const results = view?.process.results
   const when = results?.timestamp != null ? formatTimestamp(results.timestamp) : null
   const end = view?.row.endTime != null ? formatTimestamp(view.row.endTime) : null
+  const phase = view?.row.phase
+  const graceEnd = view?.row.graceEnd != null ? formatTimestamp(view.row.graceEnd) : null
   const later = view ? view.transitions.length - 1 - (found?.index ?? 0) : 0
   const to = paths.process(pid, 'results')
   return (
@@ -585,8 +602,18 @@ export function ResultCard({
         ) : reason === 'canceled' ? (
           <Trans>The election was canceled, so no results will be published.</Trans>
         ) : reason === 'not-yet' ? (
-          end ? (
-            <Trans>The results are not published yet. They come after the vote ends, on {end}.</Trans>
+          phase === 'ended' ? (
+            <Trans>The results are not published yet. Voting is over, and they can be published at any time now.</Trans>
+          ) : phase === 'closing' && graceEnd ? (
+            <Trans>
+              The results are not published yet. They come once the grace window after the end closes, on {graceEnd}, or
+              later if more batches are recorded.
+            </Trans>
+          ) : end ? (
+            <Trans>
+              The results are not published yet. They come after the vote ends, on {end}, and a short grace window after
+              it.
+            </Trans>
           ) : (
             <Trans>The results are not published yet. They come after the vote ends.</Trans>
           )

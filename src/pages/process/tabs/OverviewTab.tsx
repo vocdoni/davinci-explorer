@@ -7,8 +7,20 @@ import { Disclosure } from '~components/code'
 import { useChain, useChainNow, type ProcessView } from '~data/hooks'
 import { votingOver } from '~indexer/selectors'
 import { useMetadataCheck } from '~data/queries'
-import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar, SkeletonText, UriLink } from '~kit'
-import { formatDuration, formatNumber, formatTimestamp } from '~lib/format'
+import {
+  Address,
+  Badge,
+  BlockCell,
+  Callout,
+  Hash,
+  KeyValue,
+  Panel,
+  ProgressBar,
+  SkeletonText,
+  UriLink,
+  type KeyValueItem,
+} from '~kit'
+import { formatDuration, formatNumber, formatSeconds, formatTimestamp } from '~lib/format'
 import { NUM_FIELDS } from '~protocol/limits'
 import { browsableUri } from '~protocol/metadata'
 import { parseProcessId } from '~protocol/process-id'
@@ -111,8 +123,14 @@ function ProcessInShort({ view }: { view: ProcessView }) {
       <Trans>
         The organizer paused voting, which is due to end <Timestamp value={end} relative={false} />.
       </Trans>
-    ) : row.phase === 'closed' || row.phase === 'ended' ? (
-      <Trans>Voting has ended; the results are not published yet.</Trans>
+    ) : row.phase === 'closing' ? (
+      <Trans>
+        Voting closed <Timestamp value={end} relative={false} />. Batches of votes cast before then can still be
+        recorded until the <Term id='grace-window'>grace window</Term> closes, <Timestamp value={row.graceEnd} />, and
+        the results come after.
+      </Trans>
+    ) : row.phase === 'ended' ? (
+      <Trans>Voting has ended and the grace window has closed; the results are not published yet.</Trans>
     ) : row.phase === 'canceled' ? (
       <Trans>The organizer canceled this election, so there will be no results.</Trans>
     ) : row.phase === 'results' ? (
@@ -447,8 +465,11 @@ function DatesPanel({ view }: { view: ProcessView }) {
   const end = organizerEnd(p, created)
   const planned = end?.plannedEnd != null ? formatTimestamp(end.plannedEnd) : null
   const now = useChainNow()
-  const over = votingOver(row, now)
+  const over = votingOver(row)
   const canceled = row.phase === 'canceled'
+  const registry = useChain().registry
+  const notice = registry ? formatSeconds(registry.noticeMin) : null
+  const grace = useGraceItems(view)
   // A time an election that is over never reached gets its date, not a countdown.
   const unreached = (time: number | null) => over && now != null && time != null && time > now
   const unreachedHint = canceled
@@ -477,7 +498,9 @@ function DatesPanel({ view }: { view: ProcessView }) {
           },
           {
             label: (
-              <Label help={t`The start time plus the duration. Votes are recorded only between the start and the end.`}>
+              <Label
+                help={t`The start time plus the duration. Voting closes at the end; batches of votes cast before it can still be recorded during the grace window that follows.`}
+              >
                 <Trans>End</Trans>
               </Label>
             ),
@@ -492,16 +515,24 @@ function DatesPanel({ view }: { view: ProcessView }) {
                   : formatTimestamp(row.endTime),
           },
           { label: t`Duration`, value: formatDuration(s.duration), mono: true },
+          ...(canceled ? [] : grace),
         ]}
       />
       <div className='mt-4'>
         <div className='label-caps mb-2 inline-flex items-center gap-1 text-[11px] text-pewter'>
           <Trans>Duration changes</Trans>
           <Explain>
-            <Trans>
-              Before the end, the organizer can only make voting last longer. Ending it early (status Ended) sets the
-              duration to the time since the start.
-            </Trans>
+            {notice ? (
+              <Trans>
+                Before the end, the organizer can make voting last longer, or move the end earlier with at least{' '}
+                {notice} of notice. Ending it at once (status Ended) sets the duration to the time since the start.
+              </Trans>
+            ) : (
+              <Trans>
+                Before the end, the organizer can make voting last longer, or move the end earlier with some notice.
+                Ending it at once (status Ended) sets the duration to the time since the start.
+              </Trans>
+            )}
           </Explain>
         </div>
         {p.durationChanges.length === 0 ? (
@@ -526,6 +557,9 @@ function DatesPanel({ view }: { view: ProcessView }) {
             {p.durationChanges.map((c, i) => {
               const duration = formatDuration(c.value)
               const ends = formatTimestamp(s.startTime + c.value)
+              const before = i > 0 ? p.durationChanges[i - 1]!.value : created
+              const earlier = before != null && c.value < before
+              const warned = c.timestamp != null ? formatDuration(s.startTime + c.value - c.timestamp) : null
               return (
                 <li key={`${c.block}:${i}`} className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
                   <Timestamp value={c.timestamp} className='text-ash' />
@@ -542,6 +576,14 @@ function DatesPanel({ view }: { view: ProcessView }) {
                           ended by the organizer: duration {duration}, ended {ends}
                         </Trans>
                       )
+                    ) : earlier && warned ? (
+                      <Trans>
+                        end moved earlier to {ends}, with {warned} of notice: duration {duration}
+                      </Trans>
+                    ) : earlier ? (
+                      <Trans>
+                        end moved earlier to {ends}: duration {duration}
+                      </Trans>
                     ) : (
                       <Trans>
                         duration {duration}, ends {ends}
@@ -561,7 +603,8 @@ function DatesPanel({ view }: { view: ProcessView }) {
           <Explain>
             <Trans>
               The organizer can pause voting and resume it until the end. While it is paused the registry records no
-              batch, and the end time does not move.
+              batch and the end time does not move. A pause ends with the voting time: in the grace window the registry
+              records batches again.
             </Trans>
           </Explain>
         </div>
@@ -599,6 +642,72 @@ function DatesPanel({ view }: { view: ProcessView }) {
   )
 }
 
+/**
+ * The grace window in the dates panel: how long it is, when it closes (live:
+ * each batch recorded after the end moves it later, up to the cap) and what
+ * was recorded in it.
+ */
+function useGraceItems(view: ProcessView): KeyValueItem[] {
+  const { t } = useLingui()
+  const { process: p, row } = view
+  const registry = useChain().registry
+  if (row.grace == null) return []
+  const phase = row.phase
+  const cap = row.graceCap != null ? formatTimestamp(row.graceCap) : null
+  const byDefault = registry ? formatSeconds(registry.defaultGrace) : null
+  const changes = p.graceChanges.length
+  const batches = row.graceBatches
+  const votes = row.graceVotes
+  const closed = phase === 'ended' || phase === 'results'
+  const items: KeyValueItem[] = [
+    {
+      label: (
+        <Label
+          help={t`How long after the end, or after the last batch recorded past it, the registry still records batches of votes cast before the end. The results wait until it closes.`}
+        >
+          <Trans>Grace window</Trans>
+        </Label>
+      ),
+      value: formatSeconds(row.grace),
+      mono: true,
+      hint:
+        changes > 0
+          ? byDefault
+            ? t`set by the organizer; the registry’s default is ${byDefault}`
+            : t`set by the organizer`
+          : t`the registry’s default`,
+    },
+    {
+      label: (
+        <Label
+          help={t`When the registry stops recording batches and starts accepting the results. Each batch recorded after the end moves it later, never past a fixed cap after the end.`}
+        >
+          <Trans>Grace window closes</Trans>
+        </Label>
+      ),
+      value: <Timestamp value={row.graceEnd} />,
+      hint: closed
+        ? t`closed; nothing can be recorded after it`
+        : cap
+          ? t`or later if more batches arrive, until ${cap} at most`
+          : undefined,
+    },
+  ]
+  if (batches > 0) {
+    items.push({
+      label: (
+        <Label
+          help={t`Batches the registry recorded after the end, during the grace window. Each batch’s time is public, on the batches tab.`}
+        >
+          <Trans>Recorded after the end</Trans>
+        </Label>
+      ),
+      value: t`${plural(batches, { one: '# batch', other: '# batches' })}, ${plural(votes, { one: '# vote', other: '# votes' })}`,
+    })
+  }
+  return items
+}
+
 function LimitsPanel({ view }: { view: ProcessView }) {
   const { t } = useLingui()
   const { process: p, row } = view
@@ -625,7 +734,7 @@ function LimitsPanel({ view }: { view: ProcessView }) {
           {
             label: (
               <Label
-                help={t`The most voters this election accepts: the registry refuses a batch that would go above it. The organizer can change it while the election is open or paused, but never below the voters so far.`}
+                help={t`The most voters this election accepts: the registry refuses a batch that would go above it. The organizer can change it while the election is open or paused, until the end, but never below the voters so far.`}
               >
                 <Trans>Max voters</Trans>
               </Label>

@@ -116,6 +116,7 @@ export function ensureProcess(store: IndexerStore, id: string, block: number): P
       statusChanges: [],
       durationChanges: [],
       maxVotersChanges: [],
+      graceChanges: [],
       censusUpdates: [],
       metadataHistory: [],
       results: null,
@@ -205,6 +206,8 @@ function applyOne(store: IndexerStore, ev: IndexedEvent, index: number): void {
         s.votersCount = t.votersCount
         s.overwrittenVotesCount = t.overwrittenVotesCount
         s.batchNumber = Math.max(s.batchNumber, i + 1)
+        // The registry stamps the block time; it moves the grace window's end.
+        if (ev.timestamp != null) s.lastVoteAt = Math.max(s.lastVoteAt, ev.timestamp)
       }
       break
     }
@@ -224,6 +227,12 @@ function applyOne(store: IndexerStore, ev: IndexedEvent, index: number): void {
       p.maxVotersChanges.push({ ...at, value: ev.data.maxVoters })
       const s = newerThanState(p, ev.block)
       if (s) s.maxVoters = ev.data.maxVoters
+      break
+    }
+    case 'ProcessGraceChanged': {
+      p.graceChanges.push({ ...at, value: ev.data.grace })
+      const s = newerThanState(p, ev.block)
+      if (s) s.grace = ev.data.grace
       break
     }
     case 'CensusUpdated': {
@@ -333,7 +342,14 @@ export function applyBlockTimes(store: IndexerStore, times: Record<number, numbe
   for (const key of store.processOrder) {
     const p = store.processes[key]!
     if (p.createdAt == null && times[p.createdBlock] != null) p.createdAt = times[p.createdBlock]!
-    for (const list of [p.statusChanges, p.durationChanges, p.maxVotersChanges, p.censusUpdates, p.metadataHistory]) {
+    for (const list of [
+      p.statusChanges,
+      p.durationChanges,
+      p.maxVotersChanges,
+      p.graceChanges,
+      p.censusUpdates,
+      p.metadataHistory,
+    ]) {
       for (const c of list as Array<{ block: number; timestamp: number | null }>) {
         if (c.timestamp == null && times[c.block] != null) c.timestamp = times[c.block]!
       }
