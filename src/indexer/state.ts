@@ -403,6 +403,9 @@ export function txDetailsFrom(tx: TxLike, receipt: ReceiptLike): TxDetails {
     ys: [],
     kzgProofs: [],
     initialCensusRoot: null,
+    initialCensusURI: null,
+    initialDuration: null,
+    initialMaxVoters: null,
     decodeError: null,
   }
   try {
@@ -416,8 +419,11 @@ export function txDetailsFrom(tx: TxLike, receipt: ReceiptLike): TxDetails {
       details.ys = (call.ys as Hex[] | undefined) ?? []
       details.kzgProofs = (call.kzgProofs as Hex[] | undefined) ?? []
     } else if (decoded.name === 'newProcess') {
-      const census = decoded.args[5] as { censusRoot?: Hex } | undefined
+      const census = decoded.args[5] as { censusRoot?: Hex; censusURI?: string } | undefined
       details.initialCensusRoot = census?.censusRoot ? (census.censusRoot.toLowerCase() as Hex) : null
+      details.initialCensusURI = census?.censusURI ?? null
+      details.initialDuration = typeof decoded.args[2] === 'bigint' ? Number(decoded.args[2]) : null
+      details.initialMaxVoters = typeof decoded.args[3] === 'bigint' ? Number(decoded.args[3]) : null
     }
   } catch (err) {
     details.decodeError = err instanceof Error ? err.message : String(err)

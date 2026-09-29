@@ -2583,6 +2583,7 @@ msgstr "Not a web link"
 #: src/pages/kit/index.tsx
 #: src/pages/process/tabs/OverviewTab.tsx
 #: src/pages/process/tabs/OverviewTab.tsx
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "Open the list"
 msgstr "Open the list"
 
@@ -5281,6 +5282,11 @@ msgid "The organizer has not replaced the list."
 msgstr "The organizer has not replaced the list."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "at creation"
+msgstr "at creation"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "A credential service provider (CSP) census: the registry stores the signer’s address as the census root, a big-endian integer, and every vote carries the service’s signature."
 msgstr "A credential service provider (CSP) census: the registry stores the signer’s address as the census root, a big-endian integer, and every vote carries the service’s signature."
 
@@ -5337,6 +5343,10 @@ msgid "The duration has not changed since creation."
 msgstr "The duration has not changed since creation."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+msgid "duration {initialDuration}, ends {initialEnd}"
+msgstr "duration {initialDuration}, ends {initialEnd}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "ended early by the organizer: duration {duration}, ended {ends}"
 msgstr "ended early by the organizer: duration {duration}, ended {ends}"
 
@@ -5387,6 +5397,10 @@ msgstr "The most voters this election accepts: the registry refuses a batch that
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "Max voters"
 msgstr "Max voters"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "{initial} at creation, {changes, plural, one {changed # time} other {changed # times}}, last to {last}"
+msgstr "{initial} at creation, {changes, plural, one {changed # time} other {changed # times}}, last to {last}"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "{changes, plural, one {changed # time} other {changed # times}}, last to {last}"

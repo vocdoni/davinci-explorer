@@ -106,4 +106,22 @@ describe('process dates', () => {
     renderAt(paths.process(find('canceled')))
     expect(await screen.findByText('as planned; the organizer canceled the election')).toBeInTheDocument()
   })
+
+  it('starts each history with the value the election was created with', async () => {
+    // The busy open process raised its voter limit from 1,000 to 5,000.
+    const { unmount } = renderAt(paths.process(fixture.featured.openProcess))
+    expect(await screen.findByText('1,000 at creation, changed 1 time, last to 5,000')).toBeInTheDocument()
+    unmount()
+
+    const ended = renderAt(paths.process(find('ended')))
+    const durations = await screen.findByTestId('duration-changes')
+    expect(within(durations).getAllByRole('listitem')[0]).toHaveTextContent(/^at creation\s*duration 9 d/)
+    ended.unmount()
+
+    const replaced = fixture.store.processOrder.find((k) => fixture.store.processes[k]!.censusUpdates.length > 0)!
+    renderAt(paths.process(replaced))
+    const census = await screen.findByTestId('census-changes')
+    expect(within(census).getAllByRole('listitem')).toHaveLength(2)
+    expect(within(census).getAllByRole('listitem')[0]).toHaveTextContent(/^at creation/)
+  })
 })

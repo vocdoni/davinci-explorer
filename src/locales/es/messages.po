@@ -2583,6 +2583,7 @@ msgstr "No es un enlace web"
 #: src/pages/kit/index.tsx
 #: src/pages/process/tabs/OverviewTab.tsx
 #: src/pages/process/tabs/OverviewTab.tsx
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "Open the list"
 msgstr "Abrir la lista"
 
@@ -5281,6 +5282,11 @@ msgid "The organizer has not replaced the list."
 msgstr "El organizador no ha sustituido la lista."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "at creation"
+msgstr "al crearse"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "A credential service provider (CSP) census: the registry stores the signer’s address as the census root, a big-endian integer, and every vote carries the service’s signature."
 msgstr "Un censo de proveedor de credenciales (CSP): el registro guarda la dirección del firmante como raíz del censo, un entero big-endian, y cada voto lleva la firma del servicio."
 
@@ -5337,6 +5343,10 @@ msgid "The duration has not changed since creation."
 msgstr "La duración no ha cambiado desde la creación."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+msgid "duration {initialDuration}, ends {initialEnd}"
+msgstr "duración {initialDuration}, termina el {initialEnd}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "ended early by the organizer: duration {duration}, ended {ends}"
 msgstr "terminada antes por el organizador: duración {duration}, terminó el {ends}"
 
@@ -5387,6 +5397,10 @@ msgstr "El máximo de votantes que acepta esta votación: el registro rechaza cu
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "Max voters"
 msgstr "Máximo de votantes"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "{initial} at creation, {changes, plural, one {changed # time} other {changed # times}}, last to {last}"
+msgstr "{initial} al crearse, {changes, plural, one {cambiado # vez} other {cambiado # veces}}, la última a {last}"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "{changes, plural, one {changed # time} other {changed # times}}, last to {last}"

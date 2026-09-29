@@ -4,7 +4,8 @@ import { msg, plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { CensusOriginBadge, CheckMark, Explain, Formula, InShort, Term, Timestamp, TxLink } from '~components'
 import { Disclosure } from '~components/code'
-import { useChain, type ProcessView } from '~data/hooks'
+import { useChain, useStore, type ProcessView } from '~data/hooks'
+import { txKey, type ProcessEntity, type TxDetails } from '~indexer/types'
 import { useMetadataCheck } from '~data/queries'
 import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar, SkeletonText, UriLink } from '~kit'
 import { formatDuration, formatNumber, formatTimestamp } from '~lib/format'
@@ -55,6 +56,12 @@ function Uri({ uri, label }: { uri: string; label: string }) {
       </span>
     )
   return <UriLink uri={uri} href={browsableUri(uri)} label={label} />
+}
+
+/** The decoded `newProcess` call: the values the election was created with, once its transaction is read. */
+function useCreation(p: ProcessEntity): TxDetails | null {
+  const store = useStore()
+  return (p.createdTx ? store.txDetails[txKey(p.createdTx)] : null) ?? null
 }
 
 export function OverviewTab({ view }: { view: ProcessView }) {
@@ -295,6 +302,7 @@ function CensusPanel({ view }: { view: ProcessView }) {
   const { process: p } = view
   const c = p.state!.census
   const updates = p.censusUpdates
+  const creation = useCreation(p)
   const isCsp = c.origin === 'csp'
   const cspAddress = isCsp ? `0x${c.root.slice(-40)}` : null
   return (
@@ -368,7 +376,19 @@ function CensusPanel({ view }: { view: ProcessView }) {
               <Trans>The organizer has not replaced the list.</Trans>
             </p>
           ) : (
-            <ul className='flex flex-col divide-y divide-charcoal/60 text-[13px]'>
+            <ul className='flex flex-col divide-y divide-charcoal/60 text-[13px]' data-testid='census-changes'>
+              {creation?.initialCensusRoot ? (
+                <li className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
+                  <span className='text-ash'>
+                    <Trans>at creation</Trans>
+                  </span>
+                  <Hash value={creation.initialCensusRoot} chars={8} />
+                  <span className='min-w-0 flex-1'>
+                    <Uri uri={creation.initialCensusURI ?? ''} label={t`Open the list`} />
+                  </span>
+                  {p.createdTx ? <TxLink hash={p.createdTx} chars={4} /> : null}
+                </li>
+              ) : null}
               {updates.map((u, i) => (
                 <li key={`${u.block}:${i}`} className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
                   <Timestamp value={u.timestamp} className='text-ash' />
@@ -420,6 +440,9 @@ function DatesPanel({ view }: { view: ProcessView }) {
   // Ending voting early sets the duration in the same transaction.
   const endTxs = new Set(p.statusChanges.filter((c) => c.to === 'ended' && c.tx).map((c) => c.tx))
   const pauses = p.statusChanges.filter((c) => c.to === 'paused' || (c.from === 'paused' && c.to === 'ready'))
+  const created = useCreation(p)?.initialDuration ?? null
+  const initialDuration = created != null ? formatDuration(created) : null
+  const initialEnd = created != null ? formatTimestamp(s.startTime + created) : null
   return (
     <Panel title={t`Dates`} label={t`Voting window`}>
       <KeyValue
@@ -467,6 +490,19 @@ function DatesPanel({ view }: { view: ProcessView }) {
           </p>
         ) : (
           <ul className='flex flex-col divide-y divide-charcoal/60 text-[13px]' data-testid='duration-changes'>
+            {initialDuration != null ? (
+              <li className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
+                <span className='text-ash'>
+                  <Trans>at creation</Trans>
+                </span>
+                <span className='flex-1 text-silver'>
+                  <Trans>
+                    duration {initialDuration}, ends {initialEnd}
+                  </Trans>
+                </span>
+                {p.createdTx ? <TxLink hash={p.createdTx} chars={4} /> : null}
+              </li>
+            ) : null}
             {p.durationChanges.map((c, i) => {
               const duration = formatDuration(c.value)
               const ends = formatTimestamp(s.startTime + c.value)
@@ -540,6 +576,8 @@ function LimitsPanel({ view }: { view: ProcessView }) {
   const worst = BigInt(s.maxVoters) * s.ballotMode.maxValue
   const changes = p.maxVotersChanges.length
   const last = changes > 0 ? formatNumber(p.maxVotersChanges[changes - 1]!.value) : null
+  const createdWith = useCreation(p)?.initialMaxVoters
+  const initial = createdWith != null ? formatNumber(createdWith) : null
   const used = formatNumber(s.ballotMode.numFields)
   const capacity = formatNumber(NUM_FIELDS)
   const cap = formatNumber(MAX_POSSIBLE_RESULT)
@@ -566,7 +604,9 @@ function LimitsPanel({ view }: { view: ProcessView }) {
             mono: true,
             hint:
               last != null
-                ? t`${plural(changes, { one: 'changed # time', other: 'changed # times' })}, last to ${last}`
+                ? initial != null
+                  ? t`${initial} at creation, ${plural(changes, { one: 'changed # time', other: 'changed # times' })}, last to ${last}`
+                  : t`${plural(changes, { one: 'changed # time', other: 'changed # times' })}, last to ${last}`
                 : t`unchanged since creation`,
           },
           {

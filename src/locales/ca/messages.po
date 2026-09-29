@@ -2583,6 +2583,7 @@ msgstr "No és un enllaç web"
 #: src/pages/kit/index.tsx
 #: src/pages/process/tabs/OverviewTab.tsx
 #: src/pages/process/tabs/OverviewTab.tsx
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "Open the list"
 msgstr "Obre la llista"
 
@@ -5281,6 +5282,11 @@ msgid "The organizer has not replaced the list."
 msgstr "L'organitzador no ha substituït la llista."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "at creation"
+msgstr "en crear-se"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "A credential service provider (CSP) census: the registry stores the signer’s address as the census root, a big-endian integer, and every vote carries the service’s signature."
 msgstr "Un cens de proveïdor de credencials (CSP): el registre desa l'adreça del signant com a arrel del cens, un enter big-endian, i cada vot porta la signatura del servei."
 
@@ -5337,6 +5343,10 @@ msgid "The duration has not changed since creation."
 msgstr "La durada no ha canviat des de la creació."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+msgid "duration {initialDuration}, ends {initialEnd}"
+msgstr "durada {initialDuration}, acaba el {initialEnd}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "ended early by the organizer: duration {duration}, ended {ends}"
 msgstr "acabada abans per l'organitzador: durada {duration}, va acabar el {ends}"
 
@@ -5387,6 +5397,10 @@ msgstr "El màxim de votants que accepta aquesta votació: el registre rebutja u
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "Max voters"
 msgstr "Màxim de votants"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "{initial} at creation, {changes, plural, one {changed # time} other {changed # times}}, last to {last}"
+msgstr "{initial} en crear-se, {changes, plural, one {# canvi} other {# canvis}}, l'últim a {last}"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "{changes, plural, one {changed # time} other {changed # times}}, last to {last}"

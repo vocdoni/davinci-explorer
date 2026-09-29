@@ -17,7 +17,7 @@ import type { CensusOriginName, KeyModeName, ProcessStatusName } from '~protocol
 export type { Address, Hex, RegistryEventName }
 
 /** Bumped whenever the shape below changes; a mismatch drops the cache. */
-export const STORE_VERSION = 3
+export const STORE_VERSION = 4
 
 /** `bytes31` process id, lowercase. */
 export type ProcessId = Hex
@@ -260,6 +260,11 @@ export interface TxDetails {
   kzgProofs: Hex[]
   /** `newProcess` only: the census root the process was created with. */
   initialCensusRoot: Hex | null
+  /** `newProcess` only: where that census was published. */
+  initialCensusURI: string | null
+  /** `newProcess` only: the voting duration (seconds) and voter limit it was created with. */
+  initialDuration: number | null
+  initialMaxVoters: number | null
   /** Why the calldata could not be decoded, if it could not. */
   decodeError: string | null
 }
