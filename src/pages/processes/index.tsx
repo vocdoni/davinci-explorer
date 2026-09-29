@@ -149,7 +149,15 @@ export function ProcessesPage() {
         id: 'end',
         header: t`End`,
         accessorFn: (r) => r.endTime ?? 0,
-        cell: ({ row }) => <Timestamp value={row.original.endTime} className='text-[12px]' />,
+        cell: ({ row }) =>
+          // A canceled election never reaches its end time.
+          row.original.phase === 'canceled' ? (
+            <Tooltip content={t`Canceled: voting will not reach its end time`}>
+              <span className='text-ash'>—</span>
+            </Tooltip>
+          ) : (
+            <Timestamp value={row.original.endTime} className='text-[12px]' />
+          ),
         meta: {
           width: '110px',
           align: 'right',

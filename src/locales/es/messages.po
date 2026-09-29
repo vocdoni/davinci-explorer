@@ -5317,6 +5317,10 @@ msgid "End"
 msgstr "Fin"
 
 #: src/pages/process/tabs/OverviewTab.tsx
+msgid "as planned; the organizer canceled the election"
+msgstr "según lo previsto; el organizador canceló la votación"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "Duration"
 msgstr "Duración"
 
@@ -6087,6 +6091,10 @@ msgstr "aún no se ha leído el máximo de votantes"
 #: src/pages/processes/index.tsx
 msgid "How many people voted, and how many later votes replaced someone’s earlier vote."
 msgstr "Cuántas personas han votado y cuántos votos posteriores sustituyeron el voto anterior de alguien."
+
+#: src/pages/processes/index.tsx
+msgid "Canceled: voting will not reach its end time"
+msgstr "Cancelada: la votación no llegará a su hora de cierre"
 
 #: src/pages/processes/index.tsx
 msgid "When voting ends: the start time plus the duration. Ending early brings it forward."

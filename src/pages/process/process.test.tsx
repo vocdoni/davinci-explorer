@@ -101,4 +101,9 @@ describe('process dates', () => {
     expect(changes).toHaveTextContent('ended early by the organizer')
     expect(screen.getByText('Voting has not been paused.')).toBeInTheDocument()
   })
+
+  it('gives a canceled election the end it was due, not a countdown', async () => {
+    renderAt(paths.process(find('canceled')))
+    expect(await screen.findByText('as planned; the organizer canceled the election')).toBeInTheDocument()
+  })
 })

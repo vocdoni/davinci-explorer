@@ -441,8 +441,12 @@ function DatesPanel({ view }: { view: ProcessView }) {
                 <Trans>End</Trans>
               </Label>
             ),
-            value: <Timestamp value={row.endTime} />,
-            hint: formatTimestamp(row.endTime),
+            // A canceled election never reaches it: the date it was due, not a countdown.
+            value: <Timestamp value={row.endTime} relative={row.phase !== 'canceled'} />,
+            hint:
+              row.phase === 'canceled'
+                ? t`as planned; the organizer canceled the election`
+                : formatTimestamp(row.endTime),
           },
           { label: t`Duration`, value: formatDuration(s.duration), mono: true },
         ]}
