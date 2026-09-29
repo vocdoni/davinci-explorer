@@ -59,7 +59,12 @@ export function Lifecycle({ view }: { view: ProcessView }) {
               <div className='text-xs text-ash'>{step.detail}</div>
               {step.time != null ? (
                 <div>
-                  <Timestamp value={step.time} className='text-xs text-silver' />
+                  {/* A step that will not happen (a start after a cancel) gets its date, not a countdown. */}
+                  <Timestamp
+                    value={step.time}
+                    relative={!(step.state === 'skipped' && now != null && step.time > now)}
+                    className='text-xs text-silver'
+                  />
                 </div>
               ) : null}
               {step.tx ? (

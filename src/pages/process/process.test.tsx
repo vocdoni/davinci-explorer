@@ -3,7 +3,10 @@ import { screen, waitFor, within } from '@testing-library/react'
 import { Route, Routes } from 'react-router'
 import { demoFixture } from '~fixtures/demo'
 import { paths, patterns } from '~routes/paths'
+import { processRow, rootChain } from '~indexer/selectors'
+import { formatTimestamp } from '~lib/format'
 import { renderWithProviders } from '../../test-utils'
+import { Lifecycle } from './Lifecycle'
 import { ProcessPage } from '.'
 
 const fixture = demoFixture()
@@ -123,5 +126,19 @@ describe('process dates', () => {
     const census = await screen.findByTestId('census-changes')
     expect(within(census).getAllByRole('listitem')).toHaveLength(2)
     expect(within(census).getAllByRole('listitem')[0]).toHaveTextContent(/^at creation/)
+  })
+})
+
+describe('Lifecycle', () => {
+  it('gives the start of an election canceled before it the date, not a countdown', () => {
+    const pid = fixture.store.processOrder.find((k) => fixture.store.processes[k]!.state?.status === 'canceled')!
+    const process = structuredClone(fixture.store.processes[pid]!)
+    const start = fixture.store.chain.headTimestamp! + 86_400
+    process.state!.startTime = start
+    const view = { process, row: processRow(fixture.store, process), transitions: [] }
+    renderWithProviders(<Lifecycle view={{ ...view, rootChain: rootChain(fixture.store, pid) }} />)
+    const steps = within(screen.getByTestId('process-lifecycle')).getAllByRole('listitem')
+    expect(steps[1]).toHaveTextContent('Canceled before the start')
+    expect(steps[1]).toHaveTextContent(formatTimestamp(start))
   })
 })
