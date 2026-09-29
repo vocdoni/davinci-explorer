@@ -4948,6 +4948,14 @@ msgid "The registry’s record of this election carries no committee data."
 msgstr "The registry’s record of this election carries no committee data."
 
 #: src/pages/process/tabs/KeyTab.tsx
+msgid "The organizer secret was revealed before voting ended"
+msgstr "The organizer secret was revealed before voting ended"
+
+#: src/pages/process/tabs/KeyTab.tsx
+msgid "From then on the key was no longer locked: a threshold of committee members acting together could have opened single ballots, as with an automatic committee key. The results are not affected; the committee still decrypts only the final total."
+msgstr "From then on the key was no longer locked: a threshold of committee members acting together could have opened single ballots, as with an automatic committee key. The results are not affected; the committee still decrypts only the final total."
+
+#: src/pages/process/tabs/KeyTab.tsx
 msgid "The committee round that created this key (a DKG epoch)."
 msgstr "The committee round that created this key (a DKG epoch)."
 
@@ -5026,6 +5034,14 @@ msgstr "revealed"
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "sealed"
 msgstr "sealed"
+
+#: src/pages/process/tabs/KeyTab.tsx
+msgid "revealed <0/>, before voting ended"
+msgstr "revealed <0/>, before voting ended"
+
+#: src/pages/process/tabs/KeyTab.tsx
+msgid "revealed <0/>, after voting ended"
+msgstr "revealed <0/>, after voting ended"
 
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "The committee has no registration for this election."
@@ -8145,6 +8161,14 @@ msgstr "Open the list of voters"
 #: src/pages/verify/election/checks.tsx
 msgid "Who can open the ballots"
 msgstr "Who can open the ballots"
+
+#: src/pages/verify/election/checks.tsx
+msgid "Unlocked early"
+msgstr "Unlocked early"
+
+#: src/pages/verify/election/checks.tsx
+msgid "The organizer revealed the secret on {revealedOn}, before voting ended. From then on a threshold of committee members acting together could have opened single ballots."
+msgstr "The organizer revealed the secret on {revealedOn}, before voting ended. From then on a threshold of committee members acting together could have opened single ballots."
 
 #: src/pages/verify/election/checks.tsx
 msgid "Voters encrypt their ballots to this key (the <0>election key</0>). It was fixed when the election was created, so it cannot change, and every batch encrypts the stored ballots afresh under it."

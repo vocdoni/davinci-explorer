@@ -12,6 +12,7 @@ import { transitionDetail, type TransitionDetail } from '~indexer/selectors'
 import { Callout, Card, SkeletonText } from '~kit'
 import { publicRpc } from '~pages/contracts/model'
 import { metadataTitle } from '~pages/process/metadata'
+import { revealedBeforeEnd } from '~pages/process/reveal'
 import { useDkgResultsChecks, useSequencerResultsChecks, type ResultsCheck } from '~pages/process/results-checks'
 import {
   GET_PROCESS,
@@ -241,7 +242,8 @@ function ElectionChecks({ pid }: { pid: string }) {
   const loaded = s != null
 
   const census = censusStatus(s?.census.origin ?? null, details)
-  const key = keyStatus(keyMode, s?.encryptionKey ?? null, dkgResults.app)
+  const revealedEarly = revealedBeforeEnd(dkgResults.app?.reveal, view.row.endTime)
+  const key = keyStatus(keyMode, s?.encryptionKey ?? null, dkgResults.app, revealedEarly)
   const rules: VerifyStatus = loaded ? 'pass' : 'pending'
   const described = loaded ? metadataCheckStatus(metadata.status) : 'pending'
   const history = view.process.metadataHistory
@@ -294,7 +296,7 @@ function ElectionChecks({ pid }: { pid: string }) {
             testId='group-setup'
           >
             <CensusCard view={view} status={census} batches={verdicts.length} registry={chain.registryAddress} />
-            <KeyCard view={view} app={dkgResults.app} status={key} />
+            <KeyCard view={view} app={dkgResults.app} status={key} revealedEarly={revealedEarly === true} />
             <RulesCard view={view} />
             <MetadataCard view={view} check={metadata} status={described} registry={chain.registryAddress} />
             {changed ? <MetadataHistoryCard view={view} status={changed} registry={chain.registryAddress} /> : null}

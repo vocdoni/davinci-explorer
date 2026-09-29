@@ -85,15 +85,22 @@ export function keyMatches(key: { x: bigint; y: bigint }, app: Pick<DkgApplicati
   return converted.x === key.x && converted.y === key.y
 }
 
-/** A sequencer key is what the registry stores; a DKG key must be the committee's, and waits until the DKG is read. */
+/**
+ * A sequencer key is what the registry stores; a DKG key must be the
+ * committee's, and waits until the DKG is read. A locked key whose secret was
+ * revealed before voting ended needs attention: it was unlocked early.
+ */
 export function keyStatus(
   mode: KeyModeName | null,
   key: { x: bigint; y: bigint } | null,
-  app: Pick<DkgApplicationView, 'applicationKey'> | null | undefined
+  app: Pick<DkgApplicationView, 'applicationKey'> | null | undefined,
+  revealedEarly: boolean | null = null
 ): VerifyStatus {
   if (!mode || !key) return 'pending'
   if (mode === 'sequencer') return 'pass'
-  return app ? (keyMatches(key, app) ? 'pass' : 'fail') : 'pending'
+  if (!app) return 'pending'
+  if (!keyMatches(key, app)) return 'fail'
+  return mode === 'dkg-locked' && revealedEarly ? 'attention' : 'pass'
 }
 
 /** The document served is the committed one; pending while it loads, or when this browser cannot download it. */

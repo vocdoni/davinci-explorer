@@ -236,6 +236,7 @@ export function createDemoServices(fixture: Fixture = demoFixture()): ExplorerSe
         organizerPK: circomToReduced(d.organizerPK),
         organizerSecret: d.organizerSecret,
         revealed: d.organizerSecret !== 0n,
+        reveal: d.revealBlock != null ? { block: d.revealBlock, tx: null, timestamp: null } : null,
         applicationKey: circomToReduced(d.applicationKey),
         createdAtBlock: process.createdBlock,
         ciphertexts: dkg.resultsRequested

@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { SortingState } from '@tanstack/react-table'
-import { CheckMark, Explain, Formula, KeyModeBadge, Term } from '~components'
+import { CheckMark, Explain, Formula, KeyModeBadge, Term, Timestamp } from '~components'
 import { Disclosure } from '~components/code'
 import { useRuntimeConfig } from '~config/config-context'
 import { useChain, type ProcessView } from '~data/hooks'
@@ -18,6 +18,7 @@ import {
   KeyValue,
   Panel,
   SkeletonText,
+  TxCell,
   type AnyColumnDef,
 } from '~kit'
 import type { DkgCiphertextView } from '~data/services'
@@ -25,6 +26,7 @@ import { bigIntToHex, formatList, formatNumber } from '~lib/format'
 import type { KeyModeName } from '~protocol/types'
 import { reducedToCircom } from '~protocol/babyjubjub'
 import { dkgApplicationUrl, dkgEpochUrl } from '../dkg-links'
+import { revealedBeforeEnd } from '../reveal'
 
 /** Who holds the key, how the results come out, what a reader trusts: plain first, the mechanism apart. */
 function Trust({ mode }: { mode: KeyModeName }) {
@@ -250,6 +252,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
   const epochUrl = info ? dkgEpochUrl(dkgExplorerUrl, info.epochId) : null
   const converted = app ? reducedToCircom(app.applicationKey) : null
   const keyMatches = converted != null && converted.x === s.encryptionKey.x && converted.y === s.encryptionKey.y
+  const early = locked ? revealedBeforeEnd(app?.reveal, view.row.endTime) : null
 
   // Built here, not at module scope: the headers and cells are text.
   const ciphertextColumns = useMemo<AnyColumnDef<DkgCiphertextView>[]>(
@@ -306,6 +309,15 @@ function DkgPanel({ view }: { view: ProcessView }) {
         </Callout>
       ) : (
         <div className='flex flex-col gap-5'>
+          {early ? (
+            <Callout tone='warn' title={t`The organizer secret was revealed before voting ended`}>
+              <Trans>
+                From then on the key was no longer locked: a threshold of committee members acting together could have
+                opened single ballots, as with an automatic committee key. The results are not affected; the committee
+                still decrypts only the final total.
+              </Trans>
+            </Callout>
+          ) : null}
           <div className='grid gap-6 lg:grid-cols-2'>
             <KeyValue
               items={[
@@ -451,17 +463,33 @@ function DkgPanel({ view }: { view: ProcessView }) {
                         <Trans>not needed</Trans>
                       </Badge>
                     ) : app.revealed ? (
-                      <span className='inline-flex items-center gap-2'>
-                        <Badge tone='ok'>
+                      <span className='inline-flex flex-wrap items-center justify-end gap-2'>
+                        <Badge tone={early ? 'warn' : 'ok'}>
                           <Trans>revealed</Trans>
                         </Badge>
                         <Hash value={bigIntToHex(app.organizerSecret)} chars={6} />
+                        {/* The registry emits no event for a reveal, so the explorer has no page for it. */}
+                        {app.reveal?.tx ? <TxCell hash={app.reveal.tx} chars={4} copy /> : null}
                       </span>
                     ) : (
                       <Badge tone='warn'>
                         <Trans>sealed</Trans>
                       </Badge>
                     ),
+                    hint:
+                      locked && app.reveal?.timestamp != null ? (
+                        <span className={early ? 'text-amber' : undefined} data-testid='reveal-time'>
+                          {early ? (
+                            <Trans>
+                              revealed <Timestamp value={app.reveal.timestamp} />, before voting ended
+                            </Trans>
+                          ) : (
+                            <Trans>
+                              revealed <Timestamp value={app.reveal.timestamp} />, after voting ended
+                            </Trans>
+                          )}
+                        </span>
+                      ) : undefined,
                   },
                 ]}
               />

@@ -12,6 +12,7 @@ import { BeaconClient, BlobFetchError, type FetchedBlob } from '~protocol/beacon
 import type { Hex } from '~protocol/bytes'
 import { browsableUri } from '~protocol/metadata'
 import { SequencerClient } from '~protocol/sequencer-api'
+import { isRangeError, MIN_CHUNK } from '~indexer/scan'
 import type { ProcessEntity, RegistryInfo } from '~indexer/types'
 import type { RuntimeConfig } from '~config/runtime-config'
 
@@ -63,6 +64,13 @@ export interface DkgCiphertextView {
   plaintext: bigint
 }
 
+export interface DkgReveal {
+  block: number
+  tx: Hex | null
+  /** Unix seconds; null when the block could not be read. */
+  timestamp: number | null
+}
+
 export interface DkgApplicationView {
   manager: Address
   appManager: Address
@@ -76,6 +84,11 @@ export interface DkgApplicationView {
   /** Revealed organizer secret; 0 while sealed and always for automatic. */
   organizerSecret: bigint
   revealed: boolean
+  /**
+   * When the organizer revealed its secret (the `OrganizerSecretRevealed`
+   * log); null while sealed, for an automatic key, or when no RPC returned it.
+   */
+  reveal: DkgReveal | null
   /** Key the ballots are encrypted to, in the DKG's reduced form. */
   applicationKey: Point
   createdAtBlock: number
@@ -237,6 +250,11 @@ export function createLiveServices(config: RuntimeConfig, client: PublicClient |
         organizerPK: { x: app.organizerPK.x, y: app.organizerPK.y },
         organizerSecret: app.organizerSecret,
         revealed: app.organizerSecret !== 0n,
+        // A failed search leaves the time of the reveal unknown, not the application.
+        reveal:
+          app.organizerSecret !== 0n
+            ? await findReveal(client, appManager, epochId, aid, Number(app.createdAtBlock)).catch(() => null)
+            : null,
         applicationKey: { x: key[0], y: key[1] },
         createdAtBlock: Number(app.createdAtBlock),
         ciphertexts,
@@ -250,6 +268,57 @@ export function createLiveServices(config: RuntimeConfig, client: PublicClient |
       return readCapped(res, MAX_DOCUMENT_BYTES, url)
     },
   }
+}
+
+/** getLogs windows that fit public RPCs (publicnode takes 50,000 blocks). */
+const REVEAL_CHUNK = 50_000
+/** Windows tried before giving up on finding the reveal: about 70 days of Gnosis Chain. */
+const REVEAL_MAX_REQUESTS = 24
+
+/**
+ * The organizer's `OrganizerSecretRevealed` log for an application, searched
+ * forward from the block the application was registered in.
+ */
+export async function findReveal(
+  client: PublicClient,
+  appManager: Address,
+  epochId: Hex,
+  aid: Hex,
+  fromBlock: number
+): Promise<DkgReveal | null> {
+  const event = dkgAppManagerAbi.find((item) => item.type === 'event' && item.name === 'OrganizerSecretRevealed')
+  if (!event || event.type !== 'event') return null
+  const head = Number(await client.getBlockNumber())
+  let span = REVEAL_CHUNK
+  let from = fromBlock
+  for (let requests = 0; from <= head && requests < REVEAL_MAX_REQUESTS; requests++) {
+    const to = Math.min(head, from + span - 1)
+    let logs
+    try {
+      logs = await client.getLogs({
+        address: appManager,
+        event,
+        args: { epochId, aid },
+        fromBlock: BigInt(from),
+        toBlock: BigInt(to),
+      })
+    } catch (err) {
+      if (!isRangeError(err) || span <= MIN_CHUNK) throw err
+      span = Math.floor(span / 2)
+      continue
+    }
+    const log = logs[0]
+    if (log?.blockNumber != null) {
+      const block = Number(log.blockNumber)
+      const timestamp = await client
+        .getBlock({ blockNumber: log.blockNumber })
+        .then((b) => Number(b.timestamp))
+        .catch(() => null)
+      return { block, tx: log.transactionHash ?? null, timestamp }
+    }
+    from = to + 1
+  }
+  return null
 }
 
 /**

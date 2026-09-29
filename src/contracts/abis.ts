@@ -48,4 +48,5 @@ export const dkgAppManagerAbi = parseAbi([
   'function getApplication(bytes12 epochId, bytes32 aid) view returns (Application)',
   'function getApplicationKey(bytes12 epochId, bytes32 aid) view returns (uint256 x, uint256 y)',
   'function getOrganizerPK(bytes12 epochId, bytes32 aid) view returns (uint256, uint256)',
+  'event OrganizerSecretRevealed(bytes12 indexed epochId, bytes32 indexed aid, uint256 organizerSecret)',
 ])

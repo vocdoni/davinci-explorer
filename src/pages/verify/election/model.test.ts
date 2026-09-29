@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { demoFixture } from '~fixtures/demo'
 import { rootChain, transitionDetail, type TransitionDetail } from '~indexer/selectors'
 import { processKey } from '~indexer/types'
+import { revealedBeforeEnd } from '~pages/process/reveal'
+import { B8, circomToReduced } from '~protocol/babyjubjub'
 import { batchChecks } from '../batch'
 import {
   batchesStatus,
@@ -81,6 +83,25 @@ describe('keyStatus', () => {
     expect(keyStatus('dkg-automatic', key, null)).toBe('pending')
     expect(keyStatus('dkg-automatic', key, { applicationKey: { x: 1n, y: 7n } })).toBe('fail')
     expect(keyStatus(null, null, null)).toBe('pending')
+  })
+
+  it('notes a locked key whose secret came out before voting ended', () => {
+    const app = { applicationKey: circomToReduced(B8) }
+    expect(keyStatus('dkg-locked', B8, app)).toBe('pass')
+    expect(keyStatus('dkg-locked', B8, app, false)).toBe('pass')
+    expect(keyStatus('dkg-locked', B8, app, true)).toBe('attention')
+    expect(keyStatus('dkg-automatic', B8, app, true)).toBe('pass')
+  })
+})
+
+describe('revealedBeforeEnd', () => {
+  it('compares the reveal with the end, and knows nothing without both times', () => {
+    const reveal = { block: 1, tx: null, timestamp: 1_000 }
+    expect(revealedBeforeEnd(reveal, 2_000)).toBe(true)
+    expect(revealedBeforeEnd(reveal, 1_000)).toBe(false)
+    expect(revealedBeforeEnd({ ...reveal, timestamp: null }, 2_000)).toBeNull()
+    expect(revealedBeforeEnd(null, 2_000)).toBeNull()
+    expect(revealedBeforeEnd(reveal, null)).toBeNull()
   })
 })
 

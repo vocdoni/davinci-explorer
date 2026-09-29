@@ -4948,6 +4948,14 @@ msgid "The registry’s record of this election carries no committee data."
 msgstr "La fitxa d'aquesta votació al registre no porta dades del comitè."
 
 #: src/pages/process/tabs/KeyTab.tsx
+msgid "The organizer secret was revealed before voting ended"
+msgstr "El secret de l'organitzador es va revelar abans que acabés la votació"
+
+#: src/pages/process/tabs/KeyTab.tsx
+msgid "From then on the key was no longer locked: a threshold of committee members acting together could have opened single ballots, as with an automatic committee key. The results are not affected; the committee still decrypts only the final total."
+msgstr "Des d'aleshores la clau va deixar d'estar bloquejada: un nombre de membres del comitè igual al llindar, actuant junts, hauria pogut obrir paperetes soltes, com amb una clau de comitè automàtica. Els resultats no se'n veuen afectats: el comitè continua desxifrant només el total final."
+
+#: src/pages/process/tabs/KeyTab.tsx
 msgid "The committee round that created this key (a DKG epoch)."
 msgstr "La ronda del comitè que va crear aquesta clau (una època DKG)."
 
@@ -5026,6 +5034,14 @@ msgstr "revelat"
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "sealed"
 msgstr "segellat"
+
+#: src/pages/process/tabs/KeyTab.tsx
+msgid "revealed <0/>, before voting ended"
+msgstr "revelat <0/>, abans que acabés la votació"
+
+#: src/pages/process/tabs/KeyTab.tsx
+msgid "revealed <0/>, after voting ended"
+msgstr "revelat <0/>, després que acabés la votació"
 
 #: src/pages/process/tabs/KeyTab.tsx
 msgid "The committee has no registration for this election."
@@ -8145,6 +8161,14 @@ msgstr "Obre la llista de votants"
 #: src/pages/verify/election/checks.tsx
 msgid "Who can open the ballots"
 msgstr "Qui pot obrir les paperetes"
+
+#: src/pages/verify/election/checks.tsx
+msgid "Unlocked early"
+msgstr "Desbloquejada abans d'hora"
+
+#: src/pages/verify/election/checks.tsx
+msgid "The organizer revealed the secret on {revealedOn}, before voting ended. From then on a threshold of committee members acting together could have opened single ballots."
+msgstr "L'organitzador va revelar el secret el {revealedOn}, abans que acabés la votació. Des d'aleshores, un nombre de membres del comitè igual al llindar, actuant junts, hauria pogut obrir paperetes soltes."
 
 #: src/pages/verify/election/checks.tsx
 msgid "Voters encrypt their ballots to this key (the <0>election key</0>). It was fixed when the election was created, so it cannot change, and every batch encrypts the stored ballots afresh under it."

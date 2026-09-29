@@ -190,10 +190,13 @@ export function KeyCard({
   view,
   app,
   status,
+  revealedEarly = false,
 }: {
   view: ProcessView
   app: DkgApplicationView | null | undefined
   status: VerifyStatus
+  /** A locked key whose organizer secret came out before voting ended. */
+  revealedEarly?: boolean
 }) {
   const { i18n, t } = useLingui()
   const s = view.process.state
@@ -203,16 +206,28 @@ export function KeyCard({
     )
   const mode = s.keyMode
   const matches = app ? keyMatches(s.encryptionKey, app) : false
+  const revealedOn = formatTimestamp(app?.reveal?.timestamp)
   return (
     <CheckCard
       id='key'
       status={status}
       title={t`Who can open the ballots`}
+      statusLabel={status === 'attention' ? t`Unlocked early` : undefined}
       summary={
-        <span className='inline-flex flex-wrap items-center gap-x-2 gap-y-1'>
-          <span>{i18n._(WHO_CAN_DECRYPT[mode])}</span>
-          <KeyModeBadge mode={mode} />
-        </span>
+        <>
+          <span className='inline-flex flex-wrap items-center gap-x-2 gap-y-1'>
+            <span>{i18n._(WHO_CAN_DECRYPT[mode])}</span>
+            <KeyModeBadge mode={mode} />
+          </span>
+          {revealedEarly && app?.reveal?.timestamp != null ? (
+            <span className='mt-1 block text-amber'>
+              <Trans>
+                The organizer revealed the secret on {revealedOn}, before voting ended. From then on a threshold of
+                committee members acting together could have opened single ballots.
+              </Trans>
+            </span>
+          ) : null}
+        </>
       }
       how={
         <>
