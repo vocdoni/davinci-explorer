@@ -218,7 +218,12 @@ export function useDkgResultsChecks(view: ProcessView | null): DkgResults {
               {
                 id: 'tally-plaintexts' as const,
                 label: t`Every stored total is 0`,
-                state: (results.values.every((v) => v === 0n) ? 'pass' : 'fail') as CheckState,
+                state: (results.values.length === (s?.ballotMode.numFields ?? -1) &&
+                results.values.every((v) => v === 0n) &&
+                results.tx != null &&
+                results.tx === request.tx
+                  ? 'pass'
+                  : 'fail') as CheckState,
                 detail: t`With nothing to decrypt, the registry records 0 for every field, in the same transaction as the request.`,
               },
             ]

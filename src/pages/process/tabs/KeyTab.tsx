@@ -541,7 +541,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
               <>
                 <p className='mb-2 text-[13px] text-ash'>
                   <SubmittedSummary count={info.count} firstIndex={info.firstIndex} zeroSkipped={info.zeroSkipped} />
-                  {locked && !app.revealed ? (
+                  {locked && !app.revealed && info.count > 0 ? (
                     <>
                       {' '}
                       <Trans>The committee waits for the organizer’s reveal before it can decrypt them.</Trans>

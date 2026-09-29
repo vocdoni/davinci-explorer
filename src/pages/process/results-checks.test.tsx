@@ -43,13 +43,13 @@ describe('useDkgResultsChecks', () => {
     return p.state?.keyMode !== 'sequencer' && p.results != null
   })!
 
-  // The same election as if no ballot had been counted: nothing sent, zeros stored.
-  const empty = (view: ProcessView, values: bigint[]): ProcessView => ({
+  // The same election as if no ballot had been counted: nothing sent, zeros stored in the request's transaction.
+  const empty = (view: ProcessView, values: bigint[], tx = view.process.decryptionRequest!.tx): ProcessView => ({
     ...view,
     process: {
       ...view.process,
       decryptionRequest: { ...view.process.decryptionRequest!, count: 0, firstIndex: 0 },
-      results: { ...view.process.results!, values },
+      results: { ...view.process.results!, values, tx },
     },
   })
 
@@ -68,15 +68,17 @@ describe('useDkgResultsChecks', () => {
     expect(byId['tally-plaintexts']).toMatchObject({ label: 'Every stored total is 0', state: 'pass' })
   })
 
-  it('fails a stored total that is not 0 when nothing was decrypted', () => {
-    const { result } = renderHook(
-      () => {
-        const view = useProcess(pid)!
-        const nf = view.process.results!.values.length
-        return useDkgResultsChecks(empty(view, [1n, ...new Array<bigint>(nf - 1).fill(0n)]))
-      },
-      { wrapper: wrapper() }
-    )
-    expect(result.current.checks.find((c) => c.id === 'tally-plaintexts')?.state).toBe('fail')
+  it('fails a stored total that is not 0, or zeros stored anywhere but in the request', () => {
+    const state = (make: (view: ProcessView, nf: number) => ProcessView) =>
+      renderHook(
+        () => {
+          const view = useProcess(pid)!
+          return useDkgResultsChecks(make(view, view.process.results!.values.length))
+        },
+        { wrapper: wrapper() }
+      ).result.current.checks.find((c) => c.id === 'tally-plaintexts')?.state
+    expect(state((view, nf) => empty(view, [1n, ...new Array<bigint>(nf - 1).fill(0n)]))).toBe('fail')
+    expect(state((view, nf) => empty(view, new Array<bigint>(nf - 1).fill(0n)))).toBe('fail')
+    expect(state((view, nf) => empty(view, new Array<bigint>(nf).fill(0n), `0x${'ee'.repeat(32)}`))).toBe('fail')
   })
 })
