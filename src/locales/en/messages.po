@@ -271,7 +271,6 @@ msgid "The voting time is over. The registry still reads Ready until someone end
 msgstr "The voting time is over. The registry still reads Ready until someone ends the election or publishes the results."
 
 #: src/components/badges.tsx
-#: src/pages/process/timeline.ts
 #: src/pages/processes/filters.ts
 #: src/protocol/types.ts
 msgid "Ended"
@@ -5310,8 +5309,36 @@ msgid "The duration has not changed since creation."
 msgstr "The duration has not changed since creation."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+msgid "ended early by the organizer: duration {duration}, ended {ends}"
+msgstr "ended early by the organizer: duration {duration}, ended {ends}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "duration {duration}, ends {ends}"
 msgstr "duration {duration}, ends {ends}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "Pauses"
+msgstr "Pauses"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "The organizer can pause voting and resume it until the end. While it is paused the registry records no batch, and the end time does not move."
+msgstr "The organizer can pause voting and resume it until the end. While it is paused the registry records no batch, and the end time does not move."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "Voting has not been paused."
+msgstr "Voting has not been paused."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "paused by the organizer"
+msgstr "paused by the organizer"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "resumed by the organizer, after a pause of {length}"
+msgstr "resumed by the organizer, after a pause of {length}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "resumed by the organizer"
+msgstr "resumed by the organizer"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "Limits"
@@ -5962,6 +5989,10 @@ msgstr "End time passed; the chain still reads Ready"
 #: src/pages/process/timeline.ts
 msgid "Paused by the organizer"
 msgstr "Paused by the organizer"
+
+#: src/pages/process/timeline.ts
+msgid "Ended by the organizer"
+msgstr "Ended by the organizer"
 
 #: src/pages/process/timeline.ts
 msgid "End time reached"

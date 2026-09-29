@@ -164,6 +164,17 @@ describe('processLifecycle', () => {
     expect(steps[0]!.detail).toMatch(/^Block [\d,]+$/)
   })
 
+  it('tells an end by the organizer from the end time', () => {
+    const find = (test: (p: (typeof f.store.processes)[string]) => boolean) =>
+      f.store.processOrder.find((k) => test(f.store.processes[k]!))!
+    // The committee's decryption request moved this one to Ended once its end time had passed.
+    const requested = find((p) => p.state?.status === 'results' && p.decryptionRequest != null)
+    expect(lifecycle(requested)[3]).toMatchObject({ state: 'done', detail: 'End time reached', tx: null })
+    const ended = find((p) => p.state?.status === 'ended' && p.decryptionRequest == null)
+    const end = f.store.processes[ended]!.statusChanges.find((c) => c.to === 'ended')!
+    expect(lifecycle(ended)[3]).toMatchObject({ state: 'done', detail: 'Ended by the organizer', tx: end.tx })
+  })
+
   it('a canceled process skips the end and the results', () => {
     const canceled = f.store.processOrder.find((k) => f.store.processes[k]!.state?.status === 'canceled')!
     expect(states(canceled).slice(3)).toEqual(['skipped', 'skipped'])

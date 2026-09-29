@@ -81,3 +81,24 @@ describe('process metadata', () => {
     }
   })
 })
+
+describe('process dates', () => {
+  const find = (status: string) =>
+    fixture.store.processOrder.find(
+      (k) => fixture.store.processes[k]!.state?.status === status && !fixture.store.processes[k]!.decryptionRequest
+    )!
+
+  it('lists the pauses', async () => {
+    renderAt(paths.process(find('paused')))
+    const pauses = await screen.findByTestId('pauses')
+    expect(within(pauses).getAllByRole('listitem')).toHaveLength(1)
+    expect(pauses).toHaveTextContent('paused by the organizer')
+  })
+
+  it('marks the duration an early end set', async () => {
+    renderAt(paths.process(find('ended')))
+    const changes = await screen.findByTestId('duration-changes')
+    expect(changes).toHaveTextContent('ended early by the organizer')
+    expect(screen.getByText('Voting has not been paused.')).toBeInTheDocument()
+  })
+})

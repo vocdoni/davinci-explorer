@@ -271,7 +271,6 @@ msgid "The voting time is over. The registry still reads Ready until someone end
 msgstr "El període de votació ha acabat. El registre continua en estat A punt fins que algú finalitza la votació o en publica els resultats."
 
 #: src/components/badges.tsx
-#: src/pages/process/timeline.ts
 #: src/pages/processes/filters.ts
 #: src/protocol/types.ts
 msgid "Ended"
@@ -5310,8 +5309,36 @@ msgid "The duration has not changed since creation."
 msgstr "La durada no ha canviat des de la creació."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+msgid "ended early by the organizer: duration {duration}, ended {ends}"
+msgstr "acabada abans per l'organitzador: durada {duration}, va acabar el {ends}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "duration {duration}, ends {ends}"
 msgstr "durada {duration}, acaba el {ends}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "Pauses"
+msgstr "Pauses"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "The organizer can pause voting and resume it until the end. While it is paused the registry records no batch, and the end time does not move."
+msgstr "L'organitzador pot posar la votació en pausa i reprendre-la fins al final. Mentre està en pausa, el registre no anota cap lot, i l'hora de finalització no es mou."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "Voting has not been paused."
+msgstr "La votació no s'ha posat en pausa."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "paused by the organizer"
+msgstr "posada en pausa per l'organitzador"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "resumed by the organizer, after a pause of {length}"
+msgstr "represa per l'organitzador, després d'una pausa de {length}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "resumed by the organizer"
+msgstr "represa per l'organitzador"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "Limits"
@@ -5962,6 +5989,10 @@ msgstr "Ja ha passat l'hora de finalització; a la cadena continua en estat A pu
 #: src/pages/process/timeline.ts
 msgid "Paused by the organizer"
 msgstr "Posada en pausa per l'organitzador"
+
+#: src/pages/process/timeline.ts
+msgid "Ended by the organizer"
+msgstr "Finalitzada per l'organitzador"
 
 #: src/pages/process/timeline.ts
 msgid "End time reached"

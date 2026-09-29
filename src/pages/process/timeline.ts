@@ -29,7 +29,11 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
   const last = transitions[transitions.length - 1]
   const ballots = transitions.reduce((sum, t) => sum + t.votes, 0)
   const ended = phase === 'ended' || phase === 'results' || phase === 'closed'
-  const endChange = [...p.statusChanges].reverse().find((c) => c.to === 'ended')
+  // Asking the committee to decrypt moves a process whose end time passed to
+  // Ended in the same transaction: that is the end time, not the organizer.
+  const endChange = [...p.statusChanges]
+    .reverse()
+    .find((c) => c.to === 'ended' && !(c.tx && c.tx === p.decryptionRequest?.tx))
   const block = formatNumber(p.createdBlock)
   const batches = transitions.length
 
@@ -82,7 +86,7 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
           : phase === 'paused'
             ? t`Paused by the organizer`
             : endChange
-              ? t`Ended`
+              ? t`Ended by the organizer`
               : ended
                 ? t`End time reached`
                 : t`End time`,

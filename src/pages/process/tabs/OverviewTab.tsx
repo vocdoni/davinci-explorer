@@ -417,6 +417,9 @@ function DatesPanel({ view }: { view: ProcessView }) {
   const { t } = useLingui()
   const { process: p, row } = view
   const s = p.state!
+  // Ending voting early sets the duration in the same transaction.
+  const endTxs = new Set(p.statusChanges.filter((c) => c.to === 'ended' && c.tx).map((c) => c.tx))
+  const pauses = p.statusChanges.filter((c) => c.to === 'paused' || (c.from === 'paused' && c.to === 'ready'))
   return (
     <Panel title={t`Dates`} label={t`Voting window`}>
       <KeyValue
@@ -459,7 +462,7 @@ function DatesPanel({ view }: { view: ProcessView }) {
             <Trans>The duration has not changed since creation.</Trans>
           </p>
         ) : (
-          <ul className='flex flex-col divide-y divide-charcoal/60 text-[13px]'>
+          <ul className='flex flex-col divide-y divide-charcoal/60 text-[13px]' data-testid='duration-changes'>
             {p.durationChanges.map((c, i) => {
               const duration = formatDuration(c.value)
               const ends = formatTimestamp(s.startTime + c.value)
@@ -467,9 +470,53 @@ function DatesPanel({ view }: { view: ProcessView }) {
                 <li key={`${c.block}:${i}`} className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
                   <Timestamp value={c.timestamp} className='text-ash' />
                   <span className='flex-1 text-silver'>
-                    <Trans>
-                      duration {duration}, ends {ends}
-                    </Trans>
+                    {c.tx && endTxs.has(c.tx) ? (
+                      <Trans>
+                        ended early by the organizer: duration {duration}, ended {ends}
+                      </Trans>
+                    ) : (
+                      <Trans>
+                        duration {duration}, ends {ends}
+                      </Trans>
+                    )}
+                  </span>
+                  {c.tx ? <TxLink hash={c.tx} chars={4} /> : null}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+      <div className='mt-4'>
+        <div className='label-caps mb-2 inline-flex items-center gap-1 text-[11px] text-pewter'>
+          <Trans>Pauses</Trans>
+          <Explain>
+            <Trans>
+              The organizer can pause voting and resume it until the end. While it is paused the registry records no
+              batch, and the end time does not move.
+            </Trans>
+          </Explain>
+        </div>
+        {pauses.length === 0 ? (
+          <p className='text-[13px] text-ash'>
+            <Trans>Voting has not been paused.</Trans>
+          </p>
+        ) : (
+          <ul className='flex flex-col divide-y divide-charcoal/60 text-[13px]' data-testid='pauses'>
+            {pauses.map((c, i) => {
+              const since = pauses[i - 1]?.timestamp
+              const length = c.timestamp != null && since != null ? formatDuration(c.timestamp - since) : null
+              return (
+                <li key={`${c.block}:${i}`} className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
+                  <Timestamp value={c.timestamp} className='text-ash' />
+                  <span className='flex-1 text-silver'>
+                    {c.to === 'paused' ? (
+                      <Trans>paused by the organizer</Trans>
+                    ) : length ? (
+                      <Trans>resumed by the organizer, after a pause of {length}</Trans>
+                    ) : (
+                      <Trans>resumed by the organizer</Trans>
+                    )}
                   </span>
                   {c.tx ? <TxLink hash={c.tx} chars={4} /> : null}
                 </li>
