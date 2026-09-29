@@ -39,14 +39,15 @@ export function Badge({ tone = 'neutral', dot = false, size = 'md', title, class
     <span
       title={title}
       className={cn(
-        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill border font-medium tracking-[0.02em]',
+        'inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-pill border font-medium tracking-[0.02em]',
         size === 'sm' ? 'px-2 py-[1px] text-[10px]' : 'px-2.5 py-[3px] text-[11px]',
         TONES[tone],
         className
       )}
     >
       {dot ? <DotIcon size={6} className='shrink-0' /> : null}
-      {children}
+      {/* A column too narrow for the label ends it with an ellipsis instead of cutting a letter. */}
+      <span className='min-w-0 truncate'>{children}</span>
     </span>
   )
 }

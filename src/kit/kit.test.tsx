@@ -104,6 +104,20 @@ describe('DataTable', () => {
     // only its overscan window — the point is that it is far below 300.
     expect(screen.queryAllByText(/^row-/).length).toBeLessThan(60)
   })
+
+  it('keeps a flexible column of a virtualised table at its minimum width', () => {
+    const many: Row[] = Array.from({ length: 60 }, (_, i) => ({ id: `row-${i}`, count: i }))
+    const wide: AnyColumnDef<Row>[] = [
+      { id: 'id', header: 'Id', accessorKey: 'id', meta: { minWidth: '170px' } },
+      { id: 'count', header: 'Count', accessorKey: 'count', meta: { numeric: true, width: '80px' } },
+    ]
+    const { container } = renderWithProviders(<DataTable data={many} columns={wide} virtualized />)
+    // Side padding 32, one gap 16, then the two tracks.
+    expect(container.querySelector<HTMLElement>('[data-virtualized] > div')!.style.minWidth).toBe(
+      `${32 + 16 + 170 + 80}px`
+    )
+    expect(screen.getByText('Id').parentElement).toHaveStyle({ minWidth: '170px' })
+  })
 })
 
 describe('Input', () => {

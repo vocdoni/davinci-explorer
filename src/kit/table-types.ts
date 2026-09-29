@@ -12,6 +12,8 @@ declare module '@tanstack/react-table' {
     numeric?: boolean
     /** Fixed track width, e.g. `'160px'`. Omit for a flexible column. */
     width?: string
+    /** Narrowest a flexible column gets in a virtualised table, e.g. `'170px'`; 120px when omitted. */
+    minWidth?: string
     /** Tooltip on the header cell — room for the protocol detail. */
     headerTooltip?: string
     /** Let a long header break onto two lines rather than widen the column (translations run longer). */

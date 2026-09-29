@@ -98,7 +98,11 @@ export function DataTable<T>({
               style={{ height: rowHeight }}
             >
               {headers.map((h) => (
-                <div key={h.id} className='flex-1' style={trackStyle(h.column.columnDef.meta?.width)}>
+                <div
+                  key={h.id}
+                  className='flex-1'
+                  style={trackStyle(h.column.columnDef.meta?.width, h.column.columnDef.meta?.minWidth)}
+                >
                   <Skeleton className='h-3 w-3/4' />
                 </div>
               ))}
@@ -199,8 +203,8 @@ export function DataTable<T>({
 
 type Headers<T> = Header<T, unknown>[]
 
-function trackStyle(width?: string) {
-  return width ? { flex: `0 0 ${width}`, width } : { flex: '1 1 0', minWidth: 0 }
+function trackStyle(width?: string, minWidth?: string) {
+  return width ? { flex: `0 0 ${width}`, width } : { flex: '1 1 0', minWidth: minWidth ?? 0 }
 }
 
 function SortGlyph({ direction, visible }: { direction: false | 'asc' | 'desc'; visible: boolean }) {
@@ -234,7 +238,7 @@ function HeaderRow<T>({
         return (
           <div
             key={header.id}
-            style={trackStyle(meta?.width)}
+            style={trackStyle(meta?.width, meta?.minWidth)}
             title={meta?.headerTooltip}
             onClick={sortable ? header.column.getToggleSortingHandler() : undefined}
             className={cn(
@@ -243,7 +247,9 @@ function HeaderRow<T>({
               sortable && 'cursor-pointer select-none hover:text-ghost'
             )}
           >
-            <span className='truncate'>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+            <span className={cn(meta?.headerWrap ? 'leading-tight' : 'truncate', ALIGN[align])}>
+              {flexRender(header.column.columnDef.header, header.getContext())}
+            </span>
             <SortGlyph direction={header.column.getIsSorted()} visible={sortable} />
           </div>
         )
@@ -255,6 +261,12 @@ function HeaderRow<T>({
 /** Narrowest a flexible column gets in a virtualised table before the table scrolls sideways. */
 const FLEX_MIN_WIDTH = 120
 
+/** A `'160px'` width as a number; null for any other unit. */
+function pixels(value: string | undefined): number | null {
+  const match = /^(\d+(?:\.\d+)?)px$/.exec(value ?? '')
+  return match ? Number(match[1]) : null
+}
+
 /**
  * The width a virtualised table needs: fixed tracks, a minimum per flexible
  * track, the gaps and the side padding. Below it the rows scroll sideways
@@ -263,8 +275,8 @@ const FLEX_MIN_WIDTH = 120
 function minTableWidth<T>(headers: Headers<T>): number {
   let width = 32 + 16 * Math.max(0, headers.length - 1)
   for (const h of headers) {
-    const fixed = /^(\d+(?:\.\d+)?)px$/.exec(h.column.columnDef.meta?.width ?? '')
-    width += fixed ? Number(fixed[1]) : FLEX_MIN_WIDTH
+    const meta = h.column.columnDef.meta
+    width += pixels(meta?.width) ?? pixels(meta?.minWidth) ?? FLEX_MIN_WIDTH
   }
   return width
 }
@@ -324,7 +336,7 @@ function VirtualBody<T>({
                   return (
                     <div
                       key={cell.id}
-                      style={{ ...trackStyle(meta?.width), height: rowHeight }}
+                      style={{ ...trackStyle(meta?.width, meta?.minWidth), height: rowHeight }}
                       className={cn(
                         'flex min-w-0 items-center text-silver',
                         JUSTIFY[align],

@@ -45,7 +45,7 @@ export function ProcessPhaseBadge({ phase, size }: { phase: ProcessPhase; size?:
   const description = 'status' in p ? PROCESS_STATUS_INFO[p.status].description : i18n._(p.description)
   return (
     <Tooltip content={description}>
-      <span className='inline-flex'>
+      <span className='inline-flex max-w-full'>
         <Badge tone={p.tone} dot={p.dot} size={size}>
           {i18n._(p.label)}
         </Badge>
@@ -59,7 +59,7 @@ export function KeyModeBadge({ mode, size }: { mode: KeyModeName; size?: 'sm' | 
   const info = KEY_MODE_INFO[mode]
   return (
     <Tooltip content={info.description}>
-      <span className='inline-flex'>
+      <span className='inline-flex max-w-full'>
         <Badge tone='violet' size={size}>
           {info.label}
         </Badge>
@@ -73,7 +73,7 @@ export function CensusOriginBadge({ origin, size }: { origin: CensusOriginName; 
   const info = CENSUS_ORIGIN_INFO[origin]
   return (
     <Tooltip content={info.description}>
-      <span className='inline-flex'>
+      <span className='inline-flex max-w-full'>
         <Badge tone='slate' size={size}>
           {info.label}
         </Badge>

@@ -79,20 +79,27 @@ export function ProcessesPage() {
             explorer={false}
           />
         ),
-        meta: { headerTooltip: t`The account that created the election. Click it to list only its processes.` },
+        meta: {
+          width: '130px',
+          headerTooltip: t`The account that created the election. Click it to list only its processes.`,
+        },
       },
       {
         id: 'phase',
         header: t`Phase`,
         accessorKey: 'phase',
         cell: ({ row }) => <ProcessPhaseBadge phase={row.original.phase} size='sm' />,
+        meta: { width: '120px' },
       },
       {
         id: 'keyMode',
         header: t`Key`,
         accessorFn: (r) => r.keyMode ?? '',
         cell: ({ row }) => (row.original.keyMode ? <KeyModeBadge mode={row.original.keyMode} size='sm' /> : '—'),
-        meta: { headerTooltip: t`Who holds the key the ballots are encrypted to, and so who can decrypt the results.` },
+        meta: {
+          minWidth: '170px',
+          headerTooltip: t`Who holds the key the ballots are encrypted to, and so who can decrypt the results.`,
+        },
       },
       {
         id: 'census',
@@ -100,7 +107,7 @@ export function ProcessesPage() {
         accessorFn: (r) => r.censusOrigin ?? '',
         cell: ({ row }) =>
           row.original.censusOrigin ? <CensusOriginBadge origin={row.original.censusOrigin} size='sm' /> : '—',
-        meta: { headerTooltip: t`Where the list of voters comes from.` },
+        meta: { minWidth: '170px', headerTooltip: t`Where the list of voters comes from.` },
       },
       {
         id: 'voters',
@@ -125,6 +132,7 @@ export function ProcessesPage() {
           )
         },
         meta: {
+          width: '110px',
           numeric: true,
           headerWrap: true,
           headerTooltip: t`How many people voted, and how many later votes replaced someone’s earlier vote.`,
@@ -135,7 +143,7 @@ export function ProcessesPage() {
         header: t`Start`,
         accessorFn: (r) => r.startTime ?? 0,
         cell: ({ row }) => <Timestamp value={row.original.startTime} className='text-[12px]' />,
-        meta: { align: 'right' },
+        meta: { width: '110px', align: 'right' },
       },
       {
         id: 'end',
@@ -143,6 +151,7 @@ export function ProcessesPage() {
         accessorFn: (r) => r.endTime ?? 0,
         cell: ({ row }) => <Timestamp value={row.original.endTime} className='text-[12px]' />,
         meta: {
+          width: '110px',
           align: 'right',
           headerTooltip: t`When voting ends: the start time plus the duration. Ending early brings it forward.`,
         },
@@ -265,6 +274,7 @@ export function ProcessesPage() {
           onSortingChange={setSorting}
           onRowClick={(r) => navigate(paths.process(r.id))}
           virtualized={rows.length > 50}
+          rowHeight={56}
           maxHeight={rows.length > 50 ? 640 : 100_000}
           empty={
             filtered ? (
