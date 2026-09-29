@@ -61,7 +61,7 @@ test.describe('the guide in Catalan and Spanish', () => {
 
     const list = page.getByTestId('glossary')
     await page.getByRole('searchbox').fill('censo')
-    await expect(list.getByRole('term').filter({ hasText: /^Censo$/ })).toBeVisible()
+    await expect(list.getByRole('term').filter({ hasText: /^Lista de votantes \(censo\)$/ })).toBeVisible()
     await expect(list.locator('#term-census')).toBeVisible()
   })
 })

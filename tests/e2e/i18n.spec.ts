@@ -26,7 +26,7 @@ test.describe('language', () => {
     await selector(page).selectOption('ca')
     await expect(html(page)).toHaveAttribute('lang', 'ca')
     const root = page.getByTestId('page-overview')
-    await expect(root.getByText('Paperetes liquidades', { exact: true })).toBeVisible()
+    await expect(root.getByText('Vots anotats', { exact: true })).toBeVisible()
     await expect(root.getByText(/coincideix amb davinci-zkvm/)).toBeVisible()
     await expect(
       page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Processos' })
@@ -83,7 +83,7 @@ test.describe('first visit', () => {
     await demo(page, '/')
     await expect(html(page)).toHaveAttribute('lang', 'ca')
     await expect(selector(page)).toHaveValue('ca')
-    await expect(page.getByTestId('page-overview').getByText('Paperetes liquidades', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('page-overview').getByText('Vots anotats', { exact: true })).toBeVisible()
     await selector(page).selectOption('en')
     await expect(html(page)).toHaveAttribute('lang', 'en')
     await page.reload()

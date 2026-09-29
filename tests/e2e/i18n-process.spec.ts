@@ -52,7 +52,7 @@ test.describe('process page in Catalan', () => {
     await expect(metadata).toContainText('Opció 16')
 
     for (const [name, tab] of [
-      ['Transicions', 'transitions'],
+      ['Lots', 'transitions'],
       ['Vots', 'votes'],
       ['Resultats', 'results'],
       ['Resum', 'overview'],

@@ -22,7 +22,7 @@ test.describe('transition page', () => {
   test('in Catalan: heading, summary, publics and the registry checks', async ({ page }) => {
     await openIn(page, `/processes/${OPEN_PID}/transitions/${MULTI_BLOB}`, 'ca')
     const root = page.getByTestId('page-transition')
-    await expect(root.getByRole('heading', { name: `Transició núm. ${MULTI_BLOB}` })).toBeVisible()
+    await expect(root.getByRole('heading', { name: `Lot núm. ${MULTI_BLOB}` })).toBeVisible()
 
     const summary = page.getByTestId('transition-summary')
     for (const label of ['Procés', 'Bloc', 'Transacció', 'Comissió']) {
@@ -33,12 +33,14 @@ test.describe('transition page', () => {
     await expect(summary).not.toContainText('524,288')
 
     const publics = page.getByTestId('publics')
-    await expect(publics).toContainText('1 quan el programa va superar totes les comprovacions.')
+    await expect(publics).toContainText("1 si s'han superat totes les comprovacions.")
     await expect(publics.getByText('overall_ok', { exact: true })).toBeVisible()
 
     const verify = page.getByTestId('verify')
-    await expect(verify.getByTestId('check-guest-ok')).toContainText('El programa del zkVM va acceptar el lot')
-    await expect(verify.getByTestId('check-root-continuity')).toContainText("Parteix de l'arrel anterior")
+    await expect(verify.getByTestId('check-guest-ok')).toContainText(
+      'El lot ha superat totes les comprovacions de la prova'
+    )
+    await expect(verify.getByTestId('check-root-continuity')).toContainText('Comença on va acabar el lot anterior')
     // Commands stay as they are.
     await verify.getByTestId('check-plonk').locator('summary').click()
     await expect(verify.getByTestId('check-plonk').locator('pre')).toContainText('cast call')
@@ -47,7 +49,7 @@ test.describe('transition page', () => {
   test('in Spanish: the blobs, their content and a transition that does not exist', async ({ page }) => {
     await openIn(page, `/processes/${OPEN_PID}/transitions/${MULTI_BLOB}`, 'es')
     await expect(
-      page.getByTestId('page-transition').getByRole('heading', { name: `Transición n.º ${MULTI_BLOB}` })
+      page.getByTestId('page-transition').getByRole('heading', { name: `Lote n.º ${MULTI_BLOB}` })
     ).toBeVisible()
     await expect(page.getByTestId('blob-list').locator('tbody tr')).toHaveCount(4)
 
@@ -65,8 +67,8 @@ test.describe('transition page', () => {
 
     await demo(page, `/processes/${OPEN_PID}/transitions/999`)
     await expect(page.locator('html')).toHaveAttribute('lang', 'es')
-    await expect(page.getByText('No se ha encontrado la transición')).toBeVisible()
-    await expect(page.getByText(/El registro no tiene la transición/)).toContainText('999')
+    await expect(page.getByText('No se ha encontrado el lote')).toBeVisible()
+    await expect(page.getByText(/El registro no tiene el lote/)).toContainText('999')
   })
 })
 
@@ -84,7 +86,7 @@ test.describe('vote check', () => {
     await expect(electionInput(page)).toHaveValue(OPEN_PID)
     await expect(page.getByLabel('Id de voto')).toHaveValue(id)
     const settled = page.getByTestId('check-settled')
-    await expect(settled).toContainText(`#${MULTI_BLOB}`, { timeout: 15_000 })
+    await expect(settled).toContainText(`lote n.º ${MULTI_BLOB}`, { timeout: 15_000 })
     await settled.locator('summary').click()
     for (const label of ['Bloque', 'Transacción']) {
       await expect(settled.getByText(label, { exact: true })).toBeVisible()
