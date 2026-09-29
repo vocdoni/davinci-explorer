@@ -175,6 +175,11 @@ describe('processLifecycle', () => {
     expect(lifecycle(ended)[3]).toMatchObject({ state: 'done', detail: 'Ended by the organizer', tx: end.tx })
   })
 
+  it('an upcoming process has no batch yet', () => {
+    const upcoming = f.store.processOrder.find((k) => processRow(f.store, f.store.processes[k]!).phase === 'upcoming')!
+    expect(lifecycle(upcoming)[2]).toMatchObject({ state: 'upcoming', detail: 'No batch recorded yet' })
+  })
+
   it('a canceled process skips the end and the results', () => {
     const canceled = f.store.processOrder.find((k) => f.store.processes[k]!.state?.status === 'canceled')!
     expect(states(canceled).slice(3)).toEqual(['skipped', 'skipped'])

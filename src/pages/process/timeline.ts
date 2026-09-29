@@ -69,7 +69,7 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
       detail:
         batches > 0
           ? t`${plural(batches, { one: '# batch', other: '# batches' })}, ${plural(ballots, { one: '# vote', other: '# votes' })}`
-          : phase === 'open'
+          : phase === 'open' || phase === 'upcoming' || phase === 'paused'
             ? t`No batch recorded yet`
             : t`No batch recorded`,
       tx: last?.tx ?? null,
