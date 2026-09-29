@@ -3,13 +3,7 @@
 // and the result checks from the results tab's hooks.
 
 import type { DkgApplicationView } from '~data/services'
-import {
-  votingOver,
-  type CheckState,
-  type ProcessPhase,
-  type RootChain,
-  type TransitionDetail,
-} from '~indexer/selectors'
+import type { CheckState, ProcessPhase, RootChain, TransitionDetail } from '~indexer/selectors'
 import type { MetadataVersion } from '~indexer/types'
 import { changedWhileOpen } from '~pages/process/metadata'
 import { reducedToCircom } from '~protocol/babyjubjub'
@@ -43,9 +37,9 @@ export function batchVerdicts(
   })
 }
 
-/** Every batch passed; with no batch, pending while votes may still come and not applicable after. */
-export function batchesStatus(verdicts: BatchVerdict[], phase: ProcessPhase): VerifyStatus {
-  if (verdicts.length === 0) return votingOver(phase) ? 'na' : 'pending'
+/** Every batch passed; with no batch, pending while votes may still come and not applicable once voting is over. */
+export function batchesStatus(verdicts: BatchVerdict[], over: boolean): VerifyStatus {
+  if (verdicts.length === 0) return over ? 'na' : 'pending'
   return combine(verdicts.map((v) => v.status))
 }
 

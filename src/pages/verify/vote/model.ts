@@ -43,7 +43,8 @@ export interface Settled {
  * Is the vote id in a settled batch? A vote a sequencer still holds is
  * pending, one it refused has failed, and blobs nobody serves any more leave
  * the check undecided for good. Once voting is over (`over`) no batch can
- * come, so a vote not found, or still held, was not counted.
+ * come: a vote not found in any batch was not counted, and one a sequencer
+ * still holds missed the end, when every batch could be read.
  */
 export function settledOutcome(
   electionFound: boolean,
@@ -63,7 +64,8 @@ export function settledOutcome(
         ? { status: 'fail', reason: 'none-recorded' }
         : { status: 'pending', reason: 'no-batches' }
   if (inclusion.state === 'idle' || inclusion.state === 'searching') return { status: 'pending', reason: 'reading' }
-  if (queued) return held
+  if (queued && !over) return held
+  if (queued && inclusion.state === 'not-found' && inclusion.errors.length === 0) return held
   if (sequencerStatuses.includes('error')) return { status: 'fail', reason: 'refused' }
   if (inclusion.state === 'error') return { status: 'na', reason: 'unreadable' }
   return { status: 'fail', reason: 'not-found' }

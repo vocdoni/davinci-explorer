@@ -5,7 +5,7 @@ import type { SortingState } from '@tanstack/react-table'
 import { Link } from 'react-router'
 import { CheckMark, Explain, NativeAmount, Term, Timestamp, TxLink } from '~components'
 import { useDataSource } from '~data/context'
-import type { ProcessView } from '~data/hooks'
+import { useChainNow, type ProcessView } from '~data/hooks'
 import { votingOver, type TransitionRow } from '~indexer/selectors'
 import { Address, BlockCell, Card, CardHeader, DataTable, EmptyState, Hash, Panel, type AnyColumnDef } from '~kit'
 import { cn } from '~lib/cn'
@@ -15,6 +15,7 @@ import { paths } from '~routes/paths'
 export function TransitionsTab({ view }: { view: ProcessView }) {
   const { t } = useLingui()
   const source = useDataSource()
+  const now = useChainNow()
   const { process: p, transitions, rootChain } = view
   const pid = p.id
 
@@ -221,7 +222,7 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
           virtualized={transitions.length > 50}
           maxHeight={transitions.length > 15 ? 600 : 100_000}
           empty={
-            votingOver(view.row.phase) ? (
+            votingOver(view.row, now) ? (
               <EmptyState
                 title={t`No batch was recorded`}
                 description={t`Voting is over and no sequencer recorded a batch, so no vote was counted.`}

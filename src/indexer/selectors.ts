@@ -67,9 +67,14 @@ export function processPhase(p: ProcessEntity, now: number | null): ProcessPhase
   }
 }
 
-/** A phase after which no batch can be recorded any more. */
-export function votingOver(phase: ProcessPhase): boolean {
-  return phase === 'closed' || phase === 'ended' || phase === 'canceled' || phase === 'results'
+/**
+ * No batch can be recorded any more: the election is over, or paused past its
+ * end (the registry records a batch only for a Ready election, before its end).
+ */
+export function votingOver(row: Pick<ProcessRow, 'phase' | 'endTime'>, now: number | null): boolean {
+  const { phase, endTime } = row
+  if (phase === 'closed' || phase === 'ended' || phase === 'canceled' || phase === 'results') return true
+  return phase === 'paused' && endTime != null && now != null && now >= endTime
 }
 
 export interface ProcessRow {

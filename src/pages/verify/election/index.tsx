@@ -6,9 +6,9 @@ import { KeyModeBadge, ProcessPhaseBadge, Term, UnverifiedMark } from '~componen
 import { CodeBlock, Disclosure } from '~components/code'
 import { useRuntimeConfig } from '~config/config-context'
 import { useDataSource } from '~data/context'
-import { useChain, useIndexer, useProcess, useStore, type ProcessView } from '~data/hooks'
+import { useChain, useChainNow, useIndexer, useProcess, useStore, type ProcessView } from '~data/hooks'
 import { useMetadataCheck } from '~data/queries'
-import { transitionDetail, type TransitionDetail } from '~indexer/selectors'
+import { transitionDetail, votingOver, type TransitionDetail } from '~indexer/selectors'
 import { Callout, Card, SkeletonText } from '~kit'
 import { publicRpc } from '~pages/contracts/model'
 import { metadataTitle } from '~pages/process/metadata'
@@ -187,6 +187,7 @@ function ElectionChecks({ pid }: { pid: string }) {
   const store = useStore()
   const source = useDataSource()
   const chain = useChain()
+  const now = useChainNow()
   const { status: indexer } = useIndexer()
   const view = useProcess(pid)
   const metadata = useMetadataCheck(view?.process.state?.metadataURI, view?.process.state?.metadataHash)
@@ -248,7 +249,7 @@ function ElectionChecks({ pid }: { pid: string }) {
   const described = loaded ? metadataCheckStatus(metadata.status) : 'pending'
   const history = view.process.metadataHistory
   const changed = history.length > 1 ? metadataHistoryStatus(history) : null
-  const batches = batchesStatus(verdicts, phase)
+  const batches = batchesStatus(verdicts, votingOver(view.row, now))
   const rootChain = chainStatus(view.rootChain, loaded)
   const published = publishedStatus(view.process.results != null, phase)
   const resultChecks: ResultsCheck[] = keyMode === 'sequencer' ? sequencerResults.checks : dkgResults.checks

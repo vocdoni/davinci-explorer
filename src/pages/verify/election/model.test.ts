@@ -33,7 +33,7 @@ describe('batch checks', () => {
     expect(checks[checks.length - 1]).toMatchObject({ id: 'onchain', state: 'pass' })
     const verdicts = batchVerdicts(open, labels)
     expect(verdicts.every((v) => v.status === 'pass')).toBe(true)
-    expect(batchesStatus(verdicts, 'open')).toBe('pass')
+    expect(batchesStatus(verdicts, false)).toBe('pass')
     expect(censusStatus('onchain-dynamic', open)).toBe('pass')
   })
 
@@ -46,8 +46,8 @@ describe('batch checks', () => {
   })
 
   it('without batches, wait while votes may come and do not apply after', () => {
-    expect(batchesStatus([], 'open')).toBe('pending')
-    expect(batchesStatus([], 'ended')).toBe('na')
+    expect(batchesStatus([], false)).toBe('pending')
+    expect(batchesStatus([], true)).toBe('na')
     expect(censusStatus('merkle-static', [])).toBe('pass')
     expect(censusStatus(null, [])).toBe('pending')
   })

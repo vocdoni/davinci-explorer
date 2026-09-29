@@ -4,6 +4,7 @@
 
 import { plural, t } from '@lingui/core/macro'
 import type { ProcessView } from '~data/hooks'
+import { votingOver } from '~indexer/selectors'
 import type { Hex } from '~indexer/types'
 import { formatNumber } from '~lib/format'
 
@@ -29,6 +30,7 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
   const last = transitions[transitions.length - 1]
   const ballots = transitions.reduce((sum, t) => sum + t.votes, 0)
   const ended = phase === 'ended' || phase === 'results' || phase === 'closed'
+  const over = votingOver(row, now)
   // Asking the committee to decrypt moves a process whose end time passed to
   // Ended in the same transaction: that is the end time, not the organizer.
   const endChange = [...p.statusChanges]
@@ -58,20 +60,20 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
       id: 'transitions',
       label: t`Batches`,
       state:
-        phase === 'open' || phase === 'paused'
+        !over && (phase === 'open' || phase === 'paused')
           ? 'current'
           : transitions.length > 0
             ? 'done'
-            : ended || canceled
+            : over
               ? 'skipped'
               : 'upcoming',
       time: last?.timestamp ?? null,
       detail:
         batches > 0
           ? t`${plural(batches, { one: '# batch', other: '# batches' })}, ${plural(ballots, { one: '# vote', other: '# votes' })}`
-          : phase === 'open' || phase === 'upcoming' || phase === 'paused'
-            ? t`No batch recorded yet`
-            : t`No batch recorded`,
+          : over
+            ? t`No batch recorded`
+            : t`No batch recorded yet`,
       tx: last?.tx ?? null,
     },
     {

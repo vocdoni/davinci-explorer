@@ -180,6 +180,20 @@ describe('processLifecycle', () => {
     expect(lifecycle(upcoming)[2]).toMatchObject({ state: 'upcoming', detail: 'No batch recorded yet' })
   })
 
+  it('a process paused past its end collects no more batches', () => {
+    const pid = f.store.processOrder.find((k) => f.store.processes[k]!.state?.status === 'paused')!
+    const process = f.store.processes[pid]!
+    const row = processRow(f.store, process)
+    const transitions = transitionRows(f.store, pid)
+    expect(processLifecycle({ process, row, transitions }, now)[2]!.state).toBe('current')
+    const past = processLifecycle({ process, row: { ...row, endTime: now! - 60 }, transitions }, now)
+    expect(past[2]!.state).toBe('done')
+    expect(processLifecycle({ process, row: { ...row, endTime: now! - 60 }, transitions: [] }, now)[2]).toMatchObject({
+      state: 'skipped',
+      detail: 'No batch recorded',
+    })
+  })
+
   it('a canceled process skips the end and the results', () => {
     const canceled = f.store.processOrder.find((k) => f.store.processes[k]!.state?.status === 'canceled')!
     expect(states(canceled).slice(3)).toEqual(['skipped', 'skipped'])

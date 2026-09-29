@@ -51,8 +51,13 @@ describe('processRows', () => {
 
 describe('votingOver', () => {
   it('is over once no batch can be recorded', () => {
-    expect(['closed', 'ended', 'canceled', 'results'].every((p) => votingOver(p as ProcessPhase))).toBe(true)
-    expect(['loading', 'upcoming', 'open', 'paused'].some((p) => votingOver(p as ProcessPhase))).toBe(false)
+    const row = (phase: string, endTime: number | null = 2_000) => ({ phase: phase as ProcessPhase, endTime })
+    expect(['closed', 'ended', 'canceled', 'results'].every((p) => votingOver(row(p), 1_000))).toBe(true)
+    expect(['loading', 'upcoming', 'open', 'paused'].some((p) => votingOver(row(p), 1_000))).toBe(false)
+    // Paused past its end: only a Ready election records a batch, and only before its end.
+    expect(votingOver(row('paused'), 2_000)).toBe(true)
+    expect(votingOver(row('paused', null), 2_000)).toBe(false)
+    expect(votingOver(row('paused'), null)).toBe(false)
   })
 })
 

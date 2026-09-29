@@ -60,6 +60,11 @@ describe('settledOutcome', () => {
     expect(over('idle', 0, ['pending'])).toEqual({ status: 'fail', reason: 'missed' })
     expect(over('not-found', 3, ['aggregated'])).toEqual({ status: 'fail', reason: 'missed' })
     expect(over('not-found', 3, [])).toEqual(missing)
+    // A batch it could not read may hold the vote the sequencer still reports.
+    expect(over('error', 3, ['processed'])).toEqual({ status: 'na', reason: 'unreadable' })
+    expect(
+      settledOutcome(true, { ...inclusion('not-found'), errors: ['batch #2: pruned'] }, 3, ['processed'], true)
+    ).toEqual(missing)
     expect(settledOutcome(true, inclusion('found', 2), 3, [], true)).toEqual(found)
   })
 
