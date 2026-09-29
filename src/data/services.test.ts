@@ -1,7 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { PublicClient } from 'viem'
-import { findReveal, readCapped } from './services'
+import { DEMO_CONFIG } from '~config/runtime-config'
+import type { ProcessEntity, RegistryInfo } from '~indexer/types'
+import { createLiveServices, findReveal, readCapped } from './services'
 
 const body = (n: number, chunk = 1024) =>
   new ReadableStream<Uint8Array>({
@@ -67,5 +69,42 @@ describe('findReveal', () => {
     expect(await findReveal(client, appManager, epochId, aid, 250_000)).toBeNull()
     expect(ranges.at(-1)![1]).toBe(300_000)
     expect(ranges.every(([from, to]) => to - from + 1 <= 20_000)).toBe(true)
+  })
+})
+
+describe('readDkgApplication', () => {
+  it('searches the logs for a reveal once, not on every read', async () => {
+    let searches = 0
+    const client = {
+      readContract: async ({ functionName }: { functionName: string }) =>
+        functionName === 'getApplication'
+          ? {
+              creator: `0x${'01'.repeat(20)}`,
+              organizerPK: { x: 1n, y: 2n },
+              organizerSecret: 5n,
+              poolIndex: 3,
+              createdAtBlock: 100n,
+            }
+          : [7n, 8n],
+      getBlockNumber: async () => 1_000n,
+      getBlock: async () => ({ timestamp: 1_234n }),
+      getLogs: async () => {
+        searches += 1
+        return [{ blockNumber: 500n, transactionHash: '0xfeed' }]
+      },
+    } as unknown as PublicClient
+    const services = createLiveServices({ ...DEMO_CONFIG, demo: false, beaconUrl: '', sequencers: [] }, client)
+    const process = {
+      id: `0x${'aa'.repeat(31)}`,
+      state: {
+        dkg: { epochId: `0x${'bb'.repeat(12)}`, aid: `0x${'cc'.repeat(32)}`, resultsRequested: false, count: 0 },
+      },
+    } as unknown as ProcessEntity
+    const registry = { dkgManager: `0x${'dd'.repeat(20)}`, dkgAppManager: `0x${'ee'.repeat(20)}` } as RegistryInfo
+    const first = await services.readDkgApplication(process, registry)
+    const second = await services.readDkgApplication(process, registry)
+    expect(first?.reveal).toEqual({ block: 500, tx: '0xfeed', timestamp: 1_234 })
+    expect(second?.reveal).toEqual(first?.reveal)
+    expect(searches).toBe(1)
   })
 })

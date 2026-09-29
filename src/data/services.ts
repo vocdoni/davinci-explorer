@@ -136,6 +136,17 @@ export function createLiveServices(config: RuntimeConfig, client: PublicClient |
     upstream: s.upstream ?? s.url,
     api: new SequencerClient(s.url),
   }))
+  // A reveal never changes once found: search the logs for it once per session, not on every refetch.
+  const reveals = new Map<string, DkgReveal>()
+  const revealOf = async (appManager: Address, epochId: Hex, aid: Hex, fromBlock: number) => {
+    const key = `${appManager}:${epochId}:${aid}`.toLowerCase()
+    const known = reveals.get(key)
+    if (known || !client) return known ?? null
+    // A failed search leaves the time of the reveal unknown, not the application.
+    const found = await findReveal(client, appManager, epochId, aid, fromBlock).catch(() => null)
+    if (found?.timestamp != null) reveals.set(key, found)
+    return found
+  }
 
   return {
     kind: 'live',
@@ -250,11 +261,8 @@ export function createLiveServices(config: RuntimeConfig, client: PublicClient |
         organizerPK: { x: app.organizerPK.x, y: app.organizerPK.y },
         organizerSecret: app.organizerSecret,
         revealed: app.organizerSecret !== 0n,
-        // A failed search leaves the time of the reveal unknown, not the application.
         reveal:
-          app.organizerSecret !== 0n
-            ? await findReveal(client, appManager, epochId, aid, Number(app.createdAtBlock)).catch(() => null)
-            : null,
+          app.organizerSecret !== 0n ? await revealOf(appManager, epochId, aid, Number(app.createdAtBlock)) : null,
         applicationKey: { x: key[0], y: key[1] },
         createdAtBlock: Number(app.createdAtBlock),
         ciphertexts,
