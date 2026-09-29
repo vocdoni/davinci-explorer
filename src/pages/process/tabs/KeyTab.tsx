@@ -26,6 +26,7 @@ import { bigIntToHex, formatList, formatNumber } from '~lib/format'
 import type { KeyModeName } from '~protocol/types'
 import { reducedToCircom } from '~protocol/babyjubjub'
 import { dkgApplicationUrl, dkgEpochUrl } from '../dkg-links'
+import { useCreation, votingEnd } from '../ending'
 import { revealedBeforeEnd } from '../reveal'
 
 /** Who holds the key, how the results come out, what a reader trusts: plain first, the mechanism apart. */
@@ -252,7 +253,9 @@ function DkgPanel({ view }: { view: ProcessView }) {
   const epochUrl = info ? dkgEpochUrl(dkgExplorerUrl, info.epochId) : null
   const converted = app ? reducedToCircom(app.applicationKey) : null
   const keyMatches = converted != null && converted.x === s.encryptionKey.x && converted.y === s.encryptionKey.y
-  const early = locked ? revealedBeforeEnd(app?.reveal, view.row.endTime) : null
+  const creation = useCreation(view.process)
+  const end = votingEnd(view.process, view.row, creation?.initialDuration ?? null)
+  const early = locked ? revealedBeforeEnd(app?.reveal, end) : null
 
   // Built here, not at module scope: the headers and cells are text.
   const ciphertextColumns = useMemo<AnyColumnDef<DkgCiphertextView>[]>(

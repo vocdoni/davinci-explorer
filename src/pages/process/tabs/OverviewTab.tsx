@@ -4,8 +4,8 @@ import { msg, plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { CensusOriginBadge, CheckMark, Explain, Formula, InShort, Term, Timestamp, TxLink } from '~components'
 import { Disclosure } from '~components/code'
-import { useChain, useStore, type ProcessView } from '~data/hooks'
-import { txKey, type ProcessEntity, type TxDetails } from '~indexer/types'
+import { useChain, useChainNow, type ProcessView } from '~data/hooks'
+import { votingOver } from '~indexer/selectors'
 import { useMetadataCheck } from '~data/queries'
 import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar, SkeletonText, UriLink } from '~kit'
 import { formatDuration, formatNumber, formatTimestamp } from '~lib/format'
@@ -14,6 +14,7 @@ import { browsableUri } from '~protocol/metadata'
 import { parseProcessId } from '~protocol/process-id'
 import { CENSUS_ORIGIN_INFO, KEY_MODE_INFO, type CensusOriginName } from '~protocol/types'
 import { describeBallotMode } from '../ballot-mode'
+import { organizerEnd, useCreation } from '../ending'
 import { metadataPreset } from '../metadata'
 import { MetadataPanel } from '../MetadataPanel'
 
@@ -56,12 +57,6 @@ function Uri({ uri, label }: { uri: string; label: string }) {
       </span>
     )
   return <UriLink uri={uri} href={browsableUri(uri)} label={label} />
-}
-
-/** The decoded `newProcess` call: the values the election was created with, once its transaction is read. */
-function useCreation(p: ProcessEntity): TxDetails | null {
-  const store = useStore()
-  return (p.createdTx ? store.txDetails[txKey(p.createdTx)] : null) ?? null
 }
 
 export function OverviewTab({ view }: { view: ProcessView }) {
@@ -437,10 +432,19 @@ function DatesPanel({ view }: { view: ProcessView }) {
   const { t } = useLingui()
   const { process: p, row } = view
   const s = p.state!
-  // Ending voting early sets the duration in the same transaction.
-  const endTxs = new Set(p.statusChanges.filter((c) => c.to === 'ended' && c.tx).map((c) => c.tx))
   const pauses = p.statusChanges.filter((c) => c.to === 'paused' || (c.from === 'paused' && c.to === 'ready'))
   const created = useCreation(p)?.initialDuration ?? null
+  // Ending voting sets the duration in the same transaction.
+  const end = organizerEnd(p, created)
+  const planned = end?.plannedEnd != null ? formatTimestamp(end.plannedEnd) : null
+  const now = useChainNow()
+  const over = votingOver(row, now)
+  const canceled = row.phase === 'canceled'
+  // A time an election that is over never reached gets its date, not a countdown.
+  const unreached = (time: number | null) => over && now != null && time != null && time > now
+  const unreachedHint = canceled
+    ? t`as planned; the organizer canceled the election`
+    : t`as planned; the organizer ended the election before it`
   const initialDuration = created != null ? formatDuration(created) : null
   const initialEnd = created != null ? formatTimestamp(s.startTime + created) : null
   return (
@@ -457,7 +461,11 @@ function DatesPanel({ view }: { view: ProcessView }) {
               </span>
             ),
           },
-          { label: t`Start`, value: <Timestamp value={s.startTime} />, hint: formatTimestamp(s.startTime) },
+          {
+            label: t`Start`,
+            value: <Timestamp value={s.startTime} relative={!unreached(s.startTime)} />,
+            hint: unreached(s.startTime) ? unreachedHint : formatTimestamp(s.startTime),
+          },
           {
             label: (
               <Label help={t`The start time plus the duration. Votes are recorded only between the start and the end.`}>
@@ -465,11 +473,14 @@ function DatesPanel({ view }: { view: ProcessView }) {
               </Label>
             ),
             // A canceled election never reaches it: the date it was due, not a countdown.
-            value: <Timestamp value={row.endTime} relative={row.phase !== 'canceled'} />,
-            hint:
-              row.phase === 'canceled'
-                ? t`as planned; the organizer canceled the election`
-                : formatTimestamp(row.endTime),
+            value: <Timestamp value={row.endTime} relative={!canceled && !unreached(row.endTime)} />,
+            hint: canceled
+              ? t`as planned; the organizer canceled the election`
+              : unreached(row.endTime)
+                ? unreachedHint
+                : end?.early === false && planned
+                  ? t`as the registry records it; voting closed at the planned end, ${planned}, before the organizer ended the election`
+                  : formatTimestamp(row.endTime),
           },
           { label: t`Duration`, value: formatDuration(s.duration), mono: true },
         ]}
@@ -510,10 +521,18 @@ function DatesPanel({ view }: { view: ProcessView }) {
                 <li key={`${c.block}:${i}`} className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
                   <Timestamp value={c.timestamp} className='text-ash' />
                   <span className='flex-1 text-silver'>
-                    {c.tx && endTxs.has(c.tx) ? (
-                      <Trans>
-                        ended early by the organizer: duration {duration}, ended {ends}
-                      </Trans>
+                    {c.tx && c.tx === end?.change.tx ? (
+                      end.early === true ? (
+                        <Trans>
+                          ended early by the organizer: duration {duration}, ended {ends}
+                        </Trans>
+                      ) : end.early === false ? (
+                        <Trans>ended by the organizer after its end time, which the registry moved to {ends}</Trans>
+                      ) : (
+                        <Trans>
+                          ended by the organizer: duration {duration}, ended {ends}
+                        </Trans>
+                      )
                     ) : (
                       <Trans>
                         duration {duration}, ends {ends}

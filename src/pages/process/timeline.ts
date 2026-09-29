@@ -6,6 +6,7 @@ import { plural, t } from '@lingui/core/macro'
 import type { ProcessView } from '~data/hooks'
 import { votingOver } from '~indexer/selectors'
 import type { Hex } from '~indexer/types'
+import { organizerEnd } from './ending'
 import { formatNumber } from '~lib/format'
 
 export type StepState = 'done' | 'current' | 'upcoming' | 'skipped'
@@ -21,7 +22,12 @@ export interface LifecycleStep {
   tx: Hex | null
 }
 
-export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'transitions'>, now: number | null) {
+/** `initialDuration` is the duration the election was created with, when known. */
+export function processLifecycle(
+  view: Pick<ProcessView, 'process' | 'row' | 'transitions'>,
+  now: number | null,
+  initialDuration: number | null = null
+) {
   const { process: p, row, transitions } = view
   const phase = row.phase
   const canceled = phase === 'canceled'
@@ -31,11 +37,9 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
   const ballots = transitions.reduce((sum, t) => sum + t.votes, 0)
   const ended = phase === 'ended' || phase === 'results' || phase === 'closed'
   const over = votingOver(row, now)
-  // Asking the committee to decrypt moves a process whose end time passed to
-  // Ended in the same transaction: that is the end time, not the organizer.
-  const endChange = [...p.statusChanges]
-    .reverse()
-    .find((c) => c.to === 'ended' && !(c.tx && c.tx === p.decryptionRequest?.tx))
+  // An organizer end after the planned end only moved the recorded end: voting had closed.
+  const end = organizerEnd(p, initialDuration)
+  const endChange = end && end.early !== false ? end.change : null
   const block = formatNumber(p.createdBlock)
   const batches = transitions.length
 
@@ -80,7 +84,7 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
       id: 'end',
       label: canceled ? t`Canceled` : ended ? t`Voting closed` : t`Voting closes`,
       state: canceled ? 'skipped' : ended ? 'done' : 'upcoming',
-      time: canceled ? (cancel?.timestamp ?? null) : row.endTime,
+      time: canceled ? (cancel?.timestamp ?? null) : end?.early === false ? end.plannedEnd : row.endTime,
       detail: canceled
         ? t`Canceled by the organizer`
         : phase === 'closed'

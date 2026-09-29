@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { SortingState } from '@tanstack/react-table'
 import { useNavigate, useSearchParams } from 'react-router'
 import { CensusOriginBadge, Explain, KeyModeBadge, ProcessPhaseBadge, Term, Timestamp } from '~components'
 import { ProcessName } from '~components/ProcessName'
-import { useIndexer, useNetworkStats, useProcesses } from '~data/hooks'
-import type { ProcessRow } from '~indexer/selectors'
+import { useChainNow, useIndexer, useNetworkStats, useProcesses } from '~data/hooks'
+import { votingOver, type ProcessRow } from '~indexer/selectors'
 import {
   Address,
   Button,
@@ -50,6 +50,12 @@ export function ProcessesPage() {
   const organizerInvalid = organizer.trim() !== '' && !ADDRESS.test(organizer.trim())
 
   // Built here, not at module scope: the headers and tooltips are text.
+  const now = useChainNow()
+  // A start or an end an election that is over will never reach: no countdown to it.
+  const unreached = useCallback(
+    (row: ProcessRow, time: number | null) => votingOver(row, now) && now != null && time != null && time > now,
+    [now]
+  )
   const columns = useMemo<AnyColumnDef<ProcessRow>[]>(
     () => [
       {
@@ -142,7 +148,14 @@ export function ProcessesPage() {
         id: 'start',
         header: t`Start`,
         accessorFn: (r) => r.startTime ?? 0,
-        cell: ({ row }) => <Timestamp value={row.original.startTime} className='text-[12px]' />,
+        cell: ({ row }) =>
+          unreached(row.original, row.original.startTime) ? (
+            <Tooltip content={t`Voting is over: this time was never reached`}>
+              <span className='text-ash'>—</span>
+            </Tooltip>
+          ) : (
+            <Timestamp value={row.original.startTime} className='text-[12px]' />
+          ),
         meta: { width: '110px', align: 'right' },
       },
       {
@@ -155,6 +168,10 @@ export function ProcessesPage() {
             <Tooltip content={t`Canceled: voting will not reach its end time`}>
               <span className='text-ash'>—</span>
             </Tooltip>
+          ) : unreached(row.original, row.original.endTime) ? (
+            <Tooltip content={t`Voting is over: this time was never reached`}>
+              <span className='text-ash'>—</span>
+            </Tooltip>
           ) : (
             <Timestamp value={row.original.endTime} className='text-[12px]' />
           ),
@@ -165,7 +182,7 @@ export function ProcessesPage() {
         },
       },
     ],
-    [t]
+    [t, unreached]
   )
   const count = rows.length
   const total = formatNumber(stats.processes)

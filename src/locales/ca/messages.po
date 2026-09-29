@@ -5319,6 +5319,15 @@ msgid "The census root is the root of a lean-IMT Merkle tree (Poseidon) over the
 msgstr "L'arrel del cens és l'arrel d'un arbre de Merkle lean-IMT (Poseidon) sobre els votants i els seus pesos, com a enter big-endian. Cada aplicació de votació hi demostra la pertinença, i el programa de lots verifica cada prova. Una llista actualitzable se substitueix amb <0>setProcessCensus</0>, que emet <1>CensusUpdated</1>."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "as planned; the organizer canceled the election"
+msgstr "segons el que s'havia previst; l'organitzador va cancel·lar la votació"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "as planned; the organizer ended the election before it"
+msgstr "segons el que s'havia previst; l'organitzador va acabar la votació abans"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "Dates"
 msgstr "Dates"
 
@@ -5343,8 +5352,8 @@ msgid "End"
 msgstr "Fi"
 
 #: src/pages/process/tabs/OverviewTab.tsx
-msgid "as planned; the organizer canceled the election"
-msgstr "segons el que s'havia previst; l'organitzador va cancel·lar la votació"
+msgid "as the registry records it; voting closed at the planned end, {planned}, before the organizer ended the election"
+msgstr "tal com l'anota el registre; la votació es va tancar a l'hora prevista, el {planned}, abans que l'organitzador l'acabés"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "Duration"
@@ -5369,6 +5378,14 @@ msgstr "durada {initialDuration}, acaba el {initialEnd}"
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "ended early by the organizer: duration {duration}, ended {ends}"
 msgstr "acabada abans per l'organitzador: durada {duration}, va acabar el {ends}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "ended by the organizer after its end time, which the registry moved to {ends}"
+msgstr "acabada per l'organitzador després de la seva hora de finalització, que el registre va moure al {ends}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "ended by the organizer: duration {duration}, ended {ends}"
+msgstr "acabada per l'organitzador: durada {duration}, va acabar el {ends}"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "duration {duration}, ends {ends}"
@@ -6045,13 +6062,13 @@ msgid "{batches, plural, one {# batch} other {# batches}}, {ballots, plural, one
 msgstr "{batches, plural, one {# lot} other {# lots}}, {ballots, plural, one {# vot} other {# vots}}"
 
 #: src/pages/process/timeline.ts
-msgid "No batch recorded yet"
-msgstr "Encara no s'ha anotat cap lot"
-
-#: src/pages/process/timeline.ts
 #: src/pages/sequencers/detail.tsx
 msgid "No batch recorded"
 msgstr "No s'ha anotat cap lot"
+
+#: src/pages/process/timeline.ts
+msgid "No batch recorded yet"
+msgstr "Encara no s'ha anotat cap lot"
 
 #: src/pages/process/timeline.ts
 msgid "Voting closes"
@@ -6138,6 +6155,11 @@ msgstr "encara no s'ha llegit el màxim de votants"
 #: src/pages/processes/index.tsx
 msgid "How many people voted, and how many later votes replaced someone’s earlier vote."
 msgstr "Quantes persones han votat i quants vots posteriors han substituït el vot anterior d'algú."
+
+#: src/pages/processes/index.tsx
+#: src/pages/processes/index.tsx
+msgid "Voting is over: this time was never reached"
+msgstr "La votació ha acabat: no es va arribar mai a aquesta hora"
 
 #: src/pages/processes/index.tsx
 msgid "Canceled: voting will not reach its end time"

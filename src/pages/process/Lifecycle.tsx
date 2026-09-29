@@ -5,6 +5,7 @@ import { Timestamp, TxLink } from '~components'
 import { useChainNow, type ProcessView } from '~data/hooks'
 import { Card } from '~kit'
 import { cn } from '~lib/cn'
+import { useCreation } from './ending'
 import { processLifecycle, type StepState } from './timeline'
 
 const DOT: Record<StepState, string> = {
@@ -25,7 +26,8 @@ const STATE_LABEL: Record<StepState, MessageDescriptor> = {
 export function Lifecycle({ view }: { view: ProcessView }) {
   const { i18n, t } = useLingui()
   const now = useChainNow()
-  const steps = processLifecycle(view, now)
+  const creation = useCreation(view.process)
+  const steps = processLifecycle(view, now, creation?.initialDuration ?? null)
   return (
     <Card data-testid='process-lifecycle' className='px-5 py-4'>
       <ol className='grid gap-4 sm:grid-cols-5 sm:gap-2' aria-label={t`Process lifecycle`}>

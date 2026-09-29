@@ -5319,6 +5319,15 @@ msgid "The census root is the root of a lean-IMT Merkle tree (Poseidon) over the
 msgstr "The census root is the root of a lean-IMT Merkle tree (Poseidon) over the voters and their weights, as a big-endian integer. Each voting app proves membership against it, and the batch program checks every proof. An updatable list is replaced with <0>setProcessCensus</0>, which emits <1>CensusUpdated</1>."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "as planned; the organizer canceled the election"
+msgstr "as planned; the organizer canceled the election"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "as planned; the organizer ended the election before it"
+msgstr "as planned; the organizer ended the election before it"
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "Dates"
 msgstr "Dates"
 
@@ -5343,8 +5352,8 @@ msgid "End"
 msgstr "End"
 
 #: src/pages/process/tabs/OverviewTab.tsx
-msgid "as planned; the organizer canceled the election"
-msgstr "as planned; the organizer canceled the election"
+msgid "as the registry records it; voting closed at the planned end, {planned}, before the organizer ended the election"
+msgstr "as the registry records it; voting closed at the planned end, {planned}, before the organizer ended the election"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "Duration"
@@ -5369,6 +5378,14 @@ msgstr "duration {initialDuration}, ends {initialEnd}"
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "ended early by the organizer: duration {duration}, ended {ends}"
 msgstr "ended early by the organizer: duration {duration}, ended {ends}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "ended by the organizer after its end time, which the registry moved to {ends}"
+msgstr "ended by the organizer after its end time, which the registry moved to {ends}"
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "ended by the organizer: duration {duration}, ended {ends}"
+msgstr "ended by the organizer: duration {duration}, ended {ends}"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "duration {duration}, ends {ends}"
@@ -6045,13 +6062,13 @@ msgid "{batches, plural, one {# batch} other {# batches}}, {ballots, plural, one
 msgstr "{batches, plural, one {# batch} other {# batches}}, {ballots, plural, one {# vote} other {# votes}}"
 
 #: src/pages/process/timeline.ts
-msgid "No batch recorded yet"
-msgstr "No batch recorded yet"
-
-#: src/pages/process/timeline.ts
 #: src/pages/sequencers/detail.tsx
 msgid "No batch recorded"
 msgstr "No batch recorded"
+
+#: src/pages/process/timeline.ts
+msgid "No batch recorded yet"
+msgstr "No batch recorded yet"
 
 #: src/pages/process/timeline.ts
 msgid "Voting closes"
@@ -6138,6 +6155,11 @@ msgstr "max voters not read yet"
 #: src/pages/processes/index.tsx
 msgid "How many people voted, and how many later votes replaced someone’s earlier vote."
 msgstr "How many people voted, and how many later votes replaced someone’s earlier vote."
+
+#: src/pages/processes/index.tsx
+#: src/pages/processes/index.tsx
+msgid "Voting is over: this time was never reached"
+msgstr "Voting is over: this time was never reached"
 
 #: src/pages/processes/index.tsx
 msgid "Canceled: voting will not reach its end time"

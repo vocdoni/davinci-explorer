@@ -12,6 +12,7 @@ import { transitionDetail, votingOver, type TransitionDetail } from '~indexer/se
 import { Callout, Card, SkeletonText } from '~kit'
 import { publicRpc } from '~pages/contracts/model'
 import { metadataTitle } from '~pages/process/metadata'
+import { useCreation, votingEnd } from '~pages/process/ending'
 import { revealedBeforeEnd } from '~pages/process/reveal'
 import { useDkgResultsChecks, useSequencerResultsChecks, type ResultsCheck } from '~pages/process/results-checks'
 import {
@@ -194,6 +195,7 @@ function ElectionChecks({ pid }: { pid: string }) {
   const title = metadataTitle(metadata.doc)
   const sequencerResults = useSequencerResultsChecks(view)
   const dkgResults = useDkgResultsChecks(view)
+  const creation = useCreation(view?.process)
 
   const details = useMemo(
     (): TransitionDetail[] =>
@@ -243,7 +245,10 @@ function ElectionChecks({ pid }: { pid: string }) {
   const loaded = s != null
 
   const census = censusStatus(s?.census.origin ?? null, details)
-  const revealedEarly = revealedBeforeEnd(dkgResults.app?.reveal, view.row.endTime)
+  const revealedEarly = revealedBeforeEnd(
+    dkgResults.app?.reveal,
+    votingEnd(view.process, view.row, creation?.initialDuration ?? null)
+  )
   const key = keyStatus(keyMode, s?.encryptionKey ?? null, dkgResults.app, revealedEarly)
   const rules: VerifyStatus = loaded ? 'pass' : 'pending'
   const described = loaded ? metadataCheckStatus(metadata.status) : 'pending'
