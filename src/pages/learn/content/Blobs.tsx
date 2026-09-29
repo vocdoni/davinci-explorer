@@ -13,17 +13,17 @@ export function Blobs({ ex }: { ex: LearnExamples }) {
     <>
       <InShort className='mb-8'>
         <Trans>
-          Each batch publishes what it changed next to its transaction, in blobs: the new vote ids, every ballot it
+          Each batch publishes what it changed next to its transaction, in data blobs: the new vote ids, every ballot it
           wrote (still encrypted) and the new encrypted total. The batch program lays this data out itself, so what is
-          published is exactly what was proven. With it anyone can rebuild a process’s state, but the network deletes
-          blobs after about two weeks.
+          published is exactly what was proven. With it anyone can rebuild an election’s state, but the network deletes
+          the blobs after about two weeks.
         </Trans>
       </InShort>
 
-      <Section id='what-a-blob-is' title={t`What a blob is`}>
+      <Section id='what-a-blob-is' title={t`What a data blob is`}>
         <P>
           <Trans>
-            A <Term id='blob'>blob</Term> is a block of data sent along with a transaction. The chain keeps only a
+            A <Term id='blob'>data blob</Term> is a block of data sent along with a transaction. The chain keeps only a
             fingerprint of each blob (its <Term id='versioned-hash'>versioned hash</Term>). The data itself is kept by
             the network’s beacon nodes for about 15 days on Gnosis Chain and about 18 on Ethereum mainnet, then deleted.
             Sequencers keep the blobs they saw and serve them too.
@@ -43,7 +43,7 @@ export function Blobs({ ex }: { ex: LearnExamples }) {
 
       <Section id='what-a-transition-publishes' title={t`What a batch publishes`}>
         <P>
-          <Trans>Every settlement carries the blobs of its batch. They hold, in order:</Trans>
+          <Trans>The transaction that records a batch carries its data blobs. They hold, in order:</Trans>
         </P>
         <NumberedList
           className='my-4'
@@ -60,23 +60,23 @@ export function Blobs({ ex }: { ex: LearnExamples }) {
         <P>
           <Trans>
             New votes, changed votes and silent refreshes are all slot updates in one sorted list, so they look the
-            same. A slot’s first write is still public, because refreshes only touch slots already in use; with a voter
-            list the slot follows from the address, so who voted and when is public. What stays hidden is which slots in
-            use were changed and which were only refreshed.
+            same. A slot’s first write is still public, because refreshes only touch slots already in use; with a list
+            of voters the slot follows from the address, so who voted and when is public. What stays hidden is which
+            slots in use were changed and which were only refreshed.
           </Trans>
         </P>
         <P>
           <Trans>
-            A large batch needs several blobs, at most 32, and all of them travel in its one settlement transaction. On
-            Gnosis Chain a block takes at most 2 blobs, so a sequencer sizes each batch to fit the chain’s blob limit
-            and settles the rest as the next batch.
+            A large batch needs several blobs, at most 32, and all of them travel in the one transaction that records
+            it. On Gnosis Chain a block takes at most 2 blobs, so a sequencer sizes each batch to fit the chain’s blob
+            limit and leaves the rest for the next batch.
           </Trans>
         </P>
         <Details>
           <P>
             <Trans>
               A slot update is the slot key followed by the ballot’s active ciphertexts, each point compressed to one
-              cell. A transition with <Formula expr='T' /> cells needs <Formula expr='ceil(T / 4096)' /> blobs.
+              cell. A batch with <Formula expr='T' /> cells needs <Formula expr='ceil(T / 4096)' /> blobs.
             </Trans>
           </P>
         </Details>
@@ -95,10 +95,16 @@ export function Blobs({ ex }: { ex: LearnExamples }) {
           <P>
             <Trans>
               For each blob the guest evaluates the blob polynomial at a point bound to this process, this state root
-              and this blob’s commitment, where <Formula expr='r' /> is the order of the BLS12-381 scalar field:
+              and this blob’s commitment: the SHA-256 of the process id padded to 32 bytes, the state root before the
+              batch with its bytes reversed and the 48-byte commitment, reduced modulo <Formula expr='r_BLS' />, the
+              order of the BLS12-381 scalar field:
             </Trans>
           </P>
-          <Formula block expr='z = sha256(processId ‖ rootBefore ‖ commitment) mod r' className='my-2' />
+          <Formula
+            block
+            expr='z = sha256(be32(processId) ‖ reverse(rootBefore) ‖ commitment) mod r_BLS'
+            className='my-2'
+          />
           <P>
             <Trans>
               It publishes the blob count and the <Term id='blob-digest'>blob digest</Term> among its public values:
@@ -119,12 +125,13 @@ export function Blobs({ ex }: { ex: LearnExamples }) {
         <UL>
           <li>
             <Trans>
-              Anyone can rebuild a process’s state from its blobs alone. That is how sequencers that did not settle a
-              batch follow along, and how an observer checks every batch without trusting the sequencer that sent it.
+              Anyone can rebuild an election’s state from its published data alone. That is how sequencers that did not
+              record a batch follow along, and how an observer checks every batch without trusting the sequencer that
+              sent it.
             </Trans>
           </li>
           <li>
-            <Trans>A voter can find their vote id in the blob of the batch that included it.</Trans>
+            <Trans>A voter can find their vote id in the published data of the batch that included it.</Trans>
           </li>
           <li>
             <Trans>
@@ -138,15 +145,22 @@ export function Blobs({ ex }: { ex: LearnExamples }) {
       <Section id='in-this-explorer' title={t`In this explorer`}>
         <P>
           <Trans>
-            The transition page downloads the blobs from the beacon, or from a configured sequencer once the beacon has
-            deleted them, and decodes them. A blob from the beacon is tied to the transaction because its commitment
-            hashes to one of the transaction’s versioned hashes; a blob from a sequencer’s archive is tied by position
-            only, and the page says which. The explorer does not recompute KZG commitments from the bytes.
+            Each batch page downloads the batch’s data blobs from the beacon, or from a configured sequencer once the
+            beacon has deleted them, and decodes them. A blob from the beacon is tied to the transaction by its
+            fingerprint; a blob from a sequencer’s archive is tied by position only, and the page says which.
           </Trans>
         </P>
+        <Details>
+          <P>
+            <Trans>
+              A blob from the beacon is tied to the transaction because its KZG commitment hashes to one of the
+              transaction’s versioned hashes. The explorer does not recompute KZG commitments from the bytes.
+            </Trans>
+          </P>
+        </Details>
         {active ? (
           <SeeIt to={paths.transition(active.id, active.transitions - 1)}>
-            <Trans>The blobs of a recent transition, decoded</Trans>
+            <Trans>The data blobs of a recent batch, decoded</Trans>
           </SeeIt>
         ) : null}
         <P>

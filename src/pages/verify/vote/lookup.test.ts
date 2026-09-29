@@ -47,7 +47,7 @@ describe('STATUS_INFO', () => {
       'Pending',
       'Aggregated',
       'Processed',
-      'Settled',
+      'Recorded',
     ])
     expect(i18n._(STATUS_INFO.error.label)).toBe('Error')
     for (const info of Object.values(STATUS_INFO)) expect(i18n._(info.description)).toMatch(/^[A-Z].+\.$/)

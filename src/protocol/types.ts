@@ -44,29 +44,32 @@ const info = (label: MessageDescriptor, description: MessageDescriptor): EnumInf
   withText({}, { label, description })
 
 export const PROCESS_STATUS_INFO: Record<ProcessStatusName, EnumInfo> = {
-  ready: info(msg`Ready`, msg`Open for voting: votes are collected and recorded on chain until the end time.`),
+  ready: info(msg`Ready`, msg`Open for voting: votes are collected and recorded on the chain until the end time.`),
   paused: info(
     msg`Paused`,
     msg`The organizer paused voting. Votes may wait at a sequencer, but none are recorded until voting resumes.`
   ),
   ended: info(msg`Ended`, msg`Voting is closed and the recorded votes are final. The results are not published yet.`),
-  canceled: info(msg`Canceled`, msg`The organizer canceled the process. No results will be published.`),
-  results: info(msg`Results`, msg`The results are on chain, with proof that they count exactly the recorded votes.`),
+  canceled: info(msg`Canceled`, msg`The organizer canceled the election. No results will be published.`),
+  results: info(
+    msg`Results`,
+    msg`The results are on the chain, with proof that they count exactly the recorded votes.`
+  ),
 }
 
 export const CENSUS_ORIGIN_INFO: Record<CensusOriginName, EnumInfo> = {
-  unknown: info(msg`Unknown`, msg`Not a kind of voter list the registry accepts.`),
+  unknown: info(msg`Unknown`, msg`Not a kind of list of voters the registry accepts.`),
   'merkle-static': info(
-    msg`Merkle tree, fixed`,
-    msg`A list of voters fixed when the process was created. Each voter proves they are on it (a lean-IMT Merkle tree).`
+    msg`Fixed list`,
+    msg`A list of voters fixed when the election was created. Each voter proves they are on it.`
   ),
   'merkle-dynamic': info(
-    msg`Merkle tree, updatable`,
-    msg`A list of voters the organizer can replace while the process is open (a lean-IMT Merkle tree; each change is a CensusUpdated event).`
+    msg`Updatable list`,
+    msg`A list of voters the organizer can replace while the election is open. Every replacement is recorded on the chain.`
   ),
   'onchain-dynamic': info(
-    msg`On-chain census contract`,
-    msg`The list of voters is kept by a contract. Every batch must use a version of the list the contract held since the process was created.`
+    msg`List kept by a contract`,
+    msg`The list of voters is kept by a contract. Every batch must use a version of the list the contract held since the election was created.`
   ),
   csp: info(
     msg`Credential service provider`,
@@ -80,11 +83,11 @@ export const KEY_MODE_INFO: Record<KeyModeName, EnumInfo> = {
     msg`One sequencer node holds the key. It could read the ballots, and only it can publish the results, with a proof that they are right.`
   ),
   'dkg-automatic': info(
-    msg`DKG, automatic`,
-    msg`A committee holds the key in shares, so nobody can read the ballots alone. Once voting ends, enough members together decrypt the final count, and only that.`
+    msg`Committee, automatic`,
+    msg`A key committee holds the key in shares, so nobody can read the ballots alone. Once voting ends, enough members together decrypt the encrypted total, and only that.`
   ),
   'dkg-locked': info(
-    msg`DKG, organizer-locked`,
-    msg`A committee key plus a secret the organizer keeps. The committee can decrypt the final count only after the organizer reveals that secret.`
+    msg`Committee, organizer-locked`,
+    msg`A key committee’s key plus a secret the organizer keeps. The committee can decrypt the encrypted total only after the organizer reveals that secret.`
   ),
 }

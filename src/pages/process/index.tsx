@@ -88,18 +88,18 @@ export function ProcessPage() {
           hint={maxVoters != null ? t`of at most ${maxVoters}` : undefined}
         />
         <StatCell
-          label={t`Overwrites`}
+          label={t`Changed votes`}
           value={formatNumber(row.overwrittenVotesCount)}
           mono
-          hint={t`later votes by the same voter`}
+          hint={t`later votes that replaced a voter’s earlier one`}
         />
         <StatCell
-          label={t`Transitions`}
+          label={t`Batches`}
           value={formatNumber(transitions.length)}
           mono
           hint={t`${plural(ballots, { one: '# vote recorded', other: '# votes recorded' })}`}
         />
-        <StatCell label={t`Blobs`} value={formatNumber(blobs)} mono hint={t`data blobs published`} />
+        <StatCell label={t`Data blobs`} value={formatNumber(blobs)} mono hint={t`published with the batches`} />
       </StatRow>
 
       <Tabs
@@ -107,10 +107,10 @@ export function ProcessPage() {
         onValueChange={(value) => navigate(paths.process(process.id, value as ProcessTab))}
         items={[
           { value: 'overview', label: t`Overview`, content: <OverviewTab view={view} /> },
-          { value: 'key', label: t`Encryption key`, content: <KeyTab view={view} /> },
+          { value: 'key', label: t`Election key`, content: <KeyTab view={view} /> },
           {
             value: 'transitions',
-            label: t`Transitions`,
+            label: t`Batches`,
             meta: formatNumber(transitions.length),
             content: <TransitionsTab view={view} />,
           },

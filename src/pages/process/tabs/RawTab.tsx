@@ -63,7 +63,7 @@ export function RawTab({ view }: { view: ProcessView }) {
         title={t`Indexed entity`}
         testId='raw-entity'
         json={entity}
-        description={t`Everything the explorer built for this process from the registry’s events: creation, transitions (by key), status, duration, voter-limit and census changes, results and the decryption request.`}
+        description={t`Everything the explorer built for this process from the registry’s events: creation, batches (transition keys), status, duration, changes to the voter limit and to the list of voters, results and the decryption request.`}
       />
     </div>
   )

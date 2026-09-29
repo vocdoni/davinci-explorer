@@ -40,8 +40,8 @@ const contracts = (section: string) => `${paths.contracts()}#${section}`
 export const GLOSSARY = [
   {
     id: 'accumulator',
-    term: msg`Accumulator (encrypted total)`,
-    short: msg`The running total of every counted ballot, kept encrypted. Only the final total is decrypted, to give the results.`,
+    term: msg`Encrypted total (accumulator)`,
+    short: msg`The sum of every counted ballot, kept encrypted and updated by each batch. Only the final total is decrypted, to give the results.`,
     text: msg({
       message:
         'State leaf `0x04`: 16 ElGamal ciphertexts holding the encrypted sum of every counted ballot, one per ballot field. The encryption can be added up without being opened, so each batch updates the sum directly: it adds its new ballots, subtracts the ones they overwrite and adds the encryptions of zero of its silent refreshes. Only the final sum is decrypted by the protocol. The holder of the election key could decrypt any intermediate accumulator or ballot in the blobs.',
@@ -58,7 +58,7 @@ export const GLOSSARY = [
   {
     id: 'ballot',
     term: msg`Ballot`,
-    short: msg`A voter’s answers, encrypted on the voter’s device: one encrypted number per answer. Only the holder of the election key could read it.`,
+    short: msg`What a vote carries: the voter’s answers, encrypted on the voter’s device, one encrypted number per answer. Only the key holder could read it.`,
     text: msg({
       message:
         '16 ElGamal ciphertexts on the BabyJubJub curve, encrypted under the process key, one per field. Fields beyond the ballot mode’s `numFields` carry the identity, an empty value.',
@@ -66,7 +66,7 @@ export const GLOSSARY = [
   },
   {
     id: 'ballot-mode',
-    term: msg`Ballot mode`,
+    term: msg`Ballot rules (ballot mode)`,
     short: msg`The rules every ballot must follow: how many answers, which values each may take and how much a voter may give in total.`,
     text: msg({
       message:
@@ -77,8 +77,8 @@ export const GLOSSARY = [
   {
     id: 'ballot-proof',
     term: msg`Ballot proof`,
-    short: msg`A proof, made by the voter’s app, that the encrypted ballot follows the rules. It does not reveal what the ballot says.`,
-    text: msg`A Groth16 proof, of the davinci-circom ballot circuit, that a ballot is a correct encryption for the process. Its public inputs are the voter’s address, the vote id and an inputs hash over the process id, ballot mode, key, ciphertexts and weight.`,
+    short: msg`A proof, made by the voting app, that the encrypted ballot follows the rules. It does not reveal what the ballot says.`,
+    text: msg`A Groth16 proof, of the davinci-circom ballot circuit, that a ballot is a correct encryption for the process. Its public inputs are the voter’s address, the vote id and an inputs hash over the process id, the ballot mode, the key, the voter’s address, the vote id, the ciphertexts and the weight.`,
   },
   {
     id: 'ballot-vk-hash',
@@ -98,8 +98,8 @@ export const GLOSSARY = [
   },
   {
     id: 'blob',
-    term: msg`Blob`,
-    short: msg`Data sent along with a transaction. Each batch publishes its votes in blobs so anyone can check the count; the network deletes blobs after about two weeks.`,
+    term: msg`Data blob`,
+    short: msg`Data published along with a transaction. Each batch publishes its votes in data blobs so anyone can check what was counted; the network deletes them after about two weeks.`,
     text: msg`An EIP-4844 data blob: 4096 cells of 32 bytes carried next to a transaction. A transition’s blobs publish its vote ids, the slots it wrote and the new encrypted tally. Beacon nodes prune them after about 15 days on Gnosis Chain (16384 epochs of 80 s) and about 18 on Ethereum mainnet.`,
     see: { label: msg`The published data (blobs)`, to: paths.learn('blobs') },
   },
@@ -115,14 +115,14 @@ export const GLOSSARY = [
   },
   {
     id: 'census',
-    term: msg`Census`,
-    short: msg`The list of who may vote, and with what weight.`,
+    term: msg`List of voters (census)`,
+    short: msg`Who may vote in an election, and with what weight.`,
     text: msg`Who may vote and with what weight: a Merkle tree (fixed, updatable by the organizer, or kept by a contract) or the signatures of a credential service provider.`,
     see: { label: msg`Who may vote (census)`, to: paths.learn('census') },
   },
   {
     id: 'census-origin',
-    term: msg`Census origin`,
+    term: msg`Kind of list (census origin)`,
     short: msg`Where an election’s list of voters comes from: a fixed list, a list the organizer can update, a contract, or a credential service.`,
     text: msg({
       message:
@@ -143,10 +143,10 @@ export const GLOSSARY = [
   },
   {
     id: 'committee',
-    term: msg`Committee`,
-    short: msg`A group of independent operators who hold a key together. Enough of them must cooperate to decrypt; fewer cannot.`,
+    term: msg`Key committee`,
+    short: msg`A group of independent operators who hold an election key together, in shares. Enough of them must cooperate to decrypt; fewer cannot.`,
     text: msg`The davinci-dkg operators of one epoch, drawn by an on-chain lottery. A threshold of them can decrypt under the epoch’s pool keys; fewer cannot.`,
-    see: { label: msg`The DKG committee`, to: contracts('dkg') },
+    see: { label: msg`The key committee`, to: contracts('dkg') },
   },
   {
     id: 'csp',
@@ -162,8 +162,8 @@ export const GLOSSARY = [
   },
   {
     id: 'encryption-key',
-    term: msg`Encryption key (election key)`,
-    short: msg`The key voters encrypt their ballots to. Whoever holds the matching secret could read them.`,
+    term: msg`Election key (encryption key)`,
+    short: msg`The key voters encrypt their ballots to. Whoever holds the matching secret, the key holder, could read them.`,
     text: msg({
       message:
         'A point on the BabyJubJub curve, fixed at creation and pinned in the genesis state as leaf `0x03`. Voters encrypt every ballot field to it with ElGamal, each batch re-encrypts the stored ballots under it, and the final tally is decrypted with its secret. Who holds that secret depends on the key mode.',
@@ -175,12 +175,12 @@ export const GLOSSARY = [
     term: msg`Epoch`,
     short: msg`One round of the key committee: its members are drawn and create a new set of keys.`,
     text: msg`One DKG run: a committee is drawn and deals 16 pool keys; once finalized the epoch is Live and applications can claim keys. Epochs are created at a fixed cadence, or early when the newest pool is nearly spent or the epoch aborted.`,
-    see: { label: msg`The DKG committee`, to: contracts('dkg') },
+    see: { label: msg`The key committee`, to: contracts('dkg') },
   },
   {
     id: 'fail-mask',
     term: msg`Fail mask`,
-    short: msg`A number in a proof that says which checks failed. Zero means every check passed.`,
+    short: msg`A number the proof makes public that says which checks failed. Zero means every check passed.`,
     text: msg`Register 1 of the public values: one bit per kind of check the guest failed. The registry accepts a proof only with the values below.`,
     formula: 'ok = 1, fail_mask = 0',
   },
@@ -198,13 +198,13 @@ export const GLOSSARY = [
   },
   {
     id: 'guest',
-    term: msg`Guest`,
-    short: msg`A program whose run is proven. One checks each batch of votes, another checks the final count.`,
+    term: msg`Program (guest)`,
+    short: msg`A program whose run is proven. The batch program checks each batch of votes; the results program checks the results.`,
     text: msg`A program the zkVM proves. The vote-batch guest proves a transition; the results guest proves a sequencer-key tally.`,
   },
   {
     id: 'key-mode',
-    term: msg`Key mode`,
+    term: msg`Key holder (key mode)`,
     short: msg`Who holds the key the ballots are encrypted to, and so who can decrypt the results.`,
     text: msg`Who holds the key the ballots are encrypted under: one sequencer, a davinci-dkg committee (automatic), or the committee plus an organizer secret (locked).`,
     see: { label: msg`Who holds the key (key modes)`, to: paths.learn('key-modes') },
@@ -212,19 +212,20 @@ export const GLOSSARY = [
   {
     id: 'kzg-commitment',
     term: msg`KZG commitment`,
-    short: msg`A short fingerprint of a blob, which lets the chain check what the blob contains.`,
+    short: msg`A short fingerprint of a data blob, which lets the chain check what the blob contains.`,
     text: msg`A 48-byte commitment to a blob’s polynomial. The versioned hash is derived from it, and the point-evaluation precompile checks an opening of the blob against it.`,
   },
   {
     id: 'merkle-tree',
     term: msg`Merkle tree`,
     short: msg`A way to take one fingerprint of a long list, so that anyone can show an item is on the list with a short proof.`,
-    text: msg`A tree of hashes: each leaf is the hash of an item, each node the hash of its two children, up to one root. An inclusion proof is the path of sibling hashes from a leaf to the root. A process’s state tree is a SHA-256 sparse Merkle tree of 64 levels; a Merkle census is a lean-IMT tree hashed with Poseidon.`,
+    text: msg`A tree of hashes: each leaf stands for one item, each node is the hash of its two children, up to one root. An inclusion proof is the path of sibling hashes from a leaf to the root. A process’s state tree is a SHA-256 sparse Merkle tree of 64 levels, each leaf the hash of its key and value (below). A Merkle census is a lean-IMT tree hashed with Poseidon whose leaves are not hashed: each is the voter’s address and weight packed into one number.`,
+    formula: 'leaf = sha256(le64(key) ‖ le256(value) ‖ 0x01)',
   },
   {
     id: 'metadata-hash',
     term: msg`Metadata hash`,
-    short: msg`The fingerprint of the election’s description document (title, question, options), stored on chain so any change to it shows.`,
+    short: msg`The fingerprint of the election’s description document (title, question, options), recorded on the chain so any change to it shows.`,
     text: msg({
       message:
         'The SHA-256 of the exact bytes of a process’s metadata document, the file with its title, question and option names. The registry stores it as `metadataHash` beside the document’s address, so anyone can download the document and compare: one changed byte, even a space, gives another hash. The organizer can publish a new version until the end; each one is a `ProcessMetadataUpdated` event.',
@@ -254,19 +255,19 @@ export const GLOSSARY = [
     id: 'organizer-secret',
     term: msg`Organizer secret`,
     short: msg`In the organizer-locked key mode, the organizer’s part of the key. The results cannot be decrypted until it is revealed.`,
-    text: msg`In DKG locked mode, the organizer’s half of the process key. The committee cannot decrypt until it is revealed, and losing it loses the results.`,
+    text: msg`In the organizer-locked committee mode (DKG locked), the organizer’s half of the process key. The committee cannot decrypt until it is revealed, and losing it loses the results.`,
   },
   {
     id: 'overwrite',
-    term: msg`Overwrite (revote)`,
-    short: msg`A new vote from someone who had already voted. It replaces their previous vote in the count.`,
+    term: msg`Changed vote (overwrite)`,
+    short: msg`A new vote from someone who had already voted. It replaces their previous vote, and only the newer one counts.`,
     text: msg`A vote for a slot that already holds a ballot. The new ballot replaces the old one in the tally. The blob does not show which occupied slot it was: an overwrite and a silent refresh look the same.`,
     see: { label: msg`Changing your vote, privately`, to: paths.learn('silent-revoting') },
   },
   {
     id: 'plonk-proof',
     term: msg`PLONK proof`,
-    short: msg`The small proof the registry checks on chain before it accepts a batch or a result.`,
+    short: msg`The small proof the registry checks on the chain before it records a batch of votes or the results.`,
     text: msg`The succinct proof the registry verifies: a guest’s ZisK proof, wrapped. 768 bytes of proof and 512 bytes of public values at every batch size.`,
   },
   {
@@ -278,7 +279,7 @@ export const GLOSSARY = [
   {
     id: 'process',
     term: msg`Process`,
-    short: msg`One election on the registry, from its rules to its results.`,
+    short: msg`The registry’s record of one election, from its rules to its results. The explorer lists elections as processes.`,
     text: msg`One election on the registry: its parameters, census, key and state root while it runs, and its results at the end.`,
     see: { label: msg`Processes`, to: paths.processes() },
   },
@@ -306,7 +307,7 @@ export const GLOSSARY = [
     id: 'proof',
     term: msg`Proof`,
     short: msg`Data that shows a computation was done correctly. Anyone can check it quickly, without redoing the computation.`,
-    text: msg`DAVINCI uses three kinds: the Groth16 ballot proof a voter’s app makes, which also keeps the ballot secret; the zkVM proof of a guest program, wrapped into the PLONK proof the registry verifies; and the Groth16 proofs of each step of the DKG committee.`,
+    text: msg`DAVINCI uses three kinds: the Groth16 ballot proof a voting app makes, which also keeps the ballot secret; the zkVM proof of a guest program, wrapped into the PLONK proof the registry verifies; and the Groth16 proofs of each step of the DKG committee.`,
   },
   {
     id: 'public-values',
@@ -324,7 +325,7 @@ export const GLOSSARY = [
   {
     id: 'registry',
     term: msg`Registry (ProcessRegistry)`,
-    short: msg`The contract that holds every election of a deployment. It accepts a batch of votes or a result only with a valid proof.`,
+    short: msg`The contract that holds every election of a deployment. It records a batch of votes or the results only with a valid proof.`,
     text: msg({
       message:
         'The `ProcessRegistry` contract. It creates processes and assigns their ids, keeps each process’s latest state root and counters, runs every check of `submitStateTransition` before a batch settles, and stores the results, from `setProcessResults` or from the DKG. Its program vks and setup root are fixed at deployment.',
@@ -347,7 +348,7 @@ export const GLOSSARY = [
   },
   {
     id: 'settlement',
-    term: msg`Settlement (settle)`,
+    term: msg`Recording a batch (settlement)`,
     short: msg`Recording a batch of votes on the chain. The registry checks the batch’s proof and, if it holds, moves the election to its new state.`,
     text: msg({
       message:
@@ -400,10 +401,10 @@ export const GLOSSARY = [
   },
   {
     id: 'tracker-proof',
-    term: msg`Tracker proof`,
-    short: msg`A proof that your vote id is part of a state the registry accepted, which means your vote was recorded.`,
+    term: msg`Receipt (tracker proof)`,
+    short: msg`A sequencer’s proof that your vote id is part of a state the registry recorded, which means your vote was recorded.`,
     text: msg`The path from a vote id’s leaf to a state root. When that root is one the registry held for the process, the vote was recorded as cast.`,
-    see: { label: msg`Vote lookup`, to: paths.votes() },
+    see: { label: msg`Check your vote`, to: paths.votes() },
   },
   {
     id: 'versioned-hash',
@@ -421,10 +422,10 @@ export const GLOSSARY = [
     short: msg`The number your voting app shows when you vote. Use it to find your vote and check it.`,
     text: msg({
       message:
-        'A 64-bit identifier of one ballot, at least 2⁶³. The voter’s app computes it, as below, from the process, the voter’s address and the ballot’s secret randomness `k`, so a new ballot gets a new vote id. The voter signs it, the ballot proof takes it as a public input, and a settled transition inserts it in the state tree and publishes it in its blob.',
+        'A 64-bit identifier of one ballot, at least 2⁶³. The voting app computes it, as below, from the process, the voter’s address and the ballot’s secret randomness `k`, so a new ballot gets a new vote id. The voter signs it, the ballot proof takes it as a public input, and a settled transition inserts it in the state tree and publishes it in its blob.',
     }),
     formula: 'voteId = 2^63 + (Poseidon(processId, address, k) mod 2^63)',
-    see: { label: msg`Vote lookup`, to: paths.votes() },
+    see: { label: msg`Check your vote`, to: paths.votes() },
   },
   {
     id: 'voters-count',

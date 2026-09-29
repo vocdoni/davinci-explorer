@@ -33,18 +33,18 @@ function Trust({ mode }: { mode: KeyModeName }) {
       who: (
         <Trans>
           One sequencer node holds the secret that opens the ballots. The organizer got this key from that node when it
-          created the process.
+          created the election.
         </Trans>
       ),
       when: (
         <Trans>
           After voting ends, the key holder decrypts the <Term id='accumulator'>encrypted total</Term>, proves that the
-          result is right and publishes it.
+          results are right and publishes them.
         </Trans>
       ),
       risk: (
         <Trans>
-          The key holder could read every ballot published in the blobs, and nobody else can publish the results. This
+          The key holder could read every ballot in the published data, and nobody else can publish the results. This
           mode trusts one party with ballot secrecy.
         </Trans>
       ),
@@ -60,7 +60,7 @@ function Trust({ mode }: { mode: KeyModeName }) {
     'dkg-automatic': {
       who: (
         <Trans>
-          A <Term id='committee'>committee</Term> holds the key in shares. No sequencer and no organizer knows the
+          A <Term id='committee'>key committee</Term> holds the key in shares. No sequencer and no organizer knows the
           secret, and no member knows it alone.
         </Trans>
       ),
@@ -73,7 +73,7 @@ function Trust({ mode }: { mode: KeyModeName }) {
       risk: (
         <Trans>
           Enough members of the committee colluding (a <Term id='threshold'>threshold</Term> of them) could read every
-          ballot. If more than <Formula expr='n − t' /> members leave before the end, the results are lost.
+          ballot. If so many members leave before the end that fewer than the threshold remain, the results are lost.
         </Trans>
       ),
       detail: (
@@ -82,6 +82,8 @@ function Trust({ mode }: { mode: KeyModeName }) {
           After the end, anyone can send the final accumulator to the committee (<code>requestResultsDecryption</code>);
           sequencers do it on their first heartbeat after the end. A threshold of members post partial decryptions, each
           with a Groth16 proof, and a combine yields each field’s total. The committee never reconstructs the secret.
+          With n members and a threshold t, losing more than <Formula expr='n − t' /> members before the end loses the
+          results.
         </Trans>
       ),
     },
@@ -94,13 +96,13 @@ function Trust({ mode }: { mode: KeyModeName }) {
       ),
       when: (
         <Trans>
-          The committee can decrypt the final total only after the organizer reveals the secret. The organizer decides
-          when the results appear, not what they are.
+          The committee can decrypt the encrypted total only after the organizer reveals the organizer secret. The
+          organizer decides when the results appear, not what they are.
         </Trans>
       ),
       risk: (
         <Trans>
-          If the organizer loses the secret, the results are lost. Revealing it while voting is open leaves the process
+          If the organizer loses the secret, the results are lost. Revealing it while voting is open leaves the election
           with the trust of the automatic mode.
         </Trans>
       ),
@@ -194,34 +196,39 @@ export function KeyTab({ view }: { view: ProcessView }) {
   return (
     <div data-testid='tab-key' className='flex flex-col gap-6'>
       <div className='grid items-start gap-6 lg:grid-cols-2'>
-        <Panel title={t`Key mode`} label={t`Who can decrypt, and when`} actions={<KeyModeBadge mode={s.keyMode} />}>
+        <Panel title={t`Key holder`} label={t`Who can decrypt, and when`} actions={<KeyModeBadge mode={s.keyMode} />}>
           <Trust mode={s.keyMode} />
         </Panel>
         <Panel
-          title={t`Encryption key`}
-          label={t`BabyJubJub point`}
-          description={t`Voters encrypt their ballots to this key (ElGamal on the BabyJubJub curve). It is fixed in the process’s starting state, as leaf 0x03, so it cannot change after creation, and every batch re-encrypts the stored ballots under it.`}
+          title={t`Election key`}
+          label={t`Fixed at creation`}
+          description={t`Voters encrypt their ballots to this key before sending them. It was fixed when the election was created, so it cannot change, and every batch encrypts the stored ballots afresh under it.`}
         >
           <KeyValue
             items={[
               {
                 label: (
-                  <Label
-                    help={t`The key is a point on a curve; this is its x coordinate (twisted Edwards, circomlib form).`}
-                  >
-                    x
-                  </Label>
+                  <Label help={t`The key is a pair of numbers, a point on a curve; this is the first one.`}>x</Label>
                 ),
                 value: <Hash value={bigIntToHex(s.encryptionKey.x)} chars={10} />,
                 hint: <span className='font-mono break-all'>{s.encryptionKey.x.toString()}</span>,
               },
               {
-                label: <Label help={t`The point’s y coordinate.`}>y</Label>,
+                label: <Label help={t`The second number of the key.`}>y</Label>,
                 value: <Hash value={bigIntToHex(s.encryptionKey.y)} chars={10} />,
                 hint: <span className='font-mono break-all'>{s.encryptionKey.y.toString()}</span>,
               },
             ]}
           />
+          <Disclosure summary={<Trans>Technical details</Trans>} variant='plain' className='mt-4' testId='key-details'>
+            <p className='text-[13px] leading-relaxed text-ash'>
+              <Trans>
+                An ElGamal public key on the BabyJubJub curve: a point (x, y) in twisted Edwards form, as circomlib
+                writes it. The registry fixes it in the process’s starting state as leaf <code>0x03</code>, voters
+                encrypt every ballot field to it, and every batch re-encrypts the stored ballots under it.
+              </Trans>
+            </p>
+          </Disclosure>
         </Panel>
       </div>
       {s.keyMode !== 'sequencer' ? <DkgPanel view={view} /> : null}
@@ -247,7 +254,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
   // Built here, not at module scope: the headers and cells are text.
   const ciphertextColumns = useMemo<AnyColumnDef<DkgCiphertextView>[]>(
     () => [
-      { id: 'index', header: t`DKG index`, accessorKey: 'index', meta: { numeric: true, width: '110px' } },
+      { id: 'index', header: t`Committee index`, accessorKey: 'index', meta: { numeric: true, width: '110px' } },
       {
         id: 'field',
         header: t`Ballot field`,
@@ -271,7 +278,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
       },
       {
         id: 'plaintext',
-        header: t`Plaintext`,
+        header: t`Decrypted value`,
         accessorFn: (r) => r.plaintext,
         cell: ({ row }) => (row.original.completed ? formatNumber(row.original.plaintext) : '—'),
         meta: { numeric: true },
@@ -282,9 +289,9 @@ function DkgPanel({ view }: { view: ProcessView }) {
 
   return (
     <Panel
-      title={t`DKG application`}
-      label={t`davinci-dkg committee`}
-      description={t`The committee decrypts only for processes registered with it. The registry registered this one (a DKG application) on the committee round that holds its key, and the committee answers only what the registry sends for it.`}
+      title={t`Key committee`}
+      label={t`How this election is registered`}
+      description={t`The committee decrypts only for elections registered with it. The registry registered this one on the committee round that holds its key (a davinci-dkg application), and the committee answers only what the registry sends for it.`}
       actions={
         appUrl ? (
           <ExternalLink href={appUrl}>
@@ -295,7 +302,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
     >
       {!info ? (
         <Callout tone='warn'>
-          <Trans>The process state carries no DKG data.</Trans>
+          <Trans>The registry’s record of this election carries no committee data.</Trans>
         </Callout>
       ) : (
         <div className='flex flex-col gap-5'>
@@ -324,9 +331,10 @@ function DkgPanel({ view }: { view: ProcessView }) {
                     <Label
                       help={
                         <Trans>
-                          The number that ties this process to the committee (application id). Anyone can recompute it:{' '}
-                          <Formula expr='keccak256(chainId ‖ registry ‖ processId) mod Q' />, with Q the BabyJubJub base
-                          field, and never zero.
+                          The number that ties this election to the key committee (its application id). Anyone can
+                          recompute it from the chain id, the registry and the process id:{' '}
+                          <Formula expr='aid = keccak256(abi.encode(chainId, registry, processId)) mod Q' />, with Q the
+                          BabyJubJub base field. A result of zero becomes 1.
                         </Trans>
                       }
                     >
@@ -338,7 +346,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
                 {
                   label: (
                     <Label
-                      help={t`Each committee round creates 16 separate keys (pool keys). Every process takes one, so a decryption for it cannot touch another.`}
+                      help={t`Each committee round creates 16 separate keys (pool keys). Every election takes one, so a decryption for it cannot touch another.`}
                     >
                       <Trans>Pool index</Trans>
                     </Label>
@@ -357,7 +365,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
                         value: <Address value={app.creator} />,
                         hint:
                           chain.registry?.dkgAdapter && app.creator === chain.registry.dkgAdapter.toLowerCase()
-                            ? t`the registry’s DKG adapter`
+                            ? t`the registry’s key committee adapter`
                             : undefined,
                       },
                     ]
@@ -367,7 +375,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
             {dkg.isLoading ? (
               <SkeletonText lines={5} />
             ) : dkg.error ? (
-              <Callout tone='warn' title={t`Could not read the DKG contracts`}>
+              <Callout tone='warn' title={t`Could not read the key committee’s contracts`}>
                 {dkg.error instanceof Error ? dkg.error.message : String(dkg.error)}
               </Callout>
             ) : app ? (
@@ -375,14 +383,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
                 items={[
                   {
                     label: (
-                      <Label
-                        help={
-                          <Trans>
-                            The committee’s key for this process, <Formula expr='P_j' />, in the DKG’s reduced twisted
-                            Edwards form.
-                          </Trans>
-                        }
-                      >
+                      <Label help={<Trans>The committee’s key for this election, one of its round’s pool keys.</Trans>}>
                         <Trans>Pool key</Trans>
                       </Label>
                     ),
@@ -393,8 +394,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
                       <Label
                         help={
                           <Trans>
-                            The organizer’s public key, <Formula expr='PK_org' />. In the automatic mode it is the
-                            identity point (0, 1): there is no organizer key.
+                            The public half of the organizer secret. In the automatic mode there is no organizer key.
                           </Trans>
                         }
                       >
@@ -414,9 +414,9 @@ function DkgPanel({ view }: { view: ProcessView }) {
                       <Label
                         help={
                           <Trans>
-                            The key the ballots are encrypted to: <Formula expr='P_j + PK_org' /> when locked, just{' '}
-                            <Formula expr='P_j' /> otherwise, in the reduced form. The registry stores it in circomlib
-                            form (same y, x scaled by a fixed constant); the check redoes that conversion.
+                            The key the ballots are encrypted to: the pool key combined with the organizer key when
+                            locked, the pool key alone otherwise. Converted to the registry’s form, it must be the
+                            election key.
                           </Trans>
                         }
                       >
@@ -430,8 +430,8 @@ function DkgPanel({ view }: { view: ProcessView }) {
                       </span>
                     ),
                     hint: keyMatches
-                      ? t`once converted, it is the process’s encryption key`
-                      : t`once converted, it is not the process’s encryption key`,
+                      ? t`once converted, it is the election key`
+                      : t`once converted, it is not the election key`,
                   },
                   {
                     label: (
@@ -439,7 +439,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
                         help={
                           <Trans>
                             In the locked mode the committee cannot decrypt until the organizer reveals this secret. The
-                            DKG checks it is the right one: <Formula expr='sk · G = PK_org' />.
+                            committee’s contracts check that it is the right one.
                           </Trans>
                         }
                       >
@@ -467,20 +467,34 @@ function DkgPanel({ view }: { view: ProcessView }) {
               />
             ) : (
               <p className='text-[13px] text-ash'>
-                <Trans>No DKG application was found for this process.</Trans>
+                <Trans>The committee has no registration for this election.</Trans>
               </p>
             )}
           </div>
+
+          <Disclosure summary={<Trans>Technical details</Trans>} variant='plain' testId='dkg-key-details'>
+            <p className='text-[13px] leading-relaxed text-ash'>
+              <Trans>
+                The registration is a davinci-dkg application. The pool key <Formula expr='P_j' />, the organizer key{' '}
+                <Formula expr='PK_org' /> and the application key are points in the DKG’s reduced twisted Edwards form.
+                The application key is <Formula expr='P_j + PK_org' /> when locked and <Formula expr='P_j' /> otherwise;
+                in the automatic mode <Formula expr='PK_org' /> is the identity point (0, 1). The registry stores the
+                election key in circomlib form (same y, x scaled by a fixed constant), and the check above redoes that
+                conversion. When the organizer reveals its secret, the DKG checks <Formula expr='sk · G = PK_org' />. An
+                empty ballot field is the identity point, sent nowhere and recorded as 0.
+              </Trans>
+            </p>
+          </Disclosure>
 
           <div>
             <div className='label-caps mb-2 inline-flex items-center gap-1 text-[11px] text-pewter'>
               <Trans>Sent to the committee</Trans>
               <Explain>
                 <Trans>
-                  The encrypted total goes to the committee as one encrypted value per ballot field
-                  (requestResultsDecryption). Every ballot and refresh adds to every field, so even an option nobody
-                  picked holds a real encrypted value. Only a process that never counted a ballot has empty (identity)
-                  fields, which are recorded as 0 without the committee.
+                  The encrypted total goes to the committee as one encrypted value per ballot field. Every vote and
+                  refresh adds to every field, so even an option nobody picked holds a real encrypted value. Only an
+                  election that never counted a ballot has empty fields, which are recorded as 0 without the committee.
+                  The call is <code>requestResultsDecryption</code>.
                 </Trans>
               </Explain>
             </div>
@@ -512,7 +526,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
                     onSortingChange={setSorting}
                     empty={
                       <p className='p-4 text-[13px] text-ash'>
-                        <Trans>Every field was empty (the identity), as no ballot was counted: nothing was sent.</Trans>
+                        <Trans>Every field was empty, as no ballot was counted: nothing was sent.</Trans>
                       </p>
                     }
                   />
@@ -551,17 +565,17 @@ function SubmittedSummary({
   const skipped = skippedFields(zeroSkipped)
   if (skipped.length === 0)
     return (
-      <>{t`${plural(count, { one: '# encrypted value', other: '# encrypted values' })}, from DKG index ${first}.`}</>
+      <>{t`${plural(count, { one: '# encrypted value', other: '# encrypted values' })}, from committee index ${first}.`}</>
     )
   const identity = skipped.length
   const fields = formatList(skipped.map((f) => formatNumber(f)))
   return (
     <>
-      {t`${plural(count, { one: '# encrypted value', other: '# encrypted values' })}, from DKG index ${first}; ${plural(
+      {t`${plural(count, { one: '# encrypted value', other: '# encrypted values' })}, from committee index ${first}; ${plural(
         identity,
         {
-          one: `field ${fields} was empty (the identity), as no ballot was counted, and was recorded as 0`,
-          other: `fields ${fields} were empty (the identity), as no ballot was counted, and were recorded as 0`,
+          one: `field ${fields} was empty, as no ballot was counted, and was recorded as 0`,
+          other: `fields ${fields} were empty, as no ballot was counted, and were recorded as 0`,
         }
       )}.`}
     </>

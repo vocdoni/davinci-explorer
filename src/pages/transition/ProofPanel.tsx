@@ -57,13 +57,19 @@ export function ProofPanel({ detail }: { detail: TransitionDetail }) {
       description={
         <Trans>
           One proof covers the whole batch: every vote’s checks, how the ballots were stored and the data it published.
-          It is the same size however many votes the batch has. Technically it is a ZisK{' '}
-          <Term id='plonk-proof'>PLONK proof</Term> over every ballot proof, signature, census proof, state update,
-          re-encryption and the blob layout.
+          It is the same size however many votes the batch has.
         </Trans>
       }
     >
       <div className='flex flex-col gap-4' data-testid='proof'>
+        <Disclosure summary={t`Technical details`} variant='plain'>
+          <p className='text-[12px] leading-relaxed text-ash'>
+            <Trans>
+              It is a ZisK <Term id='plonk-proof'>PLONK proof</Term> over every ballot proof, signature, census proof,
+              state update, re-encryption and the blob layout.
+            </Trans>
+          </p>
+        </Disclosure>
         <KeyValue
           columns={2}
           items={[
@@ -165,7 +171,7 @@ export function ProofPanel({ detail }: { detail: TransitionDetail }) {
               does a proof whose public values were changed:
             </Trans>
           </p>
-          <Formula block expr='publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)' />
+          <Formula block expr='publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal) mod r_BN254' />
           <p className='text-[12px] leading-relaxed text-ash'>
             <Trans>
               The call, made inside <code>submitStateTransition</code>, which reverts with <code>InvalidProof</code>{' '}

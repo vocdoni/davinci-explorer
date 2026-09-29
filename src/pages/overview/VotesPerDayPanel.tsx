@@ -22,7 +22,7 @@ export function VotesPerDayPanel() {
         return {
           label: formatDate(d.day, 'short'),
           values: { newVoters: d.newVoters, overwrites: d.overwrites },
-          note: `${formatDate(d.day)} · ${plural(transitions, { one: '# transition', other: '# transitions' })}`,
+          note: `${formatDate(d.day)} · ${plural(transitions, { one: '# batch', other: '# batches' })}`,
         }
       }),
     [days]
@@ -36,7 +36,7 @@ export function VotesPerDayPanel() {
       label={t`Last ${DAYS} days, UTC`}
       description={
         <Trans>
-          Each vote is a new voter or an <Term id='overwrite'>overwrite</Term> of an earlier vote. The{' '}
+          Each vote is a new voter or a <Term id='overwrite'>changed vote</Term> that replaces an earlier one. The{' '}
           <Term id='silent-refresh'>silent refreshes</Term> each batch adds are not votes and are not counted.
         </Trans>
       }
@@ -46,7 +46,7 @@ export function VotesPerDayPanel() {
         <EmptyState
           compact
           title={t`No votes recorded in the last ${DAYS} days`}
-          description={t`Each batch of votes counts on the day it was recorded on chain.`}
+          description={t`Each batch of votes counts on the day it was recorded on the chain.`}
         />
       ) : (
         <StackedBars
@@ -55,7 +55,7 @@ export function VotesPerDayPanel() {
           height={200}
           series={[
             { key: 'newVoters', label: t`new voters`, color: CHART_COLORS.emerald },
-            { key: 'overwrites', label: t`overwrites`, color: CHART_COLORS.slate },
+            { key: 'overwrites', label: t`changed votes`, color: CHART_COLORS.slate },
           ]}
         />
       )}

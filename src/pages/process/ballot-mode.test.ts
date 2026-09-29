@@ -265,7 +265,7 @@ describe('describeBallotMode', () => {
   it('multiple choice and approval', () => {
     expect(describeBallotMode(mode({ maxValueSum: 2n })).summary).toBe('Each voter picks up to 2 of 4 options.')
     expect(describeBallotMode(mode({ maxValueSum: 4n })).kind).toBe('approval')
-    expect(describeBallotMode(mode({ maxValueSum: 0n })).summary).toContain('census weight')
+    expect(describeBallotMode(mode({ maxValueSum: 0n })).summary).toContain('weight on the list of voters')
   })
 
   it('points, quadratic and ranking', () => {
@@ -333,7 +333,7 @@ describe('describeBallotMode', () => {
     expect(d.kind).toBe('custom')
     expect(d.rules[0]).toContain('between 0 and 5')
     expect(describeBallotMode(mode({ maxValue: 5n, maxValueSum: 0n })).summary).toBe(
-      'Each voter distributes as many points as their census weight among 4 options, at most 5 per option.'
+      'Each voter distributes as many points as their weight on the list of voters among 4 options, at most 5 per option.'
     )
     expect(d.rules[d.rules.length - 1]).toContain('sum of the values voters gave it')
   })
@@ -346,15 +346,17 @@ describe('describeBallotMode', () => {
     expect(sum({ costExponent: 2, maxValue: 10n, maxValueSum: 25n, minValueSum: 25n })).toBe(
       'The sum of the squares of the values is exactly 25.'
     )
-    expect(sum({ maxValueSum: 0n })).toBe("The fields add up to at most the voter's census weight (maxValueSum is 0).")
+    expect(sum({ maxValueSum: 0n })).toBe(
+      "The fields add up to at most the voter's weight on the list of voters (maxValueSum is 0)."
+    )
     expect(sum({ maxValueSum: 0n, minValueSum: 2n })).toBe(
-      "The fields add up to at most the voter's census weight (maxValueSum is 0) and at least 2."
+      "The fields add up to at most the voter's weight on the list of voters (maxValueSum is 0) and at least 2."
     )
     expect(sum({ costExponent: 2, maxValue: 10n, maxValueSum: 100n, minValueSum: 4n })).toBe(
       'The sum of the squares of the values is at most 100 and at least 4.'
     )
     expect(sum({ costExponent: 3, maxValue: 10n, maxValueSum: 0n })).toBe(
-      "The sum of each value raised to the power 3 is at most the voter's census weight (maxValueSum is 0)."
+      "The sum of each value raised to the power 3 is at most the voter's weight on the list of voters (maxValueSum is 0)."
     )
   })
 
@@ -372,7 +374,7 @@ describe('describeBallotMode', () => {
       'The ballot has 1 field, usually one per option; each holds a number between 0 and 5.'
     )
     expect(describeBallotMode(mode({ maxValueSum: 0n, minValueSum: 1n })).summary).toBe(
-      'Each voter approves at least 1 and up to W of 4 options, W being their census weight.'
+      'Each voter approves at least 1 and up to W of 4 options, W being their weight on the list of voters.'
     )
   })
 

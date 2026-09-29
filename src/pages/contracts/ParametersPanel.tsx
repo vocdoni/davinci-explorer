@@ -71,7 +71,7 @@ export function ParametersPanel({
       source: 'registry.ziskVerifier()',
       value: r ? <Address value={r.ziskVerifier} chars={6} /> : loading,
       what: t`The contract the registry asks whether a proof is valid. It is fixed when the registry is deployed.`,
-      why: t`Every batch and every count decrypted by a sequencer is accepted or refused by this contract, so its code has to be the released one (next row).`,
+      why: t`Every batch, and the results a sequencer decrypts, are accepted or refused by this contract, so its code has to be the released one (next row).`,
       detail: (
         <Trans>
           The ZisK PLONK verifier. The registry calls its <Code>verifySnarkProof</Code> with the program vk, the setup
@@ -123,11 +123,12 @@ export function ParametersPanel({
       why: t`Every process id carries it, right after the organizer’s address, so an id made for another registry or chain is refused.`,
       detail: (
         <Trans>
-          The last 4 bytes of the hash below, in bytes 20 to 23 of every process id. An id with another prefix reverts
-          with <Code>UnknownProcessIdPrefix</Code>.
+          The last 4 bytes of the keccak256 below, over the registry’s chain id as 4 bytes (<Code>uint32</Code>) and its
+          20-byte address, packed. It sits in bytes 20 to 23 of every process id; an id with another prefix reverts with{' '}
+          <Code>UnknownProcessIdPrefix</Code>.
         </Trans>
       ),
-      formula: 'keccak256(chainID ‖ registry)',
+      formula: 'pidPrefix = uint32(keccak256(abi.encodePacked(chainID, registry)))',
     },
     {
       id: 'processCount',
@@ -135,12 +136,12 @@ export function ParametersPanel({
       source: 'registry.processCount()',
       value: r ? <span className='font-mono tnum text-ghost'>{formatNumber(r.processCount)}</span> : loading,
       hint: r ? t`${indexed} indexed by this explorer` : null,
-      what: t`How many processes this registry has created.`,
+      what: t`How many elections this registry has created.`,
       why: t`The explorer’s own index should reach the same number once its scan has caught up.`,
     },
     {
       id: 'dkgAdapter',
-      title: t`DKG adapter`,
+      title: t`Key committee adapter`,
       source: 'registry.dkgAdapter()',
       value: r ? (
         r.dkgAdapter ? (
@@ -152,7 +153,7 @@ export function ParametersPanel({
         loading
       ),
       what: t`The registry’s link to the key committee (davinci-dkg). It exists only when the registry was deployed with one.`,
-      why: t`Without it the committee key modes are off. With it, it is the only address allowed to hand these processes’ encrypted totals to the committee.`,
+      why: t`Without it the committee key modes are off. With it, it is the only address allowed to hand these elections’ encrypted totals to the committee.`,
       detail: (
         <Trans>
           Created by the registry’s constructor when a DKG manager was given. When it is zero, <Code>newProcess</Code>{' '}

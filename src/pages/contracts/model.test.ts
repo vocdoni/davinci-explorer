@@ -45,7 +45,7 @@ describe('the explanations', () => {
     }
     expect(i18n._(PIN_DETAILS.batchProgramVK.detail)).toContain('submitStateTransition')
     expect(PIN_DETAILS.rootCVadcopFinal.formula).toBe(
-      'publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)'
+      'publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal) mod r_BN254'
     )
     expect(PIN_DETAILS.ziskVerifierCodeHash.source).toBe('keccak256(eth_getCode(ziskVerifier))')
   })
@@ -145,13 +145,15 @@ describe('wiringChecks', () => {
     expect(detail['chain-id']).toBe(
       `The registry says chain ${chain.chainId}; this explorer is set up for chain ${chain.chainId}.`
     )
-    expect(detail['pid-prefix']).toMatch(/: on chain 0x[0-9a-f]{8}, recomputed 0x[0-9a-f]{8}\.$/)
+    expect(detail['pid-prefix']).toMatch(
+      /: the registry holds 0x[0-9a-f]{8}, the recomputed prefix is 0x[0-9a-f]{8}\.$/
+    )
     expect(detail['dkg-chain']).toBe(
-      `The DKG manager says chain ${chain.chainId}; this explorer is set up for chain ${chain.chainId}.`
+      `The committee’s manager contract says chain ${chain.chainId}; this explorer is set up for chain ${chain.chainId}.`
     )
     // The exact relation is code, beside the plain label.
     const formula = Object.fromEntries(checks.map((c) => [c.id, c.formula]))
-    expect(formula['pid-prefix']).toBe('keccak256(chainID ‖ registry)')
+    expect(formula['pid-prefix']).toBe('pidPrefix = uint32(keccak256(abi.encodePacked(chainID, registry)))')
     expect(formula['verifier-root']).toBe('verifier.getRootCVadcopFinal() = registry.rootCVadcopFinal()')
   })
 

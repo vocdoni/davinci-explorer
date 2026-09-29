@@ -44,10 +44,10 @@ export function OverviewPage() {
         <div data-testid='empty-registry'>
           <Callout tone='info' title={t`No processes on this registry yet`}>
             <Trans>
-              The registry is set up and the explorer is watching it. When an organizer creates a{' '}
-              <Term id='process'>process</Term>, it appears here with its ballot rules, its list of voters and its key.
-              Each <Term id='batch'>batch</Term> of votes then shows up as it is recorded, and the results once voting
-              ends. Meanwhile you can already check the deployment itself.
+              The registry is set up and the explorer is watching it. When an organizer creates an election (a{' '}
+              <Term id='process'>process</Term> on the registry), it appears here with its ballot rules, its list of
+              voters and its election key. Each <Term id='batch'>batch</Term> of votes then shows up as it is recorded,
+              and the results once voting ends. Meanwhile you can already check the deployment itself.
             </Trans>
           </Callout>
         </div>
@@ -68,29 +68,29 @@ export function OverviewPage() {
           mono
           tone={stats.ballots > 0 ? 'accent' : 'default'}
           hint={t`${plural(voters, { one: '# voter', other: '# voters' })} · ${plural(overwrites, {
-            one: '# overwrite',
-            other: '# overwrites',
+            one: '# changed vote',
+            other: '# changed votes',
           })}`}
           aside={
             <Explain>
               <Trans>
-                Votes in the batches recorded on chain. A voter counts once however often they vote; each later vote is
-                an overwrite that replaces their previous one.
+                Votes in the batches recorded on the chain. A voter counts once however often they vote; each later vote
+                is a changed vote that replaces their previous one.
               </Trans>
             </Explain>
           }
         />
         <StatCell
-          label={t`Transitions`}
+          label={t`Batches`}
           value={formatNumber(stats.transitions)}
           loading={loading}
           mono
-          hint={<Plural value={blobs} one='# blob published' other='# blobs published' />}
+          hint={<Plural value={blobs} one='# data blob published' other='# data blobs published' />}
           aside={
             <Explain>
               <Trans>
-                A transition is one batch of votes, proven by a sequencer and recorded on the registry. Its data is
-                published in blobs (EIP-4844), so anyone can rebuild the count.
+                A batch is a group of votes a sequencer proved and recorded on the registry (a state transition). Its
+                data is published in data blobs (EIP-4844), so anyone can rebuild the election’s state from it.
               </Trans>
             </Explain>
           }

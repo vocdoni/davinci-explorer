@@ -21,10 +21,10 @@ export function SilentRevoting({ ex }: { ex: LearnExamples }) {
       <Section id='revoting' title={t`Voting again`}>
         <P>
           <Trans>
-            A voter may vote again while the process is open. The new ballot goes to the same{' '}
+            A voter may vote again while the election is open. The new ballot goes to the same{' '}
             <Term id='slot'>slot</Term> and replaces the old one: the batch proof takes the old ballot out of the
             encrypted total and adds the new one. The registry counts how many different voters have voted and how many
-            ballots were replaced (<Term id='overwrite'>overwrites</Term>).
+            votes were changed (<Term id='overwrite'>changed votes</Term>).
           </Trans>
         </P>
         <P>
@@ -53,15 +53,15 @@ export function SilentRevoting({ ex }: { ex: LearnExamples }) {
         </P>
         <P>
           <Trans>
-            It does not hide whose slot it is: the sequencer that sealed the batch knows the secret, and with a voter
-            list the slot follows from the voter’s address.
+            It does not hide whose slot it is: the sequencer that sealed the batch knows the secret, and with a list of
+            voters the slot follows from the voter’s address.
           </Trans>
         </P>
         <P>
           <Trans>
             The secret exists in the sequencer’s memory for one batch only and is never written or logged. The prover
             deletes its copy of the input after proving only when it runs without <C>DAVINCI_KEEP_INPUTS=1</C>. That is
-            an operator setting you have to trust; nothing on chain shows it.
+            an operator setting you have to trust; nothing on the chain shows it.
           </Trans>
         </P>
         <Details>
@@ -118,13 +118,13 @@ export function SilentRevoting({ ex }: { ex: LearnExamples }) {
             <UL>
               <li>
                 <Trans>
-                  Every slot each batch wrote, in one sorted list in the batch’s <Term id='blob'>blob</Term>.
+                  Every slot each batch wrote, in one sorted list in the batch’s <Term id='blob'>published data</Term>.
                 </Trans>
               </li>
               <li>
                 <Trans>
                   When a slot is written for the first time, because refreshes only touch slots already in use. With a
-                  voter list (origins 1 to 3) the slot follows from the voter’s address, so who voted and when is
+                  list of voters (origins 1 to 3) the slot follows from the voter’s address, so who voted and when is
                   public.
                 </Trans>
               </li>
@@ -142,9 +142,9 @@ export function SilentRevoting({ ex }: { ex: LearnExamples }) {
               </li>
               <li>
                 <Trans>
-                  Your own <Term id='vote-id'>vote id</Term>, in the blob of the batch that included it. Vote ids are
-                  only ever added, so an earlier vote id stays after a revote; only the latest ballot of the slot is
-                  counted.
+                  Your own <Term id='vote-id'>vote id</Term>, in the published data of the batch that included it. Vote
+                  ids are only ever added, so an earlier vote id stays after you vote again; only the latest ballot of
+                  the slot is counted.
                 </Trans>
               </li>
             </UL>
@@ -156,11 +156,12 @@ export function SilentRevoting({ ex }: { ex: LearnExamples }) {
             <UL>
               <li>
                 <Trans>
-                  Which slots already in use were changed and which were only refreshed: in the blob they look the same.
+                  Which slots already in use were changed and which were only refreshed: in the published data they look
+                  the same.
                 </Trans>
               </li>
               <li>
-                <Trans>Which slots were overwritten, even though the number of overwrites is public.</Trans>
+                <Trans>Which slots got a changed vote, even though the number of changed votes is public.</Trans>
               </li>
               <li>
                 <Trans>Which stored ballot matches the one a voter sent, without the batch’s secret.</Trans>
@@ -172,7 +173,7 @@ export function SilentRevoting({ ex }: { ex: LearnExamples }) {
           <P>
             <Trans>
               One known limit: re-encryption scalars are SHA-256 digests reduced modulo the BN254 prime, which leaves
-              them 2<sup>−7.6</sup> away from uniform modulo the subgroup order.
+              them <Formula expr='2^−7.6' /> away from uniform modulo the subgroup order.
             </Trans>
           </P>
         </Details>
@@ -182,9 +183,9 @@ export function SilentRevoting({ ex }: { ex: LearnExamples }) {
         {active ? (
           <SeeIt
             to={paths.transition(active.id, active.transitions - 1)}
-            hint={t`Overwrites and refreshes look alike; first writes do not.`}
+            hint={t`Changed votes and refreshes look alike; first votes do not.`}
           >
-            <Trans>The slot updates of a recent transition</Trans>
+            <Trans>The slot updates of a recent batch</Trans>
           </SeeIt>
         ) : null}
         <SeeIt to={paths.votes()}>
@@ -192,7 +193,7 @@ export function SilentRevoting({ ex }: { ex: LearnExamples }) {
         </SeeIt>
         <P>
           <Trans>
-            Next: <A to={paths.learn('blobs')}>what the blobs publish</A>.
+            Next: <A to={paths.learn('blobs')}>what the published data holds</A>.
           </Trans>
         </P>
       </Section>

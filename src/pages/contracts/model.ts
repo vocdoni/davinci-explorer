@@ -29,7 +29,7 @@ export interface PinDetail {
   mismatch: MessageDescriptor
 }
 
-const PUBLIC_INPUT = 'publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)'
+const PUBLIC_INPUT = 'publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal) mod r_BN254'
 
 export const PIN_DETAILS: Record<PinName, PinDetail> = {
   batchProgramVK: {
@@ -45,18 +45,18 @@ export const PIN_DETAILS: Record<PinName, PinDetail> = {
   },
   resultsProgramVK: {
     source: 'registry.resultsProgramVK()',
-    what: msg`The fingerprint of the program that checks the final count when a sequencer holds the key.`,
+    what: msg`The fingerprint of the program that checks the results when a sequencer holds the election key.`,
     why: msg`The registry records such results only with a proof made by this exact program.`,
     detail: msg({
       message:
         'The program verification key of the results guest (`circuit-results/elf/results.elf`). `setProcessResults` verifies the tally proof of every sequencer-key process against it: the key and accumulator leaves under the final root and the 16 Chaum–Pedersen decryptions.',
     }),
-    mismatch: msg`Counts of sequencer-key processes would be proven by another program. Counts decrypted by a committee do not use this key: the committee’s proofs replace it.`,
+    mismatch: msg`The results of elections with a sequencer key would be proven by another program. Results decrypted by the key committee do not use this key: the committee’s proofs replace it.`,
   },
   rootCVadcopFinal: {
     source: 'registry.rootCVadcopFinal()',
     what: msg`The fingerprint of the proving setup every proof is made with. It changes with a new setup of the proving system, not with the programs.`,
-    why: msg`A proof made under another setup does not verify, so every batch and every count must come from the released setup.`,
+    why: msg`A proof made under another setup does not verify, so every batch and all results must come from the released setup.`,
     detail: msg`The root of the ZisK vadcop-final setup the proofs are wrapped with. It moves with the ZisK snark setup, not with the guests. The verifier hashes it into the proof’s public input together with the program vk and the public values.`,
     formula: PUBLIC_INPUT,
     mismatch: msg`The registry would expect proofs from another proving setup: proofs made with the released setup would not verify here.`,
@@ -74,7 +74,7 @@ export const PIN_DETAILS: Record<PinName, PinDetail> = {
   ballotVKHash: {
     source: 'registry.ballotVKHash()',
     what: msg`The fingerprint of the key that checks each voter’s ballot proof.`,
-    why: msg`Only ballots proven for the published ballot circuit are counted, the same for every process on this registry.`,
+    why: msg`Only ballots proven for the published ballot circuit are counted, the same for every election on this registry.`,
     detail: msg({
       message:
         'sha256 of the ballot proof verification key, the davinci-circom Groth16 key voters’ clients prove their ballots against. The registry writes it into every process’s genesis state as leaf `0x07`; the batch guest hashes the key it is given and requires it to equal that leaf, so only ballots proven for this circuit settle.',
@@ -103,7 +103,7 @@ export const DKG_VERIFIER_LABELS: Record<
 > = {
   contribution: {
     name: 'ContributionVerifier',
-    role: msg`Checks each committee member’s share of a new epoch’s keys.`,
+    role: msg`Checks each committee member’s share of the keys of a new round (an epoch).`,
     detail: msg`Groth16 verifier of each committee member’s contribution, which deals its shares of all 16 pool keys.`,
   },
   finalize: {
@@ -133,7 +133,7 @@ export function contractRows(chain: ChainMeta, details: DeploymentDetails | unde
     {
       id: 'registry',
       name: 'ProcessRegistry',
-      role: msg`Holds every process, accepts each batch of votes only after checking its proof, and records the results.`,
+      role: msg`Holds every election, and records each batch of votes and the results only after checking their proofs.`,
       detail: msg`Settling a state transition checks the proof, root continuity, the census root and the blob openings.`,
       address: chain.registryAddress.toLowerCase() as Address,
       group: 'davinci',
@@ -156,7 +156,7 @@ export function contractRows(chain: ChainMeta, details: DeploymentDetails | unde
       name: 'DavinciDKGAdapter',
       role: msg`The registry’s link to the key committee.`,
       address: null,
-      note: msg`None: this registry was deployed without a DKG manager, so the DKG key modes are disabled.`,
+      note: msg`None: this registry was deployed without a key committee, so the committee key modes are disabled.`,
       group: 'davinci',
     })
     return rows
@@ -165,7 +165,7 @@ export function contractRows(chain: ChainMeta, details: DeploymentDetails | unde
     {
       id: 'adapter',
       name: 'DavinciDKGAdapter',
-      role: msg`Connects the registry to the key committee: registers each process whose key the committee holds, and hands its encrypted total over for decryption.`,
+      role: msg`Connects the registry to the key committee: registers each election whose key the committee holds, and hands its encrypted total over for decryption.`,
       detail: msg`Created by the registry. Registers one DKG application per DKG-mode process, is its only ciphertext submitter, converts keys between the two BabyJubJub forms and reads the plaintexts back.`,
       address: r?.dkgAdapter ?? null,
       group: 'davinci',
@@ -173,7 +173,7 @@ export function contractRows(chain: ChainMeta, details: DeploymentDetails | unde
     {
       id: 'dkg-manager',
       name: 'DKGManager',
-      role: msg`Runs the committee’s epochs: their keys and the decryptions they make.`,
+      role: msg`Runs the committee’s rounds (epochs): their keys and the decryptions they make.`,
       detail: msg`Epochs, pool keys, ciphertexts, partial and combined decryptions.`,
       address: r?.dkgManager ?? null,
       group: 'dkg',
@@ -181,7 +181,7 @@ export function contractRows(chain: ChainMeta, details: DeploymentDetails | unde
     {
       id: 'dkg-app-manager',
       name: 'DKGAppManager',
-      role: msg`Registers the applications that use the committee, such as these processes.`,
+      role: msg`Registers the applications that use the committee, such as these elections.`,
       detail: msg`Application registration, submission policy and the organizer-secret reveal.`,
       address: r?.dkgAppManager ?? null,
       group: 'dkg',
@@ -256,9 +256,9 @@ export function wiringChecks(
       id: 'pid-prefix',
       label: msg`The process id prefix belongs to this registry and chain`,
       detail: r
-        ? msg`Recomputed from the chain id and the registry address: on chain ${onChainPrefix}, recomputed ${recomputedPrefix}.`
+        ? msg`The last 4 bytes of a fingerprint of the chain id and the registry address, recomputed here: the registry holds ${onChainPrefix}, the recomputed prefix is ${recomputedPrefix}.`
         : msg`not read yet`,
-      formula: 'keccak256(chainID ‖ registry)',
+      formula: 'pidPrefix = uint32(keccak256(abi.encodePacked(chainID, registry)))',
       state: r ? (recomputed === r.pidPrefix ? 'pass' : 'fail') : 'unknown',
     },
     {
@@ -275,29 +275,29 @@ export function wiringChecks(
   checks.push(
     {
       id: 'adapter-registry',
-      label: msg`The DKG adapter points back at this registry`,
+      label: msg`The key committee adapter points back at this registry`,
       detail: msg`The registry creates the adapter when it is deployed, so the adapter must name it.`,
       formula: 'adapter.registry() = registry',
       state: same(dkg?.adapterRegistry, chain.registryAddress),
     },
     {
       id: 'app-manager',
-      label: msg`The two main DKG contracts name each other`,
+      label: msg`The key committee’s two main contracts name each other`,
       detail: msg`They share one logical storage and must point at each other.`,
       formula: 'DKGAppManager.MANAGER() = DKGManager',
       state: same(dkg?.appManagerManager, r?.dkgManager),
     },
     {
       id: 'operator-registry',
-      label: msg`The operator registry belongs to this DKG manager`,
-      detail: msg`The committee is drawn from this operator registry.`,
+      label: msg`The committee’s list of operators belongs to its manager contract`,
+      detail: msg`The committee is drawn from this list of operators.`,
       formula: 'DKGRegistry.manager() = DKGManager',
       state: same(dkg?.operatorRegistryManager, r?.dkgManager),
     },
     {
       id: 'dkg-chain',
-      label: msg`The DKG contracts belong to the chain this explorer reads`,
-      detail: msg`The DKG manager says chain ${dkgChainId}; this explorer is set up for chain ${configured}.`,
+      label: msg`The key committee’s contracts belong to the chain this explorer reads`,
+      detail: msg`The committee’s manager contract says chain ${dkgChainId}; this explorer is set up for chain ${configured}.`,
       formula: 'DKGManager.CHAIN_ID() = CHAIN_ID',
       state: dkg?.chainId == null ? 'unknown' : dkg.chainId === expectedChainId ? 'pass' : 'fail',
     }

@@ -11,12 +11,12 @@ import { Badge, EmptyState, Panel, SkeletonText, type BadgeTone } from '~kit'
 // census and key tints of their badges, creation as information.
 const KIND: Record<FeedKind, { label: MessageDescriptor; tone: BadgeTone }> = {
   created: { label: msg({ message: 'created', context: 'activity kind' }), tone: 'info' },
-  transition: { label: msg({ message: 'transition', context: 'activity kind' }), tone: 'ok' },
+  transition: { label: msg({ message: 'batch', context: 'activity kind' }), tone: 'ok' },
   results: { label: msg({ message: 'results', context: 'activity kind' }), tone: 'done' },
   status: { label: msg({ message: 'status', context: 'activity kind' }), tone: 'neutral' },
   decryption: { label: msg({ message: 'decryption', context: 'activity kind' }), tone: 'violet' },
-  census: { label: msg({ message: 'census', context: 'activity kind' }), tone: 'slate' },
-  metadata: { label: msg({ message: 'metadata', context: 'activity kind' }), tone: 'neutral' },
+  census: { label: msg({ message: 'list of voters', context: 'activity kind' }), tone: 'slate' },
+  metadata: { label: msg({ message: 'description', context: 'activity kind' }), tone: 'neutral' },
   duration: { label: msg({ message: 'duration', context: 'activity kind' }), tone: 'neutral' },
   'max-voters': { label: msg({ message: 'limit', context: 'activity kind' }), tone: 'neutral' },
 }
@@ -31,7 +31,7 @@ export function ActivityPanel({ limit = 12 }: { limit?: number }) {
     <Panel
       title={t`Recent activity`}
       label={t`Registry events`}
-      description={t`What happened on the registry, newest first: new processes, batches of votes recorded, status changes and results.`}
+      description={t`What happened on the registry, newest first: new elections, batches of votes recorded, status changes and results.`}
       bodyClassName='p-0'
     >
       {loading ? (
@@ -40,7 +40,7 @@ export function ActivityPanel({ limit = 12 }: { limit?: number }) {
         <EmptyState
           compact
           title={t`No activity yet`}
-          description={t`New processes, batches of votes, status changes and results will be listed here as they happen on the registry.`}
+          description={t`New elections, batches of votes, status changes and results will be listed here as they happen on the registry.`}
         />
       ) : (
         <ul className='divide-y divide-charcoal/60'>

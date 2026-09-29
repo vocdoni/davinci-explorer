@@ -77,7 +77,7 @@ test.describe('verify', () => {
 
   test('an election waiting for its organizer: the result is not decided yet', async ({ page }) => {
     await demo(page, `/verify/election/${AWAITING_REVEAL}`)
-    await expect(page.getByTestId('check-key')).toContainText('locked with a secret of the organizer')
+    await expect(page.getByTestId('check-key')).toContainText('locked with a secret the organizer keeps')
     await expect(page.getByTestId('check-published')).toHaveAttribute('data-status', 'pending')
     await expect(page.getByTestId('check-batches')).toHaveAttribute('data-status', 'pass', { timeout: 15_000 })
   })
@@ -114,7 +114,9 @@ test.describe('verify', () => {
       await expect(release.getByTestId(`pin-${pin}`)).toHaveAttribute('data-state', 'pass')
     }
     await release.getByText('How this is checked').click()
-    await expect(release.locator('[data-formula]')).toContainText('sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)')
+    await expect(release.locator('[data-formula]').first()).toContainText(
+      'publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal) mod r_BN254'
+    )
     await expect(page.getByTestId('contract-row-registry').getByRole('link', { name: 'Source' })).toHaveAttribute(
       'href',
       /\/address\/0x[0-9a-fA-F]{40}#code$/

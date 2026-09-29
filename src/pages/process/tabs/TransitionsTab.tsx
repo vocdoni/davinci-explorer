@@ -34,7 +34,7 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
             #{row.original.index}
           </Link>
         ),
-        meta: { width: '64px', headerTooltip: t`Position among the process’s transitions, from 0.` },
+        meta: { width: '64px', headerTooltip: t`Position among the election’s batches, from 0.` },
       },
       {
         id: 'block',
@@ -77,12 +77,12 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
           numeric: true,
           width: '100px',
           headerWrap: true,
-          headerTooltip: t`People voting for the first time in this process (ballot slots written for the first time).`,
+          headerTooltip: t`People voting for the first time in this election (ballot slots written for the first time).`,
         },
       },
       {
         id: 'overwrites',
-        header: t`Overwrites`,
+        header: t`Changed votes`,
         accessorKey: 'overwrites',
         cell: ({ row }) => formatNumber(row.original.overwrites),
         meta: {
@@ -94,10 +94,10 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
       },
       {
         id: 'blobs',
-        header: t`Blobs`,
+        header: t`Data blobs`,
         accessorKey: 'nBlobs',
         cell: ({ row }) => formatNumber(row.original.nBlobs),
-        meta: { numeric: true, width: '70px' },
+        meta: { numeric: true, width: '80px', headerWrap: true },
       },
       {
         id: 'gas',
@@ -142,10 +142,10 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
 
   const headText =
     rootChain.headMatches == null
-      ? t`the registry’s current root is not read yet`
+      ? t`the fingerprint the registry holds now is not read yet`
       : rootChain.headMatches
-        ? t`the last root is the registry’s current root`
-        : t`the last root is not the registry’s current root`
+        ? t`the last fingerprint is the one the registry holds now`
+        : t`the last fingerprint is not the one the registry holds now`
   const count = transitions.length
   const gaps = rootChain.gaps
   const ballots = totals.ballots
@@ -155,14 +155,14 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
   return (
     <div data-testid='tab-transitions' className='flex flex-col gap-6'>
       <Panel
-        title={t`State-root chain`}
-        label={t`Root continuity`}
+        title={t`One unbroken chain`}
+        label={t`From each batch to the next`}
         description={
           <Trans>
             Each batch must continue exactly where the previous one ended, so no batch can be skipped, replayed or
-            forked. Each step is shown by the <Term id='state-root'>state root</Term>, the fingerprint of the process’s
-            state, starting from the one the registry computed at creation. The registry enforces this on chain; the
-            explorer checks it again from the events.
+            forked. Each step is shown by the fingerprint of the election’s state (its{' '}
+            <Term id='state-root'>state root</Term>), starting from the one the registry computed at creation. The
+            registry enforces this on the chain; the explorer checks it again from the events.
           </Trans>
         }
       >
@@ -177,7 +177,7 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
             }
           />
           <span>
-            {t`${plural(count, { one: '# transition', other: '# transitions' })}`} ·{' '}
+            {t`${plural(count, { one: '# batch', other: '# batches' })}`} ·{' '}
             {gaps === 0
               ? t`the chain is continuous`
               : t`${plural(gaps, { one: '# gap in the chain', other: '# gaps in the chain' })}`}{' '}
@@ -189,17 +189,17 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
 
       <Card flush className='overflow-hidden'>
         <CardHeader
-          title={t`Transitions`}
-          label={t`Settled batches`}
-          description={t`Each row is one batch of votes a sequencer proved and recorded on chain (submitStateTransition). Open one to see what its proof says, its published data and every check the registry ran.`}
+          title={t`Batches`}
+          label={t`Recorded batches`}
+          description={t`Each row is one batch of votes a sequencer proved and recorded on the chain (a state transition, sent with submitStateTransition). Open one to see what its proof says, its published data and every check the registry ran.`}
           actions={
             transitions.length > 0 ? (
               <span className='flex flex-wrap gap-x-4 gap-y-1 font-mono text-[12px] text-ash tnum'>
                 <span>
-                  <Plural value={ballots} one='# ballot' other='# ballots' />
+                  <Plural value={ballots} one='# vote' other='# votes' />
                 </span>
                 <span>
-                  <Plural value={blobs} one='# blob' other='# blobs' />
+                  <Plural value={blobs} one='# data blob' other='# data blobs' />
                 </span>
                 <span>
                   <Trans>{gas} gas</Trans>
@@ -222,8 +222,8 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
           maxHeight={transitions.length > 15 ? 600 : 100_000}
           empty={
             <EmptyState
-              title={t`No transitions yet`}
-              description={t`When a sequencer records the first batch of votes, it appears here with its block, blobs and fee.`}
+              title={t`No batches yet`}
+              description={t`When a sequencer records the first batch of votes, it appears here with its block, data blobs and fee.`}
             />
           }
         />
@@ -239,15 +239,16 @@ function RootChainList({ view }: { view: ProcessView }) {
   return (
     <ol
       className='max-h-[420px] overflow-y-auto rounded-sm border border-charcoal scroll-slim'
-      aria-label={t`State roots`}
+      aria-label={t`The fingerprint of each state`}
     >
       <li className='flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-charcoal/60 px-3 py-2 text-[13px]'>
         <span className='w-24 shrink-0 text-pewter'>
-          <Trans>Genesis</Trans>
+          <Trans>Start</Trans>
           <Explain className='ml-1'>
             <Trans>
-              The fingerprint of the process’s state before any vote. The registry computes it at creation from the
-              process id, the ballot rules, the encryption key, the kind of census and the ballot proof key.
+              The fingerprint of the election’s state before any vote (the genesis root). The registry computes it at
+              creation from the process id, the ballot rules, the election key, an empty encrypted total, the kind of
+              list of voters and the ballot proof key.
             </Trans>
           </Explain>
         </span>
@@ -289,7 +290,7 @@ function RootChainList({ view }: { view: ProcessView }) {
         <span className='w-24 shrink-0 text-pewter'>
           <Trans>Registry now</Trans>
           <Explain className='ml-1'>
-            <Trans>The state root the registry holds now (latestStateRoot): the next batch must start from it.</Trans>
+            <Trans>The fingerprint the registry holds now (latestStateRoot): the next batch must start from it.</Trans>
           </Explain>
         </span>
         <CheckMark state={rootChain.headMatches == null ? 'unknown' : rootChain.headMatches ? 'pass' : 'fail'} />

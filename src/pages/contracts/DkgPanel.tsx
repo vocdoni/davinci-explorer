@@ -53,7 +53,7 @@ const PHASES: Record<DkgEpochPhase, { label: MessageDescriptor; tone: BadgeTone;
   live: {
     label: msg`Live`,
     tone: 'ok',
-    description: msg`The epoch’s keys are ready (finalizeEpoch stored all 16 pool keys): applications can register, submit encrypted values and get them decrypted.`,
+    description: msg`The epoch’s keys are ready, so applications can register, send encrypted values and get them decrypted. All 16 pool keys are stored (finalizeEpoch).`,
   },
   aborted: {
     label: msg`Aborted`,
@@ -116,17 +116,18 @@ export function DkgPanel({
   const { i18n, t } = useLingui()
   const config = useRuntimeConfig()
   const r = chain.registry
-  const title = t`DKG committee`
-  const label = t`Threshold keys`
-  const description = t`The group of independent operators (davinci-dkg) that holds the keys of DKG-mode processes and decrypts their final totals. No single operator knows a key.`
+  const title = t`Key committee`
+  const label = t`Keys held in shares`
+  const description = t`The group of independent operators (davinci-dkg) that holds the keys of elections with a committee key and decrypts their encrypted totals after voting ends (in the organizer-locked mode, once the organizer reveals the organizer secret). The committee works in rounds called epochs. No single operator knows a key.`
 
   if (r && !r.dkgAdapter) {
     return (
       <Panel title={title} label={label} description={description}>
-        <Callout title={t`The DKG key modes are disabled on this registry`}>
+        <Callout title={t`The committee key modes are disabled on this registry`}>
           <Trans>
-            It was deployed without a key committee, so every process here uses a sequencer key. Creating one in a DKG
-            mode is refused: there is no adapter, and <Code>newProcess</Code> reverts with <Code>DKGDisabled</Code>.
+            It was deployed without a key committee, so every election here uses a sequencer key. Creating one with a
+            committee key is refused: there is no adapter, and <Code>newProcess</Code> reverts with{' '}
+            <Code>DKGDisabled</Code>.
           </Trans>
         </Callout>
       </Panel>
@@ -136,7 +137,7 @@ export function DkgPanel({
     return (
       <Panel title={title} label={label} description={description}>
         {error && !loading ? (
-          <Callout tone='warn' title={t`Could not read the DKG contracts`}>
+          <Callout tone='warn' title={t`Could not read the key committee’s contracts`}>
             {error}
           </Callout>
         ) : (
@@ -208,18 +209,18 @@ export function DkgPanel({
       <div className='mt-6 grid gap-6 lg:grid-cols-2'>
         <div>
           <SubHeading>
-            <Trans>Where a new DKG process gets its key</Trans>
+            <Trans>Where a new election gets its committee key</Trans>
           </SubHeading>
           <div className='mt-2 text-[13px] leading-relaxed text-ash' data-testid='registration-epoch'>
             {dkg.registrationEpoch ? (
               <>
                 <p>
                   <Trans>
-                    A <span className='text-silver'>DKG automatic</span> process created now takes the next free{' '}
-                    <Term id='pool-key'>pool key</Term> of <Term id='epoch'>epoch</Term>{' '}
+                    An election created now in the <span className='text-silver'>automatic</span> committee mode takes
+                    the next free <Term id='pool-key'>pool key</Term> of <Term id='epoch'>epoch</Term>{' '}
                     <Hash value={dkg.registrationEpoch} chars={8} className='align-middle' />, the newest Live epoch
-                    with a free key (the adapter’s <Code>registrationEpoch()</Code>). A{' '}
-                    <span className='text-silver'>DKG locked</span> process names its epoch itself.
+                    with a free key (the adapter’s <Code>registrationEpoch()</Code>). An election in the{' '}
+                    <span className='text-silver'>organizer-locked</span> mode names its epoch itself.
                   </Trans>
                 </p>
                 {technical ? (
@@ -235,8 +236,8 @@ export function DkgPanel({
             ) : dkg.registrationEpochReverted ? (
               <Trans>
                 None of the last 8 epochs is Live with a free pool key, so <Code>registrationEpoch()</Code> reverts and
-                new automatic processes are refused (<Code>NoLiveEpoch</Code>) until a new epoch is Live. Locked
-                processes name their epoch and are unaffected.
+                new elections in the automatic mode are refused (<Code>NoLiveEpoch</Code>) until a new epoch is Live.
+                Elections in the organizer-locked mode name their epoch and are unaffected.
               </Trans>
             ) : (
               '…'
@@ -271,11 +272,13 @@ export function DkgPanel({
                 label: t`Epoch policy bounds`,
                 value:
                   minThreshold != null ? (
-                    <Formula expr={`t ≥ ${minThreshold}, n ≥ ${minCommitteeSize}, 1 ≤ α ≤ ${maxAlpha}`} />
+                    <Formula
+                      expr={`t ≥ ${minThreshold}, n ≥ ${minCommitteeSize}, t ≤ minValidContributions ≤ n ≤ 32, 1 ≤ α ≤ ${maxAlpha}`}
+                    />
                   ) : (
                     '…'
                   ),
-                hint: t`whoever creates an epoch picks the threshold t, the committee size n and the lottery factor α within these`,
+                hint: t`whoever creates an epoch picks the threshold t, the committee size n, how many contributions it needs and the lottery factor α within these`,
               },
               {
                 label: t`Inactivity window`,
@@ -350,13 +353,13 @@ export function DkgPanel({
         </ul>
       </div>
 
-      <Callout className='mt-6' title={t`What you trust in the DKG modes`}>
+      <Callout className='mt-6' title={t`What you trust with a committee key`}>
         <Trans>
           Enough members of an epoch’s committee (its <Term id='threshold'>threshold</Term>) could together decrypt
-          every ballot of the processes keyed on that epoch, with the organizer secret as well in locked mode; the
-          design trusts them not to collude. A process’s key belongs to one epoch’s committee and cannot be moved to
+          every ballot of the elections keyed on that epoch, with the organizer secret as well in locked mode; the
+          design trusts them not to collude. An election’s key belongs to one epoch’s committee and cannot be moved to
           another (there is no resharing), so if more than <Formula expr='n − t' /> of its members leave before the
-          process ends, its results are lost.
+          election ends, its results are lost.
         </Trans>{' '}
         <Link
           to={paths.learn('key-modes')}
@@ -418,7 +421,7 @@ function EpochDetails({
             {
               label: t`Applications`,
               value: e.applications != null ? formatNumber(e.applications) : '—',
-              hint: t`DAVINCI processes and any other application on this epoch`,
+              hint: t`DAVINCI elections and any other application on this epoch`,
             },
           ]}
         />
@@ -495,8 +498,8 @@ function Registration({ dkg, adapter }: { dkg: DkgDeployment; adapter: string | 
       )}{' '}
       <Trans>
         Each registration takes one of the epoch’s {poolKeys} pool keys. Once one key or fewer is left, the contract
-        allows the next epoch early and the nodes create it; if the keys run out first, creating DKG-mode processes
-        waits for it (about one epoch setup).
+        allows the next epoch early and the nodes create it; if the keys run out first, creating elections with a
+        committee key waits for it (about one epoch setup).
       </Trans>
     </Callout>
   )

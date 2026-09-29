@@ -34,7 +34,7 @@ A piece more than one view uses goes in `src/components/`, a shared hook in
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pages/overview/`   | `/`                                                                                                                                                                                                                                                                              |
 | `pages/processes/`  | `/processes?status=&keyMode=&census=&organizer=&q=`                                                                                                                                                                                                                              |
-| `pages/process/`    | `/processes/:pid` and `/processes/:pid/:tab` (`overview`, `key`, `transitions`, `votes`, `results`, `raw`); one file per tab in `tabs/`                                                                                                                                          |
+| `pages/process/`    | `/processes/:pid` and `/processes/:pid/:tab` (`overview`, `key`, `transitions`, `votes`, `results`, `raw`; the `key` tab reads "Election key" and `transitions` "Batches"); one file per tab in `tabs/`                                                                          |
 | `pages/transition/` | `/processes/:pid/transitions/:index`, and `/tx/:hash` (`tx.tsx`, resolves a hash to its transition or process)                                                                                                                                                                   |
 | `pages/verify/`     | `/verify` (the three checks), `/verify/vote?pid=&voteId=`, `/verify/election/:pid?` and `/verify/deployment`; one folder per flow. The old `/votes?pid=&voteId=` and `/votes/:pid/:voteId` redirect to the vote check, and the old `/learn/verify-*` guides to the matching flow |
 | `pages/contracts/`  | `/contracts`: the addresses and parameters, as reference; plain by default, with one "Technical details" switch on every panel for the mechanism                                                                                                                                 |
@@ -70,6 +70,28 @@ Each flow computes its outcomes in a pure, tested `model.ts` from the
 selectors (`transitionDetail(...).checks` through `batchChecks`, `rootChain`)
 and the results checks the process's results tab shows
 (`pages/process/results-checks.tsx`).
+
+The contracts page and Verify → The deployment say the same things from one
+place, `pages/contracts/model.ts`. `PIN_DETAILS` explains each pinned value:
+`source` is how it is read, as an expression (`registry.batchProgramVK()`,
+`keccak256(eth_getCode(ziskVerifier))`); `what` and `why` are plain;
+`detail` is the mechanism, with `backtick` names; `formula` is the relation
+`detail` refers to; `mismatch` says what a different value would mean.
+`contractRows` gives each contract a plain `role`, a technical `detail` and a
+`note` when it has no address, `DKG_VERIFIER_LABELS` a `role` and a `detail`
+per committee verifier, and `wiringChecks` a plain `label`, the values
+compared in `detail` and the exact relation in `formula`. The contracts page
+shows the technical fields behind its "Technical details" switch; the
+deployment flow shows them under each card's "How this is checked". Either
+way `source` and `formula` go through `Formula` and `detail` through
+`RichText`.
+
+The sequencers pages compare a node's `/info` with the chain through
+`infoChecks(info, chain)` (`pages/sequencers/model.ts`): the chain id, the
+registry, and the three pins a node reports (`ballotVKHash`,
+`batchProgramVK`, `resultsProgramVK`). Call it while rendering: every
+`label` is in the active language, and the three pin checks carry `pin`, the
+pin's own name, with `PIN_LABELS` as their label.
 
 ## Data flow
 
@@ -224,19 +246,31 @@ Pure functions, unit-tested; use them directly when a hook does not fit.
   is `unknown`, the registry asked the census contract), `occupied_before`
   equals the previous voters count, vote counts match the event, the blob
   count, each commitment hashes to the transaction's versioned hash, and
-  `sha256(commitment ‖ y …)` equals the publics' blob digest. Each is
-  `pass`, `fail` or `unknown` (not read yet, or, for the two blob-hash
-  checks, the RPC left out `blobVersionedHashes`). The PLONK itself and the
-  KZG openings are verified on-chain; the explorer shows the program vk and
-  `rootCVadcopFinal` they were checked against (the registry immutables).
+  `sha256(commitment ‖ y …)` equals the publics' blob digest. Each entry is
+  `{ id, label, state, detail, formula? }`: `label` is a plain statement
+  ("It starts where the previous batch ended") and `detail` what was
+  compared, both in the active language, so build the checks while
+  rendering; `formula` is the rule as an expression for `Formula`, never
+  translated. `state` is `pass`, `fail` or `unknown` (not read yet, or, for
+  the two blob-hash checks, the RPC left out `blobVersionedHashes`). The
+  PLONK itself and the KZG openings are verified on-chain; the explorer
+  shows the program vk and `rootCVadcopFinal` they were checked against (the
+  registry immutables). The batch page adds, per check,
+  `checkCopy(id, censusOrigin)` from `pages/transition/checks.ts`: a plain
+  `meaning`, the mechanism the contract `enforced` (`backtick` names, through
+  `RichText`), its `formula`, and how to read the recheck command
+  (`recheck`, `recheckFormula`), in `CHECK_ORDER`, the order the contract runs
+  them; `ONCHAIN_LABELS` names the two checks only the chain runs.
 - `~protocol/publics`: `decodeBatchPublicValues` (the 512-byte on-chain
   `publicValues`), `decodeBatchPublicsRegisters` (the prover's 256-byte
   view), the results guest equivalents, `failBits`, and `BATCH_REGISTERS`, a
   table of every register with its name, span, meaning and who reads it (the
-  contract, the fold guest, or nobody). A register or fail bit whose rule is an
-  expression carries it in `formula` (never translated): render it with
-  `Formula` beside the `description`. Ported from davinci-zkvm
-  `rust-sdk/src/publics.rs`.
+  contract, the fold guest, or nobody). `description` is plain; the
+  mechanism it leaves out (Groth16, leaf numbers, `latestStateRoot`) is in an
+  optional `detail`, both in the active language when read. A register or
+  fail bit whose rule is an expression carries it in `formula` (never
+  translated): render it with `Formula` beside the `description`. Ported
+  from davinci-zkvm `rust-sdk/src/publics.rs`.
 - `~protocol/blob`: `decodeTransitionBlobs(blobs, numFields)` (the DA cell
   layout, `CIRCUIT.md` §8), `unpackBallot(cells)` (decompress one slot
   update's ciphertexts: slow, about 0.3 ms a point, so do it on demand; the
@@ -257,12 +291,14 @@ Pure functions, unit-tested; use them directly when a hook does not fit.
   nonce), `processIdPrefix`, `computeProcessId`.
 - `~protocol/types`: the enums with a label and a one-line explanation each
   (`PROCESS_STATUS_INFO`, `CENSUS_ORIGIN_INFO`, `KEY_MODE_INFO`), in the
-  active language when read.
+  active language when read. Both are plain ("Fixed list", "Committee,
+  automatic"); the mechanism behind each is in the glossary and the guide.
 - `~protocol/releases`: `KNOWN_RELEASES` (the davinci-zkvm pins from
   `rust-sdk/src/release.rs`: both program vks, `rootCVadcopFinal`, the
   verifier code hash, the ballot VK hash) and `matchRelease`. Add a row per
-  release, newest first. `PIN_LABELS` are the pins' plain names ("Vote-batch
-  program"); the pin's own name (`batchProgramVK`) is the technical one.
+  release, newest first. `PIN_LABELS` are the pins' plain names ("Batch
+  program", "Proving setup"); the pin's own name (`batchProgramVK`) is the
+  technical one.
 - `~protocol/limits`: protocol constants (`NUM_FIELDS`, `MAX_BLOBS`,
   `TX_BLOB_CAP`, vote-id and slot namespaces, the refresh rule).
 
@@ -331,8 +367,9 @@ and the reading aids of [docs/writing.md](docs/writing.md):
   `glossaryHref`, `readGlossary`, `filterGlossary`), which the Learn glossary
   page renders too, the short definition first.
 - `Formula` (`<Formula expr='sha256(a ‖ b)' />`): an expression in the mono
-  font, each kind of token in its own colour, `||` as ‖, `2^63` as a
-  superscript; `block` sets it on its own line.
+  font, each kind of token in its own colour, `||` as ‖, `2^63` and
+  `2^-7.6` as superscripts (a negative exponent keeps its sign, drawn as a
+  minus); `block` sets it on its own line.
 - `InShort`, the plain lead of a long page; `NumberedList`, steps or rules
   in order; `RichText`, translated text whose `backtick` spans are
   identifiers. Link to a section

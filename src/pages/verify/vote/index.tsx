@@ -30,8 +30,8 @@ import { batchOutcome, chainFrom, electionOutcome, resultOutcome, settledOutcome
 
 /**
  * Verify → My vote (`/verify/vote?pid=&voteId=`): was this vote counted?
- * The election, the batch that settled the vote, that batch's checks, the
- * result, and a sequencer's tracker proof.
+ * The election, the batch that recorded the vote, that batch's checks, the
+ * results, and a sequencer's receipt (tracker proof).
  */
 export function VerifyVotePage() {
   const { t } = useLingui()
@@ -73,7 +73,7 @@ export function VerifyVotePage() {
           <p className='rounded-md border border-dashed border-charcoal p-5 text-[14px] text-ash'>
             <Trans>
               Enter your vote above. Five checks then run in your browser: the election, the batch that recorded your
-              vote, that batch’s checks, the result and a sequencer’s receipt.
+              vote, that batch’s checks, the results and a sequencer’s receipt.
             </Trans>
           </p>
         }
@@ -111,7 +111,7 @@ function VoteFrame({
       flow={t`My vote`}
       icon={<BallotIcon size={24} />}
       question={t`Was my vote counted?`}
-      description={t`Follow your vote from the app you voted with to the published result. Every step is read from the chain by your browser, and each one tells you how to check it without this site.`}
+      description={t`Follow your vote from your voting app to the published results. Every step is read from the chain by your browser, and each one tells you how to check it without this site.`}
       states={states}
       hints={hints}
     >
@@ -168,7 +168,7 @@ function VoteChecks({ pid, voteId, choose }: { pid: string; voteId: bigint; choo
   const checks = detail
     ? batchChecks(detail, {
         onchain: t`The proof and the published data were verified on the chain`,
-        onchainCensus: t`The registry asked the census contract about the list of voters`,
+        onchainCensus: t`The registry asked the contract that keeps the list of voters`,
       })
     : null
   const batch = batchOutcome(settled, checks ? checks.map((c) => c.state) : null)
@@ -324,8 +324,9 @@ function VoteRedo({
           <Prose>
             <p>
               <Trans>
-                The receipt shows the batch was accepted (status 1) and the new state fingerprint (state root); the
-                transaction lists the fingerprints of the data blobs that carry your vote id (their versioned hashes).
+                The transaction’s receipt shows the batch was accepted (status 1) and the new state fingerprint (state
+                root); the transaction lists the fingerprints of the data blobs that carry your vote id (their versioned
+                hashes).
               </Trans>
             </p>
           </Prose>
@@ -399,7 +400,7 @@ function VoteProves({ keyMode }: { keyMode: KeyModeName | null }) {
           only build on that state.
         </Trans>,
         <Trans key='counted'>
-          Once the result is out, the result is the decryption of a total that includes your ballot.
+          Once the results are out, they are the decryption of a total that includes your ballot.
         </Trans>,
       ]}
       doesNot={[
@@ -417,14 +418,14 @@ function VoteProves({ keyMode }: { keyMode: KeyModeName | null }) {
           </span>
         ) : (
           <Trans key='key'>
-            That nobody can read your ballot. Who could depends on the election: one sequencer, or a threshold of a
+            That nobody can read your ballot. Who could depends on the election: one sequencer, or a threshold of a key
             committee.
           </Trans>
         ),
         <Trans key='public'>
-          That nobody knows you voted. The first time your ballot slot is written is public, and when the census is a
-          published list of voters, the slot follows from your address. Whether you voted again stays hidden: a new vote
-          looks like a routine refresh.
+          That nobody knows you voted. The first time your ballot slot is written is public, and when the list of voters
+          is published (a Merkle census), the slot follows from your address. Whether you voted again stays hidden: a
+          changed vote looks like a routine silent refresh.
         </Trans>,
       ]}
     >
@@ -459,29 +460,29 @@ function VoteProves({ keyMode }: { keyMode: KeyModeName | null }) {
         <Prose>
           <p>
             <Trans>
-              You can vote again while the process is open. The new ballot replaces the old one in your slot, and the
-              count subtracts the old ballot and adds the new one.
+              You can vote again while the election is open. The new ballot replaces the old one in your slot, and the
+              encrypted total subtracts the old ballot and adds the new one.
             </Trans>
           </p>
           <p>
             <Trans>
               Every batch also re-encrypts a random sample of other ballots it did not change (a{' '}
-              <Term id='silent-refresh'>silent refresh</Term>), and adds an encryption of zero to the count for each,
-              which changes nothing. In the published data a changed vote and a refresh look the same: a slot whose
-              encrypted values changed. Nobody watching the chain can tell whether you voted again or your slot was only
-              refreshed, so a revote stays deniable.
+              <Term id='silent-refresh'>silent refresh</Term>), and adds an encryption of zero to the encrypted total
+              for each, which changes nothing. In the published data a changed vote and a silent refresh look the same:
+              a slot whose encrypted values changed. Nobody watching the chain can tell whether you voted again or your
+              slot was only refreshed, so a changed vote stays deniable.
             </Trans>
           </p>
           <p>
             <Trans>
-              What stays public is how many votes each batch changed, and the first time a slot appears, since refreshes
-              only touch slots already written. With a Merkle census the slot follows from your address, so that you
-              voted, and when, is public too.
+              What stays public is how many votes each batch changed, and the first time a slot appears, since silent
+              refreshes only touch slots already written. With a Merkle census the slot follows from your address, so
+              that you voted, and when, is public too.
             </Trans>
           </p>
           <p>
             <Link to={paths.learn('silent-revoting')} className='text-emerald hover:underline'>
-              <Trans>Revoting, re-encryption and silent refreshes, in the guide</Trans>
+              <Trans>Changing your vote, re-encryption and silent refreshes, in the guide</Trans>
             </Link>
           </p>
         </Prose>

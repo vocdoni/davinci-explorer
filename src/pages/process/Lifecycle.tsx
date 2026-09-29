@@ -21,7 +21,7 @@ const STATE_LABEL: Record<StepState, MessageDescriptor> = {
   skipped: msg`skipped`,
 }
 
-/** created → start → transitions → end → results, as a strip (a list on a phone). */
+/** created → start → batches → end → results, as a strip (a list on a phone). */
 export function Lifecycle({ view }: { view: ProcessView }) {
   const { i18n, t } = useLingui()
   const now = useChainNow()

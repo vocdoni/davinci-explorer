@@ -35,7 +35,7 @@ const DAYS = 30
 const TABLE_MIN_WIDTH = 1100
 
 interface Row extends SequencerEntry {
-  /** Transitions per UTC day over the last `DAYS` days, for the sparkline. */
+  /** Batches per UTC day over the last `DAYS` days, for the sparkline. */
   activity: number[]
 }
 
@@ -113,14 +113,14 @@ function SequencerList() {
           }
         />
         <StatCell
-          label={t`Transitions`}
+          label={t`Batches`}
           value={formatNumber(totals.transitions)}
           mono
           loading={loading}
-          hint={t`batches recorded`}
+          hint={t`recorded on the chain`}
         />
         <StatCell
-          label={t`Ballots`}
+          label={t`Votes`}
           value={formatNumber(totals.ballots)}
           mono
           loading={loading}
@@ -266,23 +266,29 @@ function SequencerTable({ rows, loading, showNodes }: { rows: Row[]; loading: bo
       },
       num(
         'transitions',
-        t`Transitions`,
+        t`Batches`,
         (r) => r.onchain?.transitions ?? 0,
         t`Batches of votes it recorded, each proven and accepted by the registry (state transitions).`
       ),
       num(
         'ballots',
-        t`Ballots`,
+        t`Votes`,
         (r) => r.onchain?.ballots ?? 0,
-        t`Votes in those batches: new votes plus votes that changed an earlier one.`
+        t`Votes in those batches: new votes plus changed votes.`
       ),
       num(
         'processes',
         t`Processes`,
         (r) => r.onchain?.processes ?? 0,
-        t`Processes it recorded a batch or published results for.`
+        t`The elections it recorded a batch or published results for.`
       ),
-      num('blobs', t`Blobs`, (r) => r.onchain?.blobs ?? 0, t`Data blobs its batches published (EIP-4844).`, '76px'),
+      num(
+        'blobs',
+        t`Data blobs`,
+        (r) => r.onchain?.blobs ?? 0,
+        t`Data blobs its batches published (EIP-4844).`,
+        '76px'
+      ),
       {
         id: 'fees',
         header: t`Fees paid`,
@@ -301,7 +307,7 @@ function SequencerTable({ rows, loading, showNodes }: { rows: Row[]; loading: bo
           headerTooltip: t`Execution and blob gas of the transactions that recorded its batches and results. Failed transactions leave no registry event and are not counted.`,
         },
       },
-      num('results', t`Results`, (r) => r.onchain?.results ?? 0, t`Process results it published.`, '84px'),
+      num('results', t`Results`, (r) => r.onchain?.results ?? 0, t`The results of elections it published.`, '84px'),
       time('first', t`First active`),
       time('last', t`Last active`),
       {
@@ -314,7 +320,7 @@ function SequencerTable({ rows, loading, showNodes }: { rows: Row[]; loading: bo
             values={row.original.activity}
             width={88}
             height={22}
-            ariaLabel={t`Transitions per day over the last ${DAYS} days`}
+            ariaLabel={t`Batches per day over the last ${DAYS} days`}
           />
         ),
         meta: { align: 'right', width: '112px', headerWrap: true, headerTooltip: t`Batches recorded per UTC day.` },
@@ -344,7 +350,7 @@ function NoSequencer() {
   return (
     <EmptyState
       title={t`No sequencer yet`}
-      description={t`Once a sequencer records the first batch of a process, its account shows up here.`}
+      description={t`Once a sequencer records the first batch of an election, its account shows up here.`}
     />
   )
 }
@@ -360,10 +366,10 @@ function SequencerCards({ rows, loading, showNodes }: { rows: Row[]; loading: bo
         const o = r.onchain
         const stats: Array<[string, string]> = o
           ? [
-              [t`Transitions`, formatNumber(o.transitions)],
-              [t`Ballots`, formatNumber(o.ballots)],
+              [t`Batches`, formatNumber(o.transitions)],
+              [t`Votes`, formatNumber(o.ballots)],
               [t`Processes`, formatNumber(o.processes)],
-              [t`Blobs`, formatNumber(o.blobs)],
+              [t`Data blobs`, formatNumber(o.blobs)],
               [t`Results`, formatNumber(o.results)],
             ]
           : []
@@ -408,7 +414,7 @@ function SequencerCards({ rows, loading, showNodes }: { rows: Row[]; loading: bo
                     values={r.activity}
                     width={96}
                     height={22}
-                    ariaLabel={t`Transitions per day over the last ${DAYS} days`}
+                    ariaLabel={t`Batches per day over the last ${DAYS} days`}
                   />
                 </div>
               </>

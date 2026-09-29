@@ -55,7 +55,7 @@ import { ProcessPicker } from './ProcessPicker'
 
 /**
  * Verify → An election (`/verify/election/:pid?`): its setup, every batch and
- * the root chain, and how the result was produced. Without a pid, a picker.
+ * the root chain, and how the results were produced. Without a pid, a picker.
  */
 export function VerifyElectionPage() {
   const { t } = useLingui()
@@ -80,7 +80,7 @@ export function VerifyElectionPage() {
           <p className='rounded-md border border-dashed border-charcoal p-5 text-[14px] text-ash'>
             <Trans>
               Pick an election above. Its checks then run in your browser: who may vote, who can open the ballots, the
-              ballot rules, every batch of votes, and the result.
+              ballot rules, every batch of votes, and the results.
             </Trans>
           </p>
         }
@@ -118,7 +118,7 @@ function ElectionFrame({
       flow={t`An election`}
       icon={<BallotBoxIcon size={24} />}
       question={t`Was this election run correctly?`}
-      description={t`Who could vote, who can open the ballots, whether every batch of votes was accepted by the rules, and how the result was produced. Everything is read from the chain by your browser.`}
+      description={t`Who could vote, who can open the ballots, whether every batch of votes was accepted by the rules, and how the results were produced. Everything is read from the chain by your browser.`}
       states={states}
       hints={hints}
     >
@@ -150,7 +150,7 @@ function Chosen({ view, title, unverified }: { view: ProcessView | null; title: 
   const { t } = useLingui()
   if (!view) return <SkeletonText lines={2} />
   const pid = view.process.id
-  const ballots = view.row.votersCount + view.row.overwrittenVotesCount
+  const votes = view.row.votersCount + view.row.overwrittenVotesCount
   return (
     <Card
       className='flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between'
@@ -170,7 +170,7 @@ function Chosen({ view, title, unverified }: { view: ProcessView | null; title: 
           <ProcessPhaseBadge phase={view.row.phase} />
           {view.row.keyMode ? <KeyModeBadge mode={view.row.keyMode} /> : null}
           <span className='text-[12px] text-ash'>
-            <Plural value={ballots} one='# ballot recorded' other='# ballots recorded' />
+            <Plural value={votes} one='# vote recorded' other='# votes recorded' />
           </span>
         </div>
       </div>
@@ -198,7 +198,7 @@ function ElectionChecks({ pid }: { pid: string }) {
       view ? view.transitions.flatMap((r) => transitionDetail(store, pid, r.index) ?? []) : [],
     [store, pid, view]
   )
-  // The batch checks need each settlement's calldata: ask for this election's first.
+  // The batch checks need each recorded batch's calldata: ask for this election's first.
   const missing = details.filter((d) => d.transition.tx && !d.tx).map((d) => d.transition.tx)
   const missingKey = missing.join(',')
   useEffect(() => {
@@ -236,7 +236,7 @@ function ElectionChecks({ pid }: { pid: string }) {
   const keyMode = s?.keyMode ?? null
   const verdicts = batchVerdicts(details, {
     onchain: t`The proof and the published data were verified on the chain`,
-    onchainCensus: t`The registry asked the census contract about the list of voters`,
+    onchainCensus: t`The registry asked the contract that keeps the list of voters`,
   })
   const loaded = s != null
 
@@ -308,7 +308,7 @@ function ElectionChecks({ pid }: { pid: string }) {
             <ChainCard view={view} status={rootChain} registry={chain.registryAddress} />
           </CheckGroup>
           <CheckGroup
-            title={t`Result`}
+            title={t`Results`}
             description={t`After the vote ends, only the final encrypted total is decrypted, never a single ballot.`}
             testId='group-result'
           >
@@ -450,7 +450,7 @@ function ElectionProves({ keyMode }: { keyMode: KeyModeName | null }) {
           replaced in the open, on the chain.
         </Trans>,
         <Trans key='result'>
-          Once published, the result is the decryption of the encrypted total in the final state, nothing else.
+          Once published, the results are the decryption of the encrypted total in the final state, nothing else.
         </Trans>,
         <Trans key='metadata'>
           The title, the question and the option names are the document the organizer recorded on the chain, when its
@@ -469,7 +469,7 @@ function ElectionProves({ keyMode }: { keyMode: KeyModeName | null }) {
           </span>
         ) : (
           <Trans key='key'>
-            That nobody can read a ballot. Who could depends on the election: one sequencer, or a threshold of a
+            That nobody can read a ballot. Who could depends on the election: one sequencer, or a threshold of a key
             committee.
           </Trans>
         ),
@@ -478,7 +478,7 @@ function ElectionProves({ keyMode }: { keyMode: KeyModeName | null }) {
           used as published.
         </Trans>,
         <Trans key='metadata-app'>
-          That a voter’s app showed the committed description. The chain binds the document, not what an app puts on the
+          That a voting app showed the committed description. The chain binds the document, not what an app puts on the
           screen.
         </Trans>,
       ]}
@@ -496,7 +496,7 @@ function OrganizerControls() {
     <Disclosure summary={t`For organizers: your controls, and getting the results`} testId='organizer-controls'>
       <Prose>
         <p>
-          <Trans>Only the organizer can make these calls; each one shows up in the process’s history.</Trans>
+          <Trans>Only the organizer can make these calls; each one shows up in the election’s history.</Trans>
         </p>
         <ul className='flex list-disc flex-col gap-1.5 pl-5'>
           <li>
@@ -533,34 +533,34 @@ function OrganizerControls() {
         <p>
           <Trans>
             No batch is recorded after the end time. With a sequencer key, the node that holds the key publishes the
-            results once the process has ended; it is the only one that can. With a DKG key anyone can ask the committee
-            to decrypt, and sequencers do on their first heartbeat after the end; in locked mode the decryption waits
-            for your reveal (<code>revealProcessKey</code> on the registry). The results tab shows how the tally was
-            produced.
+            results once the election has ended; it is the only one that can. With a key committee (a DKG key) anyone
+            can ask the committee to decrypt, and sequencers do on their first heartbeat after the end; in locked mode
+            the decryption waits for your reveal (<code>revealProcessKey</code> on the registry). The results tab shows
+            how the results were produced.
           </Trans>
         </p>
         <ul className='flex list-disc flex-col gap-1.5 pl-5'>
           <li>
             <Trans>
-              Keep the organizer secret of a locked process. Without it the committee never decrypts the tally.
+              Keep the organizer secret of a locked election. Without it the committee never decrypts the results.
             </Trans>
           </li>
           <li>
             <Trans>
-              A reveal works at any time, but revealing during voting drops the process to the automatic trust model.
+              A reveal works at any time, but revealing during voting drops the election to the automatic trust model.
             </Trans>
           </li>
         </ul>
         <p>
           <Trans>
-            In the DKG modes, once a sequencer has requested the decryption the process is Ended and out of your hands,
-            so the tally cannot be canceled after it becomes readable. See{' '}
+            With a committee key, once a sequencer has requested the decryption the election is Ended and out of your
+            hands, so it cannot be canceled after its results become readable. See{' '}
             <Link to={paths.learn('key-modes')} className={LINK}>
               key modes
             </Link>{' '}
             and{' '}
             <Link to={{ pathname: paths.learn('glossary'), hash: 'term-census' }} className={LINK}>
-              census origins
+              lists of voters
             </Link>
             .
           </Trans>

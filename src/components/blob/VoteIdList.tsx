@@ -23,7 +23,7 @@ export function VoteIdList({ processId, voteIds }: { processId: string; voteIds:
       <Input
         size='sm'
         mono
-        label={t`Find a vote id in this transition`}
+        label={t`Find a vote id in this batch`}
         placeholder='0x8…'
         value={filter}
         onChange={(e) => {
@@ -37,7 +37,7 @@ export function VoteIdList({ processId, voteIds }: { processId: string; voteIds:
           compact
           title={ids.length === 0 ? t`No vote ids` : t`No match`}
           description={
-            ids.length === 0 ? t`This batch inserted no vote id.` : t`No vote id of this transition contains that text.`
+            ids.length === 0 ? t`This batch inserted no vote id.` : t`No vote id of this batch contains that text.`
           }
         />
       ) : (

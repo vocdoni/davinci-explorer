@@ -50,6 +50,7 @@ describe('checkCopy', () => {
 
   it('asks the census contract for an on-chain census', () => {
     expect(i18n._(checkCopy('census-root', 'onchain-dynamic').enforced)).toMatch(/getRootBlockNumber/)
-    expect(i18n._(checkCopy('census-root', 'merkle-static').enforced)).toMatch(/big-endian integer/)
+    expect(i18n._(checkCopy('census-root', 'onchain-dynamic').enforced)).toMatch(/bytes reversed/)
+    expect(i18n._(checkCopy('census-root', 'merkle-static').enforced)).toMatch(/bytes reversed/)
   })
 })

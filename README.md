@@ -3,7 +3,7 @@
 A read-only web explorer for a DAVINCI deployment. It shows every election
 (process) on the registry, each batch of votes and the data it published,
 the votes and the results, with the checks behind each, so a voter, an
-organizer or an auditor can see for themselves that the count is right.
+organizer or an auditor can see for themselves that the results are right.
 Pages say in plain words what a value means and keep the mechanism, the exact
 values and the commands one step below; a guide (Learn) and a glossary
 explain the protocol. It talks to the chain from the browser (JSON-RPC and a

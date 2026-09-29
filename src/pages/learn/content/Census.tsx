@@ -11,27 +11,27 @@ export function Census({ ex }: { ex: LearnExamples }) {
     <>
       <InShort className='mb-8'>
         <Trans>
-          Every process has a list of who may vote, its census. It can be a fixed list, a list the organizer can update,
-          a list kept by a contract, or a service that signs each voter’s credential. Each voter’s ballot is kept in one
-          place that follows from who they are, so a new vote from them replaces the old one.
+          Every election has a list of voters: who may vote, and with what weight. It can be a fixed list, a list the
+          organizer can update, a list kept by a contract, or a service that signs each voter’s credential. Each voter’s
+          ballot is kept in one place that follows from who they are, so a new vote from them replaces the old one.
         </Trans>
       </InShort>
 
-      <Section id='four-census-origins' title={t`Four kinds of census`}>
+      <Section id='four-census-origins' title={t`Four kinds of list`}>
         <P>
           <Trans>
-            The <Term id='census'>census</Term> says who may vote and with what weight. The organizer picks one of four
-            kinds (the <Term id='census-origin'>census origin</Term>) when creating the process. The proof of each batch
-            checks every voter against the census, and the registry checks that the census used is one the process
-            accepts.
+            The <Term id='census'>list of voters</Term> says who may vote and with what weight. The organizer picks one
+            of four kinds (the <Term id='census-origin'>census origin</Term>) when creating the election. The proof of
+            each batch checks every voter against the list, and the registry checks that the list used is one the
+            election accepts.
           </Trans>
         </P>
         <SimpleTable
-          head={[t`Origin`, t`The census`, t`What a batch may be checked against`]}
+          head={[t`Origin`, t`The list of voters`, t`What a batch may be checked against`]}
           rows={[
             [
               t`1 · Fixed list`,
-              t`A list of voters, downloaded from the census address the process names.`,
+              t`A list of voters, downloaded from the address the election names.`,
               t`The list fixed at creation.`,
             ],
             [
@@ -46,11 +46,11 @@ export function Census({ ex }: { ex: LearnExamples }) {
               <Trans>
                 A contract keeps the list; sequencers rebuild it from the contract’s <C>CensusMemberAdded</C> logs.
               </Trans>,
-              t`Any version the contract recorded at or after the process’s creation block.`,
+              t`Any version that was still the contract’s current list at or after the block that created the election.`,
             ],
             [
               t`4 · Credential service provider`,
-              t`A census provider (CSP) signs each voter’s credential; its address stands for the census.`,
+              t`A credential service (CSP) signs each voter’s credential; its address stands for the list.`,
               t`The provider’s address.`,
             ],
           ]}
@@ -66,7 +66,7 @@ export function Census({ ex }: { ex: LearnExamples }) {
         </Details>
       </Section>
 
-      <Section id='merkle-censuses' title={t`Voter lists`}>
+      <Section id='merkle-censuses' title={t`Lists of voters`}>
         <P>
           <Trans>
             With a list (origins 1 to 3), each voter shows they are on it with a short proof, and the batch proof checks
@@ -77,18 +77,19 @@ export function Census({ ex }: { ex: LearnExamples }) {
           <li>
             <Trans>
               <strong className='font-medium text-silver'>Origin 2.</strong> Only the organizer can replace the list,
-              keeping the same origin, and only while the process is Ready or Paused and before its end. Batches proven
-              against the previous list no longer settle, and a pending vote whose census entry changed ends in an error
-              and has to be cast again.
+              keeping the same origin, and only while the election is Ready or Paused and before its end. Batches proven
+              against the previous list are no longer recorded, and a pending vote whose entry in the list changed ends
+              in an error and has to be cast again.
             </Trans>
           </li>
           <li>
             <Trans>
               <strong className='font-medium text-silver'>Origin 3.</strong> For every batch the registry asks the
-              census contract when it recorded the version the batch used: it must be a real block, not in the future
-              and not before the process was created. So the contract must never drop a version, or batches proven
-              against it would stop settling. Weights must stay fixed too, a sequencer rule: a weight change makes the
-              sequencer mark the census unusable.
+              contract that keeps the list up to which block the batch’s version was current. That block must be a real
+              one, not in the future and not before the election was created. A version recorded before the election but
+              still current when it was created counts. So the contract must never drop a version, or batches proven
+              against it would no longer be recorded. Weights must stay fixed too, a sequencer rule: a weight change
+              makes the sequencer mark the list unusable.
             </Trans>
           </li>
         </UL>
@@ -97,9 +98,11 @@ export function Census({ ex }: { ex: LearnExamples }) {
             <Trans>
               A voter proves membership with a lean-IMT (Poseidon) inclusion proof. Replacing an origin-2 census is{' '}
               <C>setProcessCensus</C>, which emits <C>CensusUpdated</C>. For origin 3 the registry calls{' '}
-              <C>getRootBlockNumber(root)</C> on the census contract on every settlement: it must be non-zero, not in
-              the future and not before the process’s creation block. The contract has to be append-only, since a batch
-              proven against an evicted root would stop settling.
+              <C>getRootBlockNumber(root)</C> on the census contract on every settlement. It returns the last block the
+              root was valid: the current block for the current root, the block it was replaced in for an older one, and
+              0 for a root the contract never held. It must be non-zero, not in the future and not before the process’s
+              creation block. The contract has to be append-only, since a batch proven against an evicted root would
+              stop settling.
             </Trans>
           </P>
         </Details>
@@ -109,7 +112,7 @@ export function Census({ ex }: { ex: LearnExamples }) {
         <P>
           <Trans>
             With origin 4 there is no list. A <Term id='csp'>credential service provider</Term> signs each voter’s
-            credential, the batch proof checks the signature, and the registry checks that the signer is the process’s
+            credential, the batch proof checks the signature, and the registry checks that the signer is the election’s
             provider. A credential, once signed, cannot be revoked.
           </Trans>
         </P>
@@ -128,9 +131,9 @@ export function Census({ ex }: { ex: LearnExamples }) {
       <Section id='ballot-slots' title={t`Ballot slots`}>
         <P>
           <Trans>
-            Each voter’s ballot is kept in one place in the process’s state, its <Term id='slot'>slot</Term>. A new vote
-            from the same voter goes to the same slot and replaces the old ballot. With a voter list the slot is
-            computed from the voter’s address; with a credential service, from the number the service signs.
+            Each voter’s ballot is kept in one place in the election’s state, its <Term id='slot'>slot</Term>. A new
+            vote from the same voter goes to the same slot and replaces the old ballot. With a list of voters the slot
+            is computed from the voter’s address; with a credential service, from the number the service signs.
           </Trans>
         </P>
         <P>
@@ -142,9 +145,9 @@ export function Census({ ex }: { ex: LearnExamples }) {
         </P>
         <P>
           <Trans>
-            Two voters on one slot would overwrite each other’s ballots, so slots must be unique. The census contract
-            refuses a registration whose slot is taken, sequencers refuse any list with two voters on one slot, and the
-            batch proof refuses two votes for one slot in a batch. Making a clash on purpose would take about{' '}
+            Two voters on one slot would replace each other’s ballots, so slots must be unique. A contract that keeps a
+            list refuses a registration whose slot is taken, sequencers refuse any list with two voters on one slot, and
+            the batch proof refuses two votes for one slot in a batch. Making a clash on purpose would take about{' '}
             <Formula expr='2^63 / N' /> key generations in a list of <Formula expr='N' /> members.
           </Trans>
         </P>
@@ -166,17 +169,18 @@ export function Census({ ex }: { ex: LearnExamples }) {
       <Section id='where-to-see-it' title={t`Where to see it`}>
         <P>
           <Trans>
-            A process’s overview shows its census origin, root and address. Every transition page checks the census root
-            its proof used against the roots the process accepts.
+            A process page’s overview shows what kind of list of voters the election uses, the list’s fingerprint (its
+            census root) and its address. Every batch page checks the list its proof used against the lists the election
+            accepts.
           </Trans>
         </P>
         {ex.newest ? (
           <SeeIt to={paths.process(ex.newest.id)}>
-            <Trans>The census of the newest process</Trans>
+            <Trans>The list of voters of the newest election</Trans>
           </SeeIt>
         ) : (
           <SeeIt to={paths.processes()}>
-            <Trans>Processes, filterable by census origin</Trans>
+            <Trans>Every process, filterable by the kind of list of voters</Trans>
           </SeeIt>
         )}
       </Section>

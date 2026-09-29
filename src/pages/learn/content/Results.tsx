@@ -14,23 +14,24 @@ export function Results({ ex }: { ex: LearnExamples }) {
         <Trans>
           Every batch adds its ballots to one encrypted total. When voting ends only that total is decrypted, and the
           decryption is proven: with a sequencer key by a second proof the registry checks, with a committee key by the
-          committee’s proofs of each step. The registry records the results only when those proofs hold.
+          key committee’s proofs of each step. The registry records the results only when those proofs hold.
         </Trans>
       </InShort>
 
       <Section id='what-gets-decrypted' title={t`What gets decrypted`}>
         <P>
           <Trans>
-            Each batch adds its ballots to one encrypted total, the <Term id='accumulator'>accumulator</Term>, with one
-            encrypted number per ballot field. Result <Formula expr='i' /> is the sum of field <Formula expr='i' /> over
-            every counted ballot. The protocol decrypts only the final total, never a single ballot. The holder of the
-            election key could decrypt any earlier total or any ballot in the blobs.
+            Each batch adds its ballots to one <Term id='accumulator'>encrypted total</Term>, with one encrypted number
+            per ballot field. Result <Formula expr='i' /> is the sum of field <Formula expr='i' /> over every counted
+            ballot. The protocol decrypts only the final total, never a single ballot. The key holder could decrypt any
+            earlier total or any ballot in the published data.
           </Trans>
         </P>
         <P>
           <Trans>
-            A process can get its results once it is Ended, or once its end time has passed while it is Ready or Paused.
-            How the total is decrypted and proven depends on the <A to={paths.learn('key-modes')}>key mode</A>.
+            An election can get its results once it is Ended, or once its end time has passed while it is Ready or
+            Paused. How the total is decrypted and proven depends on{' '}
+            <A to={paths.learn('key-modes')}>who holds the key</A>.
           </Trans>
         </P>
         <Details>
@@ -45,15 +46,15 @@ export function Results({ ex }: { ex: LearnExamples }) {
       <Section id='sequencer-key-a-results-proof' title={t`Sequencer key: a results proof`}>
         <P>
           <Trans>
-            Once the process has ended and its state is final, the sequencer holding the key decrypts the total. It then
-            proves the decryption with a second program, the results program, which checks:
+            Once the election has ended and its state is final, the sequencer holding the key decrypts the total. It
+            then proves the decryption with a second program, the results program, which checks:
           </Trans>
         </P>
         <NumberedList
           className='my-4 [&_li]:text-[14px]'
           items={[
             <Trans key='leaves'>
-              that the key and the encrypted total it used are the ones in the process’s final state;
+              that the key and the encrypted total it used are the ones in the election’s final state;
             </Trans>,
             <Trans key='cp'>that each decrypted number is the correct decryption of its encrypted number;</Trans>,
             <Trans key='range'>
@@ -63,16 +64,17 @@ export function Results({ ex }: { ex: LearnExamples }) {
         />
         <P>
           <Trans>
-            The registry records the results only for a sequencer-key process that has ended, when the proof says every
-            check passed, was made on the process’s latest state and comes from the released results program. It stores
-            one result per ballot field and moves the process to Results.
+            The registry records the results only for an election with a sequencer key that has ended, when the proof
+            says every check passed, was made on the election’s latest state and comes from the released results
+            program. It stores one result per ballot field and moves the election to Results.
           </Trans>
         </P>
         <Details>
           <P>
             <Trans>
-              Decryption is a bounded search. At creation the registry requires the largest possible total, the maximum
-              number of voters times the ballot’s maximum value, to stay within the bound below.
+              Decryption is a bounded search. At creation, and whenever the organizer changes the voter limit (
+              <C>setProcessMaxVoters</C>), the registry requires the largest possible total, the maximum number of
+              voters times the ballot’s maximum value, to stay within the bound below.
             </Trans>
           </P>
           <Formula block expr='maxValue × maxVoters ≤ 10^12' className='my-2' />
@@ -94,10 +96,10 @@ export function Results({ ex }: { ex: LearnExamples }) {
         </Details>
       </Section>
 
-      <Section id='dkg-key-threshold-decryption' title={t`DKG key: threshold decryption`}>
+      <Section id='dkg-key-threshold-decryption' title={t`Committee key: decryption in shares`}>
         <P>
           <Trans>
-            With a committee key there is no second program. The registry and the committee do the checking:
+            With a committee key there is no second program. The registry and the key committee do the checking:
           </Trans>
         </P>
         <NumberedList
@@ -105,11 +107,11 @@ export function Results({ ex }: { ex: LearnExamples }) {
           items={[
             <Trans key='request'>
               After the end, anyone can ask for the decryption; sequencers ask on their own shortly after the end. The
-              registry checks that the encrypted total is the one in the process’s final state, and moves the process to
-              Ended, which the organizer can no longer change.
+              registry checks that the encrypted total is the one in the election’s final state, and moves the election
+              to Ended, which the organizer can no longer change.
             </Trans>,
             <Trans key='skip'>
-              It skips fields that never received anything (they count as 0, and only a process that never counted a
+              It skips fields that never received anything (they count as 0, and only an election that never counted a
               ballot has them) and sends the rest to the committee.
             </Trans>,
             <Trans key='partials'>
@@ -119,14 +121,14 @@ export function Results({ ex }: { ex: LearnExamples }) {
             </Trans>,
             <Trans key='finalize'>
               Anyone then asks the registry to collect the decrypted values. It stores them in field order and moves the
-              process to Results; until every value is ready, the call is refused.
+              election to Results; until every value is ready, the call is refused.
             </Trans>,
           ]}
         />
         <P>
           <Trans>
             There is no results proof in the committee modes: the committee’s proofs of every step and the registry’s
-            own check of the encrypted total replace it. So the process’s results depend on the committee staying
+            own check of the encrypted total replace it. So the election’s results depend on the committee staying
             available: once the encrypted total is handed over there is no fallback.
           </Trans>
         </P>
@@ -167,7 +169,7 @@ export function Results({ ex }: { ex: LearnExamples }) {
       <Section id='where-to-see-it' title={t`Where to see it`}>
         {ex.withResults ? (
           <SeeIt to={paths.process(ex.withResults.id, 'results')}>
-            <Trans>The results of a finished process and how they were produced</Trans>
+            <Trans>The results of a finished election and how they were produced</Trans>
           </SeeIt>
         ) : (
           <SeeIt to={paths.processes({ status: 'results' })}>

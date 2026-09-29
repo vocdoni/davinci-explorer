@@ -26,7 +26,7 @@ test.describe('metadata', () => {
     await demo(page, `/processes/${OPEN}`)
     const check = page.getByTestId('metadata-check')
     await expect(check).toHaveAttribute('data-status', 'matches')
-    await expect(check).toContainText('The document matches the on-chain hash')
+    await expect(check).toContainText('The document matches the fingerprint on the chain')
     await expect(page.getByTestId('page-process').getByTestId('unverified-mark')).toHaveCount(0)
     await expect(page.getByTestId('metadata-history').getByRole('listitem')).toHaveCount(1)
   })
@@ -38,7 +38,9 @@ test.describe('metadata', () => {
     await expect(heading).toContainText('Budget allocation')
     await expect(heading.getByTestId('unverified-mark')).toBeVisible()
     await heading.getByTestId('unverified-mark').hover()
-    await expect(page.getByRole('tooltip')).toContainText('not the one the organizer committed on-chain')
+    await expect(page.getByRole('tooltip')).toContainText(
+      'not the one whose fingerprint the organizer recorded on the chain'
+    )
 
     await page.getByRole('tab', { name: 'Results' }).click()
     const tally = page.getByTestId('tally')

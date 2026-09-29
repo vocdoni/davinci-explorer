@@ -29,18 +29,18 @@ function BlobsLine({ blobs }: { blobs: UseQueryResult<DecodedTransitionBlobs> })
   if (blobs.data?.decoded) {
     const voteIds = blobs.data.decoded.voteIds.length
     const updates = blobs.data.decoded.updates.length
-    return t`blobs: ${plural(voteIds, { one: '# vote id', other: '# vote ids' })}, ${plural(updates, {
+    return t`published data: ${plural(voteIds, { one: '# vote id', other: '# vote ids' })}, ${plural(updates, {
       one: '# slot update',
       other: '# slot updates',
     })}`
   }
   if (blobs.data?.decodeError) {
     const reason = blobs.data.decodeError
-    return t`blobs: ${reason}`
+    return t`published data: ${reason}`
   }
-  if (blobs.error) return t`blobs: not available`
-  if (blobs.isLoading) return t`blobs: loading…`
-  return t`blobs: waiting for the transaction`
+  if (blobs.error) return t`published data: not available`
+  if (blobs.isLoading) return t`published data: loading…`
+  return t`published data: waiting for the transaction`
 }
 
 function Label({ children, explain }: { children: ReactNode; explain?: ReactNode }) {
@@ -52,7 +52,7 @@ function Label({ children, explain }: { children: ReactNode; explain?: ReactNode
   )
 }
 
-/** The facts of one transition: where it sits, who settled it, what it changed and what it cost. */
+/** The facts of one batch: where it sits, who recorded it, what it changed and what it cost. */
 export function TransitionSummary({
   detail,
   blobs,
@@ -153,7 +153,7 @@ export function TransitionSummary({
     {
       label: (
         <Label
-          explain={t`A new voter voted for the first time; a changed vote (an overwrite) replaced a voter’s earlier vote. A first vote is public, since refreshes only touch slots already written; which of those were changed and which only refreshed is not.`}
+          explain={t`A new voter voted for the first time; a changed vote (an overwrite) replaced a voter’s earlier vote. A first vote is public, since silent refreshes only touch slots already written; which of those were changed and which only refreshed is not.`}
         >
           {t`Votes`}
         </Label>
@@ -177,9 +177,9 @@ export function TransitionSummary({
     {
       label: (
         <Label
-          explain={t`Data blobs attached to the transaction (EIP-4844). They carry what anyone needs to rebuild the state, and are paid for in blob gas rather than as call data.`}
+          explain={t`The published data of the batch, attached to the transaction as data blobs (EIP-4844). They carry what anyone needs to rebuild the state, and are paid for in blob gas rather than as call data.`}
         >
-          {t`Blobs`}
+          {t`Data blobs`}
         </Label>
       ),
       value: blobGas != null ? t`${nBlobsText} · ${blobGas} blob gas` : nBlobsText,
@@ -213,9 +213,9 @@ export function TransitionSummary({
     {
       label: (
         <Label
-          explain={t`What the transaction sent to the registry (submitStateTransition): the process id, 512 bytes of public values, the 768-byte proof, and per blob a commitment, an evaluation and a KZG proof.`}
+          explain={t`What the transaction sent to the registry: the process id, what the proof makes public, the proof, and for each data blob the values that tie it to the proof. In submitStateTransition: 512 bytes of public values, the 768-byte proof, and per blob a KZG commitment, an evaluation and a KZG proof.`}
         >
-          {t`Calldata`}
+          {t`Transaction data`}
         </Label>
       ),
       value: tx ? formatBytes(tx.inputSize) : pending,
@@ -223,7 +223,7 @@ export function TransitionSummary({
     },
   ]
 
-  const ballots = row.votes
+  const votes = row.votes
   const nBlobs = tr.nBlobs
   const passedText = formatNumber(passed)
   const checksText = formatNumber(detail.checks.length)
@@ -231,8 +231,8 @@ export function TransitionSummary({
   return (
     <Card data-testid='transition-summary'>
       <p className='text-[13px] text-silver'>
-        <Plural value={ballots} one='# ballot' other='# ballots' /> ·{' '}
-        <Plural value={nBlobs} one='# blob' other='# blobs' /> ·{' '}
+        <Plural value={votes} one='# vote' other='# votes' /> ·{' '}
+        <Plural value={nBlobs} one='# data blob' other='# data blobs' /> ·{' '}
         <HashLink id='verify' className={`${tone} hover:underline`}>
           <Trans>
             {passedText}/{checksText} checks passed
@@ -245,7 +245,7 @@ export function TransitionSummary({
         <Trans>
           Every batch of this election is on its{' '}
           <Link to={paths.process(process.id, 'transitions')} className='text-silver hover:text-emerald'>
-            transitions tab
+            batches tab
           </Link>
           , each starting where the one before ended.
         </Trans>
@@ -301,8 +301,8 @@ export function TransitionInShort({ detail }: { detail: TransitionDetail }) {
         </li>
         <li>
           <Trans>
-            Its data is published in <Plural value={nBlobs} one='# blob' other='# blobs' />, so anyone can rebuild the
-            election’s <Term id='state-root'>state</Term> from it without trusting whoever sent it.
+            Its data is published in <Plural value={nBlobs} one='# data blob' other='# data blobs' />, so anyone can
+            rebuild the election’s <Term id='state-root'>state</Term> from it without trusting whoever sent it.
           </Trans>
         </li>
       </ul>

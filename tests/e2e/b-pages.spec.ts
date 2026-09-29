@@ -24,9 +24,9 @@ test.describe('transition page', () => {
     const errors = watchErrors(page)
     await demo(page, `/processes/${OPEN_PID}/transitions/${MULTI_BLOB}`)
     const root = page.getByTestId('page-transition')
-    await expect(root.getByRole('heading', { name: `Transition #${MULTI_BLOB}` })).toBeVisible()
+    await expect(root.getByRole('heading', { name: `Batch #${MULTI_BLOB}` })).toBeVisible()
     await expect(page.getByTestId('transition-summary')).toContainText('checks passed')
-    await expect(page.getByTestId('transition-summary')).toContainText('4 blobs')
+    await expect(page.getByTestId('transition-summary')).toContainText('4 data blobs')
 
     const publics = page.getByTestId('publics')
     for (const name of ['overall_ok', 'fail_mask', 'RootHashBefore', 'CensusRoot', 'BlobsDigest', 'OccupiedBefore']) {
@@ -64,17 +64,17 @@ test.describe('transition page', () => {
     await content.getByRole('tab', { name: /Cells/ }).click()
     const cells = content.getByTestId('blob-cell-view')
     await expect(cells).toContainText('Vote id count')
-    await cells.getByRole('button', { name: /Accumulator/ }).click()
-    await expect(cells).toContainText('Accumulator field 0 c1')
+    await cells.getByRole('button', { name: /Encrypted total/ }).click()
+    await expect(cells).toContainText('Encrypted total, field 0 c1')
     expect(errors).toEqual([])
   })
 
   test('steps to the previous and next transition', async ({ page }) => {
     await demo(page, `/processes/${OPEN_PID}/transitions/${MULTI_BLOB}`)
     await page.getByRole('link', { name: `#${MULTI_BLOB + 1}` }).click()
-    await expect(page.getByRole('heading', { name: `Transition #${MULTI_BLOB + 1}` })).toBeVisible()
+    await expect(page.getByRole('heading', { name: `Batch #${MULTI_BLOB + 1}` })).toBeVisible()
     await page.getByRole('link', { name: `#${MULTI_BLOB}` }).click()
-    await expect(page.getByRole('heading', { name: `Transition #${MULTI_BLOB}` })).toBeVisible()
+    await expect(page.getByRole('heading', { name: `Batch #${MULTI_BLOB}` })).toBeVisible()
   })
 
   test('a vote id links to its lookup', async ({ page }) => {
@@ -86,9 +86,9 @@ test.describe('transition page', () => {
     await expect(page.getByTestId('check-settled')).toContainText(`batch #${MULTI_BLOB}`, { timeout: 15_000 })
   })
 
-  test('an unknown transition says so', async ({ page }) => {
+  test('an unknown batch says so', async ({ page }) => {
     await demo(page, `/processes/${OPEN_PID}/transitions/999`)
-    await expect(page.getByText('No transition found')).toBeVisible()
+    await expect(page.getByText('No batch found')).toBeVisible()
   })
 })
 
@@ -116,7 +116,7 @@ test.describe('vote check', () => {
     await page.getByLabel('Vote id').fill('0x1')
     await page.getByRole('button', { name: 'Check this vote' }).click()
     await expect(page.getByText('A process id is 0x followed by 62 hex digits (31 bytes).')).toBeVisible()
-    await expect(page.getByText('Vote ids start at 0x8000000000000000 (2^63).')).toBeVisible()
+    await expect(page.getByText('Vote ids start at 0x8000000000000000 (2⁶³).')).toBeVisible()
     await expect(page).toHaveURL(/\/verify\/vote\?demo=1$/)
   })
 
@@ -132,7 +132,7 @@ test.describe('vote check', () => {
     await expect(page.getByTestId('check-tracker')).toHaveAttribute('data-status', 'pass')
     await settled.getByText('How this is checked').click()
     await expect(page.getByTestId('vote-inclusion-source')).toContainText('The beacon API')
-    await expect(page.getByTestId('sequencer-status').getByText('Settled', { exact: true }).first()).toBeVisible()
+    await expect(page.getByTestId('sequencer-status').getByText('Recorded', { exact: true }).first()).toBeVisible()
     await page.getByTestId('check-tracker').getByText('How this is checked').click()
     await expect(page.getByTestId('check-tracker')).toContainText('The path reaches the root the proof names')
     await expect(page.getByTestId('check-tracker')).toContainText('That root is one the registry held for this process')
@@ -171,7 +171,7 @@ test.describe('vote check', () => {
     const text = page.getByTestId('vote-explainers')
     await expect(text).toContainText('What this proves, and what it doesn’t')
     await text.getByText('Voting again, and the silent refreshes').click()
-    await expect(text).toContainText('a revote stays deniable')
+    await expect(text).toContainText('a changed vote stays deniable')
     await text.getByText('Why the ballot on the chain is not the one you sent').click()
     await expect(text).toContainText('re-encrypts it')
   })

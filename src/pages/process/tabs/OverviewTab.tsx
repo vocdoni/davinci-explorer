@@ -3,6 +3,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { msg, plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { CensusOriginBadge, CheckMark, Explain, Formula, InShort, Term, Timestamp, TxLink } from '~components'
+import { Disclosure } from '~components/code'
 import { useChain, type ProcessView } from '~data/hooks'
 import { useMetadataCheck } from '~data/queries'
 import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar, SkeletonText, UriLink } from '~kit'
@@ -20,9 +21,9 @@ const MAX_POSSIBLE_RESULT = 1_000_000_000_000n
 
 const CENSUS_ROOT_RULE: Record<CensusOriginName, MessageDescriptor> = {
   unknown: msg`Not a kind of list the registry accepts.`,
-  'merkle-static': msg`The list was fixed when the process was created. Every batch of votes is checked against that same list.`,
-  'merkle-dynamic': msg`The organizer can replace the list while the process is open or paused, until the end. Each batch of votes is checked against the list current at the time.`,
-  'onchain-dynamic': msg`A batch may use any root the census contract recorded at or after the creation block: any version of the list since the process was created. The registry asks the contract at every batch.`,
+  'merkle-static': msg`The list was fixed when the election was created. Every batch of votes is checked against that same list.`,
+  'merkle-dynamic': msg`The organizer can replace the list while the election is open or paused, until the end. Each batch of votes is checked against the list current at the time.`,
+  'onchain-dynamic': msg`A contract keeps the list. A batch may use any version of it the contract has held since the election was created, and the registry asks the contract at every batch.`,
   csp: msg`Each vote carries a signature from the credential service. The service’s signing address stands for the list and never changes.`,
 }
 
@@ -111,7 +112,7 @@ function ProcessInShort({ view }: { view: ProcessView }) {
     ) : row.phase === 'closed' || row.phase === 'ended' ? (
       <Trans>Voting has ended; the results are not published yet.</Trans>
     ) : row.phase === 'canceled' ? (
-      <Trans>The organizer canceled this process, so there will be no results.</Trans>
+      <Trans>The organizer canceled this election, so there will be no results.</Trans>
     ) : row.phase === 'results' ? (
       <Trans>Voting has ended and the results are published.</Trans>
     ) : null
@@ -121,8 +122,8 @@ function ProcessInShort({ view }: { view: ProcessView }) {
         {phase}{' '}
         {overwrites > 0 ? (
           <Trans>
-            <Plural value={voters} one='# voter' other='# voters' /> of at most {most} took part, and{' '}
-            <Plural value={overwrites} one='# vote' other='# votes' /> replaced an earlier one.
+            <Plural value={voters} one='# voter' other='# voters' /> of at most {most} took part, with{' '}
+            <Plural value={overwrites} one='# changed vote' other='# changed votes' />.
           </Trans>
         ) : (
           <Trans>
@@ -169,8 +170,8 @@ function BallotPanel({ view }: { view: ProcessView }) {
             </Trans>
             <Explain>
               <Trans>
-                The kind the organizer’s app wrote in the metadata document, whose fingerprint matches the one on chain.
-                It is a label: the rules above are what every ballot proof enforces.
+                The kind of ballot the organizer’s app wrote in the election’s description, whose fingerprint matches
+                the one recorded on the chain. It is only a label: the rules above are what every ballot proof enforces.
               </Trans>
             </Explain>
           </span>
@@ -186,9 +187,9 @@ function BallotPanel({ view }: { view: ProcessView }) {
       </ul>
       <p className='mt-3 text-xs leading-relaxed text-ash'>
         <Trans>
-          A ballot that breaks these rules cannot be counted. Each voter’s app proves that the encrypted ballot follows
+          A ballot that breaks these rules cannot be counted. Each voting app proves that the encrypted ballot follows
           them (a <Term id='ballot-proof'>ballot proof</Term>), and every batch checks those proofs against the rules
-          stored with the process, in state leaf 0x02.
+          stored with the election.
         </Trans>
       </p>
       <KeyValue
@@ -267,7 +268,7 @@ function BallotPanel({ view }: { view: ProcessView }) {
           {
             label: (
               <Label
-                help={t`The most a voter may give in total, adding up the costs. 0 means up to the voter’s weight in the census.`}
+                help={t`The most a voter may give in total, adding up the costs. 0 means up to the voter’s weight on the list of voters.`}
               >
                 <Trans>Max sum</Trans>
               </Label>
@@ -277,6 +278,14 @@ function BallotPanel({ view }: { view: ProcessView }) {
           },
         ]}
       />
+      <Disclosure summary={t`Technical details`} variant='plain' className='mt-4' testId='ballot-mode-details'>
+        <p className='text-[13px] leading-relaxed text-ash'>
+          <Trans>
+            These rules are the process’s ballot mode, packed into its starting state as leaf <code>0x02</code> when it
+            was created, so they cannot change. The batch program checks every ballot proof against that leaf.
+          </Trans>
+        </p>
+      </Disclosure>
     </Panel>
   )
 }
@@ -290,7 +299,7 @@ function CensusPanel({ view }: { view: ProcessView }) {
   const cspAddress = isCsp ? `0x${c.root.slice(-40)}` : null
   return (
     <Panel
-      title={t`Census`}
+      title={t`List of voters`}
       label={t`Who may vote`}
       description={CENSUS_ORIGIN_INFO[c.origin].description}
       actions={<CensusOriginBadge origin={c.origin} />}
@@ -304,13 +313,17 @@ function CensusPanel({ view }: { view: ProcessView }) {
               <Label
                 help={
                   isCsp
-                    ? t`The credential service whose signature lets a voter vote. The registry stores its address as the census root, a big-endian integer.`
+                    ? t`The credential service whose signature lets a voter vote. Its address stands in for the list’s fingerprint.`
                     : c.origin === 'onchain-dynamic'
-                      ? t`The fingerprint of the contract’s list when the process was created, kept for information. Batches are checked against the contract instead.`
-                      : t`The fingerprint of the list of voters and their weights. Each voter proves they are on the list against it (the root of a lean-IMT Merkle tree, as a big-endian integer).`
+                      ? t`The fingerprint of the contract’s list when the election was created, kept for information. Batches are checked against the contract instead.`
+                      : t`The fingerprint of the list of voters and their weights. Each voter proves they are on the list against it.`
                 }
               >
-                {isCsp ? t`CSP signer` : c.origin === 'onchain-dynamic' ? t`Root at creation` : t`Census root`}
+                {isCsp
+                  ? t`Credential service`
+                  : c.origin === 'onchain-dynamic'
+                    ? t`Fingerprint at creation`
+                    : t`Fingerprint of the list`}
               </Label>
             ),
             value: cspAddress ? <Address value={cspAddress} /> : <Hash value={c.root} chars={10} />,
@@ -320,9 +333,9 @@ function CensusPanel({ view }: { view: ProcessView }) {
                 {
                   label: (
                     <Label
-                      help={t`The contract that keeps the list. At every batch the registry asks it whether it held the list the batch used (ICensusValidator).`}
+                      help={t`The contract that keeps the list. At every batch the registry asks it whether it held the list the batch used.`}
                     >
-                      <Trans>Census contract</Trans>
+                      <Trans>Contract that keeps the list</Trans>
                     </Label>
                   ),
                   value: <Address value={c.contractAddress} />,
@@ -338,17 +351,17 @@ function CensusPanel({ view }: { view: ProcessView }) {
                     : t`Where the full list can be downloaded. Sequencers fetch it and check its fingerprint before they accept votes.`
                 }
               >
-                <Trans>Census URI</Trans>
+                <Trans>Where to get it</Trans>
               </Label>
             ),
-            value: <Uri uri={c.uri} label={isCsp ? t`Open the signer’s service` : t`Open the census file`} />,
+            value: <Uri uri={c.uri} label={isCsp ? t`Open the signer’s service` : t`Open the list`} />,
           },
         ]}
       />
       {c.origin === 'merkle-dynamic' ? (
         <div className='mt-4'>
           <div className='label-caps mb-2 text-[11px] text-pewter'>
-            <Trans>Census updates</Trans>
+            <Trans>Changes to the list</Trans>
           </div>
           {updates.length === 0 ? (
             <p className='text-[13px] text-ash'>
@@ -361,7 +374,7 @@ function CensusPanel({ view }: { view: ProcessView }) {
                   <Timestamp value={u.timestamp} className='text-ash' />
                   <Hash value={u.value.root} chars={8} />
                   <span className='min-w-0 flex-1'>
-                    <Uri uri={u.value.uri} label={t`Open the census file`} />
+                    <Uri uri={u.value.uri} label={t`Open the list`} />
                   </span>
                   {u.tx ? <TxLink hash={u.tx} chars={4} /> : null}
                 </li>
@@ -370,6 +383,32 @@ function CensusPanel({ view }: { view: ProcessView }) {
           )}
         </div>
       ) : null}
+      <Disclosure summary={t`Technical details`} variant='plain' className='mt-4' testId='census-details'>
+        <p className='text-[13px] leading-relaxed text-ash'>
+          {isCsp ? (
+            <Trans>
+              A credential service provider (CSP) census: the registry stores the signer’s address as the census root, a
+              big-endian integer, and every vote carries the service’s signature.
+            </Trans>
+          ) : c.origin === 'onchain-dynamic' ? (
+            <Trans>
+              An on-chain census: the contract implements <code>ICensusValidator</code>, and at every batch the registry
+              calls its <code>getRootBlockNumber</code> with the root the batch used. It answers the last block that
+              root was valid (the current block for the current root, the block it was replaced in for an older one, 0
+              for one it never held), and the registry requires that block to be no earlier than the creation block and
+              no later than the batch. Voters prove membership with lean-IMT (Poseidon) proofs, as in any Merkle census.
+              The root shown is the one given at creation, as a big-endian integer.
+            </Trans>
+          ) : (
+            <Trans>
+              The census root is the root of a lean-IMT Merkle tree (Poseidon) over the voters and their weights, as a
+              big-endian integer. Each voting app proves membership against it, and the batch program checks every
+              proof. An updatable list is replaced with <code>setProcessCensus</code>, which emits{' '}
+              <code>CensusUpdated</code>.
+            </Trans>
+          )}
+        </p>
+      </Disclosure>
     </Panel>
   )
 }
@@ -467,7 +506,7 @@ function LimitsPanel({ view }: { view: ProcessView }) {
           {
             label: (
               <Label
-                help={t`The most voters this process accepts: the registry refuses a batch that would go above it. The organizer can change it while the process is open or paused, but never below the voters so far.`}
+                help={t`The most voters this election accepts: the registry refuses a batch that would go above it. The organizer can change it while the election is open or paused, but never below the voters so far.`}
               >
                 <Trans>Max voters</Trans>
               </Label>
@@ -482,7 +521,7 @@ function LimitsPanel({ view }: { view: ProcessView }) {
           {
             label: (
               <Label
-                help={t`Every ballot has room for ${capacity} encrypted numbers. The process uses the first ones (numFields); the rest are fixed padding.`}
+                help={t`Every ballot has room for ${capacity} encrypted numbers. The election uses the first ones (numFields); the rest are fixed padding.`}
               >
                 <Trans>Fields in use</Trans>
               </Label>
@@ -496,12 +535,12 @@ function LimitsPanel({ view }: { view: ProcessView }) {
                 help={
                   <Trans>
                     The highest total one option could reach if every voter gave it the maximum. The registry keeps it
-                    at or below one trillion, so the final count can always be decrypted:{' '}
+                    at or below one trillion, so the results can always be decrypted:{' '}
                     <Formula expr='maxValue × maxVoters ≤ 10^12' />.
                   </Trans>
                 }
               >
-                <Trans>Largest possible tally per field</Trans>
+                <Trans>Largest possible result per field</Trans>
               </Label>
             ),
             value: formatNumber(worst),
@@ -524,7 +563,7 @@ function ProcessIdPanel({ view }: { view: ProcessView }) {
     <Panel
       title={t`Process id`}
       label={t`Decoded`}
-      description={t`The id has three parts: the organizer’s address, a code for this registry and chain, and a count of the organizer’s earlier processes (31 bytes in all).`}
+      description={t`The id has three parts: the organizer’s address, a code for this registry and chain, and a count of the organizer’s earlier elections (31 bytes in all).`}
     >
       <KeyValue
         items={[
@@ -535,8 +574,8 @@ function ProcessIdPanel({ view }: { view: ProcessView }) {
                 help={
                   <Trans>
                     Ties the id to this registry and chain: the registry refuses ids with another prefix, so an id
-                    cannot be reused anywhere else. It is the last 4 bytes of{' '}
-                    <Formula expr='keccak256(chainId ‖ registry)' />.
+                    cannot be reused anywhere else. It is the last 4 bytes of a fingerprint of the registry’s chain id
+                    and address: <Formula expr='pidPrefix = uint32(keccak256(abi.encodePacked(chainID, registry)))' />.
                   </Trans>
                 }
               >
@@ -558,7 +597,7 @@ function ProcessIdPanel({ view }: { view: ProcessView }) {
           },
           {
             label: (
-              <Label help={t`How many processes the organizer had created on this registry before this one.`}>
+              <Label help={t`How many elections the organizer had created on this registry before this one.`}>
                 <Trans>Nonce</Trans>
               </Label>
             ),

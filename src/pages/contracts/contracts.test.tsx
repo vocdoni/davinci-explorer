@@ -66,7 +66,7 @@ describe('ContractsPage', () => {
     expect(screen.getByTestId('wiring-checks').querySelectorAll('[data-formula]')).toHaveLength(7)
     expect(screen.getByTestId('contract-row-verifier')).toHaveTextContent('verifySnarkProof')
     expect(within(screen.getByTestId('param-pidPrefix')).getByTestId('param-detail')).toHaveTextContent(
-      'keccak256(chainID ‖ registry)'
+      'pidPrefix = uint32(keccak256(abi.encodePacked(chainID, registry)))'
     )
     expect(screen.getByTestId('pin-batchProgramVK')).toHaveTextContent('registry.batchProgramVK()')
   })
@@ -74,7 +74,7 @@ describe('ContractsPage', () => {
   it('names each pin in plain words, with its identifier beside', () => {
     renderWithProviders(<ContractsPage />, { route: '/contracts' })
     const pin = screen.getByTestId('pin-batchProgramVK')
-    expect(pin).toHaveTextContent('Vote-batch program')
+    expect(pin).toHaveTextContent('Batch program')
     expect(within(pin).getByText('batchProgramVK').tagName).toBe('CODE')
   })
 
@@ -94,15 +94,15 @@ describe('DkgPanel', () => {
     registry: { ...store.chain.registry!, dkgAdapter: null, dkgManager: null, dkgAppManager: null },
   }
 
-  it('says the DKG modes are off on a registry without an adapter', () => {
+  it('says the committee key modes are off on a registry without an adapter', () => {
     renderWithProviders(<DkgPanel chain={noDkg} dkg={null} loading={false} error={null} />)
-    expect(screen.getByText('The DKG key modes are disabled on this registry')).toBeInTheDocument()
+    expect(screen.getByText('The committee key modes are disabled on this registry')).toBeInTheDocument()
     expect(screen.getByText('DKGDisabled')).toBeInTheDocument()
   })
 
   it('shows a read failure as it came', () => {
     renderWithProviders(<DkgPanel chain={store.chain} dkg={null} loading={false} error='execution reverted' />)
-    expect(screen.getByText('Could not read the DKG contracts')).toBeInTheDocument()
+    expect(screen.getByText('Could not read the key committee’s contracts')).toBeInTheDocument()
     expect(screen.getByText('execution reverted')).toBeInTheDocument()
   })
 

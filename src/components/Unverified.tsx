@@ -20,7 +20,7 @@ export function UnverifiedMark({
   const label = t`unverified`
   return (
     <Tooltip
-      content={t`Unverified: the document this comes from is not the one the organizer committed on-chain, so it may not be what voters were shown.`}
+      content={t`Unverified: the document this comes from is not the one whose fingerprint the organizer recorded on the chain, so it may not be what voters were shown.`}
     >
       <span
         tabIndex={focusable ? 0 : undefined}

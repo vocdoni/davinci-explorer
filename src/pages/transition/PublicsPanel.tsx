@@ -76,8 +76,8 @@ export function PublicsPanel({ detail }: { detail: TransitionDetail }) {
 
   return (
     <Panel
-      label={t`What the proof says`}
-      title={t`Public values`}
+      label={t`Public values`}
+      title={t`What the proof says`}
       description={
         <Trans>
           What the proof makes public about this batch (its <Term id='public-values'>public values</Term>): the state it
@@ -149,6 +149,7 @@ export function PublicsPanel({ detail }: { detail: TransitionDetail }) {
                   </span>
                   <span className='col-span-2 flex flex-col gap-1 text-[12px] leading-relaxed text-ash md:col-span-1'>
                     <span className='text-silver'>{r.description}</span>
+                    {r.detail ? <span>{r.detail}</span> : null}
                     {r.formula ? <Formula expr={r.formula} className='w-fit' /> : null}
                     {note ? <span className='text-pewter'>{i18n._(note)}</span> : null}
                   </span>
@@ -213,13 +214,13 @@ function FailMask({ mask }: { mask: number }) {
     <div className='flex flex-col gap-2'>
       <div className='flex flex-wrap items-center gap-2 text-[13px] text-silver'>
         <span className='label-caps text-[11px] text-pewter'>
-          <Trans>Fail mask</Trans>
+          <Trans>Failed checks</Trans>
         </span>
         <Explain>
           <Trans>
-            Which checks failed: one bit per group of checks in the proven program (davinci-zkvm circuit/CIRCUIT.md
-            §11). The registry requires every bit to be zero. The checks of a group often stop at the first failure, so
-            a set bit gives a reason, not a full list.
+            Which checks failed, one bit per group of checks in the proven program, so zero when none failed. The
+            registry requires every bit to be zero. The checks of a group often stop at the first failure, so a set bit
+            gives a reason, not a full list. This is the <code>fail_mask</code> of davinci-zkvm circuit/CIRCUIT.md §11.
           </Trans>
         </Explain>
         <span className={cn('font-mono text-[12px]', count ? 'text-red' : 'text-emerald')}>
@@ -241,6 +242,7 @@ function FailMask({ mask }: { mask: number }) {
                 <span className='font-mono text-[12px] text-silver'>{b.constant}</span>
                 <span className='col-span-2 flex flex-col gap-0.5 text-[12px] leading-relaxed sm:col-span-1'>
                   {bit ? <span className='text-silver'>{bit.description}</span> : null}
+                  {bit?.detail ? <span className='text-ash'>{bit.detail}</span> : null}
                   <span className='text-ash'>{i18n._(b.meaning)}</span>
                   {bit?.formula ? <Formula expr={bit.formula} className='w-fit' /> : null}
                 </span>

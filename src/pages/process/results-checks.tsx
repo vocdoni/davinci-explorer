@@ -85,7 +85,7 @@ export function useSequencerResultsChecks(view: ProcessView | null): SequencerRe
     },
     {
       id: 'final-root',
-      label: t`Proven against the final state root`,
+      label: t`Proven from the election’s final state`,
       state:
         pub && lastRoot
           ? pub.stateRoot === lastRoot && pub.stateRoot === s.latestStateRoot
@@ -95,29 +95,29 @@ export function useSequencerResultsChecks(view: ProcessView | null): SequencerRe
       detail: pub ? (
         <span className='inline-flex flex-wrap items-center gap-1'>
           <Trans>
-            The state root the proof was made for (registers 2 to 9) is the last batch’s root:{' '}
+            The proof starts from the fingerprint of the state after the last batch (the state root, registers 2 to 9):{' '}
             <Hash value={pub.stateRoot} chars={6} />
           </Trans>
         </span>
       ) : (
-        t`The state root the proof was made for (registers 2 to 9) against the last batch’s root.`
+        t`The fingerprint of the state the proof starts from (registers 2 to 9), against the one after the last batch.`
       ),
     },
     {
       id: 'tally-proven',
-      label: t`The stored tally is the proven one`,
+      label: t`The stored results are the proven ones`,
       state: pub
         ? results.values.length === nf && results.values.every((v, i) => pub.results[i] === v)
           ? 'pass'
           : 'fail'
         : 'unknown',
-      detail: t`The totals in the proof (registers 10 to ${lastRegister}, one 64-bit value per field) against the ProcessResultsSet event.`,
+      detail: t`The totals in the proof, against the ones the registry recorded (registers 10 to ${lastRegister}, one 64-bit value per field, and the ProcessResultsSet event).`,
     },
     {
       id: 'plonk',
-      label: t`The PLONK verified on-chain`,
+      label: t`The proof was checked on the chain`,
       state: 'pass',
-      detail: t`The registry emits ProcessResultsSet only after the verifier accepted the proof under the results program (resultsProgramVK).`,
+      detail: t`The registry records the results, and emits ProcessResultsSet, only after the verifier accepted the PLONK proof under the results program (resultsProgramVK).`,
     },
   ]
   return { checks, publics: pub, decodeError: decoded.error }
@@ -161,33 +161,34 @@ export function useDkgResultsChecks(view: ProcessView | null): DkgResults {
           ? [
               {
                 id: 'revealed' as const,
-                label: t`The organizer revealed its secret`,
+                label: t`The organizer secret was revealed`,
                 state: (app ? (app.revealed ? 'pass' : 'unknown') : 'unknown') as CheckState,
                 detail: app?.revealed ? (
                   <Trans>
-                    The DKG checked <Formula expr='sk · G = PK_org' /> when it accepted the reveal.
+                    The key committee’s contracts checked the secret against the organizer key when they accepted the
+                    reveal: <Formula expr='sk · G = PK_org' />.
                   </Trans>
                 ) : (
-                  t`Until the reveal the committee cannot decrypt: the DKG refuses every partial decryption and combine.`
+                  t`Until the reveal the committee cannot decrypt: its contracts refuse every partial decryption and combine.`
                 ),
               },
             ]
           : []),
         {
           id: 'combined',
-          label: t`Every value sent to the committee is decrypted`,
+          label: t`Every value sent to the key committee is decrypted`,
           state: (app ? (completed === submitted ? 'pass' : 'unknown') : 'unknown') as CheckState,
           detail: app
-            ? t`${combined} of ${total} combined on the DKG, each from the members’ partial decryptions`
+            ? t`${combined} of ${total} decrypted by the key committee, each from its members’ partial decryptions`
             : dkg.isLoading
-              ? t`Reading the DKG contracts…`
-              : t`The DKG state could not be read`,
+              ? t`Reading the key committee’s contracts…`
+              : t`The key committee’s contracts could not be read`,
         },
         ...(results && app && app.ciphertexts.length > 0
           ? [
               {
                 id: 'tally-plaintexts' as const,
-                label: t`The stored totals are the committee’s decrypted values`,
+                label: t`The stored totals are the key committee’s decrypted values`,
                 state: (app.ciphertexts.every((c) => c.completed && results.values[c.field] === c.plaintext)
                   ? 'pass'
                   : 'fail') as CheckState,

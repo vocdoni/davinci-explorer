@@ -176,7 +176,7 @@ export function useVoteInclusion(pid: string | undefined, voteId: bigint | null)
         if (cancelled) return
         const job = blobJob(storeRef.current, pid, i)
         if (!job) {
-          errors.push(t`#${i}: the settlement transaction could not be read from the RPC`)
+          errors.push(t`Batch #${i}: its transaction could not be read from the RPC`)
           if (!cancelled) setResult({ state: 'searching', transitionIndex: null, checked, total, errors: [...errors] })
           continue
         }

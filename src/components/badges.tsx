@@ -19,14 +19,14 @@ const PHASE: Record<
     { description: MessageDescriptor } | { status: ProcessStatusName }
   )
 > = {
-  loading: { label: msg`Loading`, tone: 'neutral', description: msg`Still reading this process from the chain.` },
+  loading: { label: msg`Loading`, tone: 'neutral', description: msg`Still reading this election from the chain.` },
   upcoming: { label: msg`Upcoming`, tone: 'info', description: msg`Voting has not started yet.` },
   open: { label: msg`Open`, tone: 'ok', dot: true, status: 'ready' },
   paused: { label: msg`Paused`, tone: 'warn', status: 'paused' },
   closed: {
     label: msg`Voting closed`,
     tone: 'warn',
-    description: msg`The voting time is over. The registry still reads Ready until someone ends the process or publishes the results.`,
+    description: msg`The voting time is over. The registry still reads Ready until someone ends the election or publishes the results.`,
   },
   ended: { label: msg`Ended`, tone: 'neutral', status: 'ended' },
   canceled: { label: msg`Canceled`, tone: 'danger', status: 'canceled' },

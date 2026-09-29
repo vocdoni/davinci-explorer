@@ -21,7 +21,7 @@ const SECTIONS: Array<{ id: string; label: MessageDescriptor }> = [
   { id: 'addresses', label: msg`Addresses` },
   { id: 'parameters', label: msg`Pinned values` },
   { id: 'release', label: msg`Release check` },
-  { id: 'dkg', label: msg`DKG committee` },
+  { id: 'dkg', label: msg`Key committee` },
 ]
 
 /**
@@ -68,8 +68,8 @@ export function ContractsPage() {
         <ul>
           <li>
             <Trans>
-              The <Term id='registry'>registry</Term> is the contract that holds every process. It accepts a batch of
-              votes or a result only with a valid proof.
+              The <Term id='registry'>registry</Term> is the contract that holds every election. It records a batch of
+              votes or the results only with a valid proof.
             </Trans>
           </li>
           <li>
@@ -105,7 +105,7 @@ export function ContractsPage() {
         <span data-testid='release-summary'>{i18n._(verdict.text)}</span>{' '}
         {match.release ? (
           <Trans>
-            Every batch and every count decrypted by a sequencer on this registry is checked against the released
+            Every batch on this registry, and the results a sequencer decrypts, are checked against the released
             programs, the released proving setup and the released verifier code.
           </Trans>
         ) : null}

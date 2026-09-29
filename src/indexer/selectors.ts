@@ -388,7 +388,7 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
       t`The voters were checked against this election’s list`,
       censusOk,
       onchainCensus
-        ? t`The explorer cannot redo this one: the registry asked the census contract when it recorded the batch.`
+        ? t`The explorer cannot redo this one: the registry asked the contract that keeps the list of voters when it recorded the batch.`
         : t`The list the proof used, against the one the election accepts.`,
       onchainCensus ? 'createdBlock ≤ getRootBlockNumber(CensusRoot) ≤ block' : 'CensusRoot = census.censusRoot'
     )
@@ -426,7 +426,7 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
       'blob-count',
       t`The transaction carries every data blob the proof counts`,
       hashes ? hashes.length === nBlobs && (!publics || publics.nBlobs === nBlobs) : null,
-      t`${plural(nBlobs, { one: '# blob', other: '# blobs' })}.`,
+      t`${plural(nBlobs, { one: '# data blob', other: '# data blobs' })}.`,
       'NBlobs = nBlobs = count(blobVersionedHashes)'
     )
   )
@@ -437,7 +437,7 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
       tx && hashes && tx.commitments.length > 0
         ? tx.commitments.length === hashes.length && tx.commitments.every((c, i) => versionedHash(c) === hashes[i])
         : null,
-      t`Each blob’s commitment in the call, against the blob hashes of the transaction.`,
+      t`The fingerprint of each data blob in the call, against the ones the transaction carries.`,
       'versionedHash = 0x01 ‖ sha256(commitment)[1..]'
     )
   )
@@ -446,7 +446,7 @@ export function transitionDetail(store: IndexerStore, pid: string, index: number
       'blobs-digest',
       t`The proof covers exactly this published data`,
       tx && publics && tx.commitments.length > 0 ? blobsDigest(tx.commitments, tx.ys) === publics.blobsDigest : null,
-      t`One fingerprint over every blob, recomputed here, against the one in the proof.`,
+      t`One fingerprint over all the published data, recomputed here, against the one in the proof.`,
       'sha256(commitment₀ ‖ y₀ ‖ commitment₁ ‖ y₁ ‖ …) = BlobsDigest'
     )
   )
@@ -541,7 +541,7 @@ export interface FeedEntry {
   block: number
   tx: Hex | null
   timestamp: number | null
-  /** One plain line: "Transition #3: 12 votes in 1 blob". */
+  /** One plain line: "Batch #3: 12 votes in 1 data blob". */
   label: string
   href: string
 }
@@ -568,11 +568,11 @@ function feedEntry(store: IndexerStore, ev: IndexedEvent): FeedEntry | null {
         ...base,
         kind: 'transition',
         label: tr
-          ? t`Transition #${index}: ${plural(votes, { one: '# vote', other: '# votes' })} in ${plural(nBlobs, {
-              one: '# blob',
-              other: '# blobs',
+          ? t`Batch #${index}: ${plural(votes, { one: '# vote', other: '# votes' })} in ${plural(nBlobs, {
+              one: '# data blob',
+              other: '# data blobs',
             })}`
-          : t`Transition #${index} in ${plural(nBlobs, { one: '# blob', other: '# blobs' })}`,
+          : t`Batch #${index} in ${plural(nBlobs, { one: '# data blob', other: '# data blobs' })}`,
         href: tr ? paths.transition(ev.processId, tr.index) : base.href,
       }
     }
@@ -588,7 +588,7 @@ function feedEntry(store: IndexerStore, ev: IndexedEvent): FeedEntry | null {
       return {
         ...base,
         kind: 'decryption',
-        label: t`Encrypted count sent to the DKG committee to decrypt (${plural(count, { one: '# field', other: '# fields' })})`,
+        label: t`Encrypted total sent to the key committee to decrypt (${plural(count, { one: '# field', other: '# fields' })})`,
         href: paths.process(ev.processId, 'results'),
       }
     }
@@ -713,7 +713,7 @@ export function searchStore(store: IndexerStore, raw: string, limit = 8): Search
     const tr = transitionByTx(store, q)
     if (tr) {
       const index = tr.index
-      push({ kind: 'transition', label: t`Transition #${index}`, href: paths.transition(tr.processId, index) })
+      push({ kind: 'transition', label: t`Batch #${index}`, href: paths.transition(tr.processId, index) })
     }
     for (const key of store.processOrder) {
       const p = store.processes[key]!
@@ -762,7 +762,7 @@ export function searchStore(store: IndexerStore, raw: string, limit = 8): Search
       if (tr.block === block)
         push({
           kind: 'block',
-          label: t`Transition #${index} in block ${block}`,
+          label: t`Batch #${index} in block ${block}`,
           href: paths.transition(tr.processId, index),
         })
     }

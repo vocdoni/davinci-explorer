@@ -54,11 +54,11 @@ export function ProcessesPanel() {
   return (
     <Panel
       title={t`Processes`}
-      label={t`By phase, key and census`}
+      label={t`By phase, key holder and list of voters`}
       description={
         <Trans>
-          How many processes are in each phase, who holds their key (the <Term id='key-mode'>key mode</Term>) and where
-          their voters come from (the <Term id='census'>census</Term>). Each line opens the matching list.
+          How many elections are in each phase, <Term id='key-mode'>who holds their key</Term> and where their{' '}
+          <Term id='census'>list of voters</Term> comes from. Each line opens the matching list.
         </Trans>
       }
       actions={
@@ -71,7 +71,7 @@ export function ProcessesPanel() {
         <EmptyState
           compact
           title={t`No processes yet`}
-          description={t`Each process an organizer creates will be counted here by phase, key mode and list of voters.`}
+          description={t`Each election an organizer creates will be counted here by phase, key holder and list of voters.`}
         />
       ) : (
         <div className='flex flex-col gap-5'>
@@ -84,7 +84,7 @@ export function ProcessesPanel() {
           <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2'>
             <div>
               <div className='label-caps mb-1 text-[11px] text-pewter'>
-                <Trans>Key mode</Trans>
+                <Trans>Key holder</Trans>
               </div>
               <ul>
                 {KEY_MODES.map((m) => (
@@ -99,7 +99,7 @@ export function ProcessesPanel() {
             </div>
             <div>
               <div className='label-caps mb-1 text-[11px] text-pewter'>
-                <Trans>Census</Trans>
+                <Trans>List of voters</Trans>
               </div>
               <ul>
                 {CENSUS.map((c) => (

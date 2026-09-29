@@ -1,7 +1,7 @@
 // Formulas in prose: `sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)`
 // set in the mono font with function names, variables, literals and
-// operators in their own colours, `||` shown as ‖, `2^63` as a superscript,
-// and line breaks only at the spaces around operators and after commas. The expression is code: it is
+// operators in their own colours, `||` shown as ‖, `2^63` and `2^−7.6` as
+// superscripts, and line breaks only at the spaces around operators and after commas. The expression is code: it is
 // never translated, so pass it as `expr` and it stays out of the catalogs.
 
 import { Fragment } from 'react'
@@ -16,7 +16,7 @@ const TOKEN_CLASS: Record<Exclude<FormulaTokenKind, 'space'>, string> = {
   punct: 'text-pewter',
 }
 
-/** A token that reads as an exponent after `^`: a number or a short name. */
+/** A token that reads as an exponent after `^`: a number or a short name, with its sign (`−7.6`). */
 function isExponent(tok: FormulaToken | undefined): boolean {
   return tok != null && (tok.kind === 'lit' || tok.kind === 'var') && tok.text.length <= 8
 }

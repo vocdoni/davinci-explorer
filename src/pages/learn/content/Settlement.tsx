@@ -13,17 +13,19 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
     <>
       <InShort className='mb-8'>
         <Trans>
-          The registry accepts a batch only if the process is open, the proof is valid and says every check passed, the
-          batch starts from the latest state, its voters were checked against the right census, the voter limit holds
-          and the published data matches the proof. If any check fails the transaction is refused and nothing changes.
+          The registry records a batch only if the election is open, the proof is valid and says every check passed, the
+          batch starts from the latest state, its voters were checked against the right list of voters, the voter limit
+          holds and the published data matches the proof. If any check fails the transaction is refused and nothing
+          changes.
         </Trans>
       </InShort>
 
       <Section id='the-call' title={t`The call`}>
         <P>
           <Trans>
-            A sequencer sends a batch to the registry in one transaction, which also carries the batch’s blobs. Anyone
-            may send it; the checks below decide whether it is accepted (whether the batch settles).
+            A sequencer sends a batch to the registry in one transaction, which also carries the batch’s data blobs.
+            Anyone may send it; the checks below decide whether it is recorded (in technical terms, whether the batch
+            settles).
           </Trans>
         </P>
         <Details>
@@ -42,32 +44,32 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
         <NumberedList
           className='my-4 [&_li]:text-[14px]'
           items={[
-            <Trans key='1'>The process exists, is open and is inside its voting window.</Trans>,
+            <Trans key='1'>The election exists, is open and is inside its voting window.</Trans>,
             <Trans key='2'>The proof’s public values have the right size and say every check passed.</Trans>,
             <Trans key='3'>
-              The batch starts from the process’s latest state. A batch built on an older state, such as the loser of a
+              The batch starts from the election’s latest state. A batch built on an older state, such as the loser of a
               race between two sequencers, is refused here.
             </Trans>,
-            <Trans key='4'>The voters were checked against a census the process accepts.</Trans>,
+            <Trans key='4'>The voters were checked against a list of voters the election accepts.</Trans>,
             <Trans key='5'>
               The number of voters before the batch matches the registry’s own count. The proof cannot see the whole
               state, so the registry supplies it.
             </Trans>,
-            <Trans key='6'>The batch does not take the process past its maximum number of voters.</Trans>,
+            <Trans key='6'>The batch does not take the election past its maximum number of voters.</Trans>,
             <Trans key='7'>
-              The published data matches the proof: the right number of blobs, and a fingerprint of them equal to the
-              one in the proof.
+              The published data matches the proof: the right number of data blobs, and a fingerprint of them equal to
+              the one in the proof.
             </Trans>,
             <Trans key='8'>
               The proof itself is valid, and was made by the released batch program under the released proving setup.
             </Trans>,
-            <Trans key='9'>Each blob really contains the data the proof computed.</Trans>,
+            <Trans key='9'>Each data blob really contains the data the proof computed.</Trans>,
           ]}
         />
         <P>
           <Trans>
-            When every check passes, the process moves to its new state, its counts of voters, changed votes and batches
-            go up, and the registry announces the new state in an event.
+            When every check passes, the election moves to its new state, its counts of voters, changed votes and
+            batches go up, and the registry announces the new state in an event.
           </Trans>
         </P>
         <Details summary={<Trans>The exact checks</Trans>}>
@@ -88,8 +90,8 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
             <li>
               <Trans>
                 The census root matches. For origins 1, 2 and 4 it equals the stored root; for an on-chain census the
-                census contract’s <C>getRootBlockNumber(root)</C> must be non-zero, at most the current block and at
-                least the process’s creation block.
+                census contract’s <C>getRootBlockNumber(root)</C>, the last block the root was valid, must be non-zero,
+                at most the current block and at least the process’s creation block.
               </Trans>
             </li>
             <li>
@@ -113,15 +115,17 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
                 The verifier accepts the PLONK proof,{' '}
                 <Formula expr='verifySnarkProof(batchProgramVK, rootCVadcopFinal, publicValues, proofBytes)' />. It
                 hashes the <Term id='program-vk'>program vk</Term>, the public values and the setup root together,{' '}
-                <Formula expr='sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)' />, so a proof of another program or
-                made under another setup fails.
+                <Formula expr='sha256(programVK ‖ publicValues ‖ rootCVadcopFinal) mod r_BN254' />, so a proof of
+                another program or made under another setup fails.
               </Trans>
             </li>
             <li>
               <Trans>
                 Every blob opens to its <Formula expr='y' /> at{' '}
-                <Formula expr='z = sha256(processId ‖ rootBefore ‖ commitment) mod r' />, checked with the
-                point-evaluation precompile against the transaction’s blob hashes.
+                <Formula expr='z = sha256(be32(processId) ‖ reverse(rootBefore) ‖ commitment) mod r_BLS' />, checked
+                with the point-evaluation precompile against the transaction’s blob hashes. The process id is padded to
+                32 bytes, the root before the batch is taken with its bytes reversed, the commitment is 48 bytes, and{' '}
+                <Formula expr='r_BLS' /> is the order of the BLS12-381 scalar field.
               </Trans>
             </li>
           </OL>
@@ -140,8 +144,8 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
           <Trans>
             A proof makes a short list of numbers public, its <Term id='public-values'>public values</Term>. They say
             whether every check passed and give the fingerprints of the state before and after, the number of votes and
-            of changed votes, the fingerprint of the census used, a fingerprint of the published data with the number of
-            blobs, and how many voters had voted before the batch.
+            of changed votes, the fingerprint of the list of voters used, a fingerprint of the published data with the
+            number of data blobs, and how many voters had voted before the batch.
           </Trans>
         </P>
         <Details>
@@ -175,35 +179,47 @@ export function Settlement({ ex }: { ex: LearnExamples }) {
       >
         <P>
           <Trans>
-            The proof shows that a batch was processed correctly from whatever starting state and census it was given.
-            The registry adds what only the chain knows: the process’s latest state, its census, its count of voters,
-            and the fingerprints of the blobs the transaction carries. Together they make each batch a valid step from
-            the previous one.
+            The proof shows that a batch was processed correctly from whatever starting state and list of voters it was
+            given. The registry adds what only the chain knows: the election’s latest state, its list of voters, its
+            count of voters, and the fingerprints of the data blobs the transaction carries. Together they make each
+            batch a valid step from the previous one.
           </Trans>
         </P>
         <UL>
           <li>
             <Trans>
-              The explorer recomputes most of these checks from public data: the proof’s verdict, the chain of states,
-              the census root, <C>occupied_before</C>, the vote counts, the blob count, the versioned hashes and the
-              blob digest. It does not recompute the census root of a census kept by a contract (origin 3), and for an
-              updated list (origin 2) it only checks the root against the roots it has seen.
+              The explorer redoes most of these checks from public data: the proof’s verdict, the chain of states, the
+              list of voters used, the count of earlier voters, the vote counts and the published data. It cannot check
+              the list for a list kept by a contract (origin 3), and for a replaced list (origin 2) it only knows the
+              lists it has seen.
             </Trans>
           </li>
           <li>
             <Trans>
-              The proof itself and the blob openings (the PLONK proof and the KZG openings) are verified on chain; the
-              explorer shows the program fingerprint and the setup root they were checked against.
+              The proof itself and the checks of the published data are verified on the chain; the explorer shows the
+              program’s fingerprint and the proving setup they were checked against.
             </Trans>
           </li>
         </UL>
+        <Details>
+          <P>
+            <Trans>
+              Recomputed: <C>ok</C> and <C>fail_mask</C>, root continuity, the census root, <C>occupied_before</C>, the
+              vote counts, the blob count, the versioned hashes and the blob digest. Not recomputed: the census root of
+              an origin-3 census, which the registry checked with the census contract’s <C>getRootBlockNumber(root)</C>;
+              for origin 2 the root is only checked against the roots of the <C>CensusUpdated</C> events seen. The PLONK
+              proof and the KZG openings were verified on the chain, against the program vk and <C>rootCVadcopFinal</C>{' '}
+              the registry pins.
+            </Trans>
+          </P>
+        </Details>
         {active ? (
           <SeeIt to={paths.transition(active.id, active.transitions - 1)}>
-            <Trans>The checks of a recent transition</Trans>
+            <Trans>The checks of a recent batch</Trans>
           </SeeIt>
         ) : null}
         <SeeIt to={`${paths.contracts()}#parameters`}>
-          <Trans>The program vk and setup root this registry pins</Trans>
+          <Trans>The program fingerprints and proving setup this registry pins</Trans>
         </SeeIt>
         <P>
           <Trans>

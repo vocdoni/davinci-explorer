@@ -34,6 +34,34 @@ describe('VerifyDeploymentPage', () => {
     expect(screen.getByTestId('contract-row-registry')).toHaveTextContent('ProcessRegistry')
   })
 
+  it('keeps each value’s source, each link’s relation and each contract’s mechanism under the details', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<VerifyDeploymentPage />, { route: '/verify/deployment' })
+    const formulas = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('[data-formula]')).map((f) => f.textContent ?? '')
+
+    const release_ = screen.getByTestId('check-release')
+    await user.click(within(release_).getByText('How this is checked'))
+    const pins = within(release_).getByTestId('pin-details')
+    expect(formulas(pins)).toEqual(
+      expect.arrayContaining(['registry.batchProgramVK()', 'keccak256(eth_getCode(ziskVerifier))'])
+    )
+    expect(pins).toHaveTextContent('cargo-zisk setup')
+
+    const contracts = screen.getByTestId('check-contracts')
+    await waitFor(() => expect(contracts).toHaveAttribute('data-status', 'pass'))
+    await user.click(within(contracts).getByText('How this is checked'))
+    expect(formulas(within(contracts).getByTestId('wiring-checks'))).toEqual(
+      expect.arrayContaining(['adapter.registry() = registry', 'DKGManager.CHAIN_ID() = CHAIN_ID'])
+    )
+    expect(within(contracts).getByTestId('contract-details')).toHaveTextContent('verifySnarkProof')
+
+    const dkg = screen.getByTestId('check-dkg')
+    await waitFor(() => expect(dkg).toHaveAttribute('data-status', 'pass'))
+    await user.click(within(dkg).getByText('How this is checked'))
+    expect(within(dkg).getByTestId('dkg-verifier-finalize')).toHaveTextContent('finalizeEpoch')
+  })
+
   it('switches the verification command between the chain’s pins and the release’s', async () => {
     const user = userEvent.setup()
     renderWithProviders(<VerifyDeploymentPage />, { route: '/verify/deployment' })

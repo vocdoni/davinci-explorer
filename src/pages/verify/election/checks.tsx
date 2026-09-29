@@ -1,5 +1,5 @@
 // The cards of the election check: its setup (census, key, ballot rules),
-// every batch and the root chain, and the result.
+// every batch and the root chain, and the results.
 
 import { useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -88,7 +88,7 @@ export function CensusCard({
                 other='All # batches were proven against it.'
               />
             ) : status === 'fail' ? (
-              <Trans>A batch was proven against another census.</Trans>
+              <Trans>A batch was proven against another list of voters.</Trans>
             ) : null
           ) : null}
         </>
@@ -145,8 +145,10 @@ export function CensusCard({
             <RedoCommand
               note={
                 <Trans>
-                  Ask the census contract when it recorded a list fingerprint; for every batch, the registry requires a
-                  block at or after the election’s creation.
+                  Ask the census contract up to which block a list fingerprint was valid: the current block for its
+                  current list, the block it was replaced in for an older one, 0 for one it never held. For every batch,
+                  the registry requires that block to be no earlier than the election’s creation and no later than the
+                  batch.
                 </Trans>
               }
               code={`cast call ${contract} "getRootBlockNumber(uint256)(uint256)" \\\n  ${root.toString()} --rpc-url $RPC`}
@@ -162,7 +164,7 @@ export function CensusCard({
         </>
       }
     >
-      {c.uri ? <UriLink uri={c.uri} href={href} label={t`Open the census file`} /> : null}
+      {c.uri ? <UriLink uri={c.uri} href={href} label={t`Open the list of voters`} /> : null}
     </CheckCard>
   )
 }
@@ -199,8 +201,9 @@ export function KeyCard({
         <>
           <p>
             <Trans>
-              Voters lock their ballots with this key (the <Term id='encryption-key'>election key</Term>). It was fixed
-              when the election was created, so it cannot change, and every batch keeps the ballots locked with it.
+              Voters encrypt their ballots to this key (the <Term id='encryption-key'>election key</Term>). It was fixed
+              when the election was created, so it cannot change, and every batch encrypts the stored ballots afresh
+              under it.
             </Trans>{' '}
             {KEY_MODE_INFO[mode].description}
           </p>
@@ -266,7 +269,7 @@ export function RulesCard({ view }: { view: ProcessView }) {
       how={
         <p>
           <Trans>
-            The rules are part of the election’s starting state, so they cannot change. Each voter’s app proves that the
+            The rules are part of the election’s starting state, so they cannot change. Each voting app proves that the
             ballot follows them without revealing it (a <Term id='ballot-proof'>ballot proof</Term>), and every one of
             those proofs is checked inside the batch’s proof before the batch is recorded.
           </Trans>
@@ -352,9 +355,9 @@ export function MetadataCard({
                   label: t`Address`,
                   value: uri ? <span className='font-mono break-all'>{uri}</span> : '—',
                 },
-                { label: t`Committed hash`, value: <Hash value={s.metadataHash} chars={10} /> },
+                { label: t`Fingerprint on the chain`, value: <Hash value={s.metadataHash} chars={10} /> },
                 {
-                  label: t`Hash of what it serves`,
+                  label: t`Fingerprint of what is served`,
                   value: check.served ? (
                     <span className='inline-flex items-center gap-2'>
                       <CheckMark state={check.status === 'matches' ? 'pass' : 'fail'} />
@@ -513,7 +516,7 @@ function BatchList({ pid, verdicts }: { pid: string; verdicts: BatchVerdict[] })
                 {v.timestamp != null ? formatTimestamp(v.timestamp) : '—'}
               </span>
               <span className='w-24 shrink-0 text-[12px] text-ash'>
-                <Plural value={v.votes} one='# ballot' other='# ballots' />
+                <Plural value={v.votes} one='# vote' other='# votes' />
               </span>
               <span className='flex min-w-0 flex-1 flex-wrap items-center gap-1' aria-hidden='true'>
                 {v.checks.map((c) => (
@@ -664,7 +667,7 @@ export function ChainCard({ view, status, registry }: { view: ProcessView; statu
           </HowPart>
           <p>
             <Link to={paths.process(pid, 'transitions')} className={LINK}>
-              <Trans>Every root, batch by batch, on the transitions tab.</Trans>
+              <Trans>Every fingerprint, batch by batch, on the batches tab.</Trans>
             </Link>
           </p>
           <RedoCommand
@@ -692,36 +695,36 @@ export function PublishedCard({ view, status }: { view: ProcessView; status: Ver
   const pid = view.process.id
   const link = (
     <Link to={paths.process(pid, 'results')} className={LINK}>
-      <Trans>The result</Trans>
+      <Trans>The results</Trans>
     </Link>
   )
   return (
     <CheckCard
       id='published'
       status={status}
-      title={t`The result is published`}
+      title={t`The results are published`}
       statusLabel={status === 'pending' ? t`Not yet` : undefined}
       summary={
         results ? (
           when ? (
             <Trans>
-              {link} was published on {when}, counting <Plural value={voters} one='# voter' other='# voters' />.
+              {link} were published on {when}, counting <Plural value={voters} one='# voter' other='# voters' />.
             </Trans>
           ) : (
             <Trans>
-              {link} is published, counting <Plural value={voters} one='# voter' other='# voters' />.
+              {link} are published, counting <Plural value={voters} one='# voter' other='# voters' />.
             </Trans>
           )
         ) : view.row.phase === 'canceled' ? (
-          <Trans>The organizer canceled the election, so no result will be published.</Trans>
+          <Trans>The organizer canceled the election, so no results will be published.</Trans>
         ) : request ? (
           <Trans>
-            The encrypted total went to the committee for decryption; the result follows once it is decrypted.
+            The encrypted total went to the key committee for decryption; the results follow once it is decrypted.
           </Trans>
         ) : end ? (
-          <Trans>Not yet: the result comes after the vote ends, on {end}.</Trans>
+          <Trans>Not yet: the results come after the vote ends, on {end}.</Trans>
         ) : (
-          <Trans>Not yet: the result comes after the vote ends.</Trans>
+          <Trans>Not yet: the results come after the vote ends.</Trans>
         )
       }
     />
@@ -760,7 +763,7 @@ export function ProducedCard({
     <CheckCard
       id='produced'
       status={status}
-      title={mode === 'sequencer' ? t`The result was proven correct` : t`The committee decrypted the right total`}
+      title={mode === 'sequencer' ? t`The results were proven correct` : t`The key committee decrypted the right total`}
       statusLabel={status === 'pending' && checks.length === 0 ? t`Not yet` : undefined}
       summary={mode ? i18n._(HOW_RESULT[mode]) : t`Reading the election…`}
       how={
@@ -806,9 +809,9 @@ export function TallyCard({
         ) : status === 'fail' ? (
           <Trans>A stored number differs from the proven one.</Trans>
         ) : status === 'na' ? (
-          <Trans>There is no result to compare.</Trans>
+          <Trans>There are no results to compare.</Trans>
         ) : (
-          <Trans>Compared once the result is published.</Trans>
+          <Trans>Compared once the results are published.</Trans>
         )
       }
       how={checks.length ? <ResultChecksList checks={checks} /> : undefined}

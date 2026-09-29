@@ -18,19 +18,19 @@ const PIN_HELP: Record<PinCheck['pin'], MessageDescriptor> = {
   }),
   resultsProgramVK: msg({
     message:
-      'The program that proves the results of a process with a sequencer key. The registry accepts such results only with a proof of this program (`resultsProgramVK`).',
+      'The program that proves the results of an election with a sequencer key. The registry accepts such results only with a proof of this program (`resultsProgramVK`).',
   }),
   rootCVadcopFinal: msg({
     message:
-      'The ZisK proving setup both kinds of proof are wrapped with (`rootCVadcopFinal`). It changes with the ZisK release, not with the programs.',
+      'The proving setup every proof is made with. It changes with a new release of the proving system, not with the programs (`rootCVadcopFinal`, the ZisK setup both kinds of proof are wrapped with).',
   }),
   ziskVerifierCodeHash: msg({
     message:
-      'The fingerprint of the code of the verifier contract, which checks every proof for the registry (keccak256 of its runtime code).',
+      'The fingerprint of the code of the verifier contract, which checks every proof for the registry (`ziskVerifierCodeHash`, the keccak256 of its runtime code).',
   }),
   ballotVKHash: msg({
     message:
-      'The fingerprint of the key that checks voters’ ballot proofs (`ballotVKHash`). Every process starts with it in its state, as leaf `0x07`, and the batch program accepts ballot proofs only under that key.',
+      'The fingerprint of the key that checks voters’ ballot proofs. Every election starts with it in its state, and the batch program accepts ballot proofs only under that key (`ballotVKHash`, leaf `0x07`).',
   }),
 }
 
@@ -89,8 +89,8 @@ export function NetworkCard() {
                 <Trans>Registry</Trans>
                 <Explain>
                   <Trans>
-                    The voting contract (ProcessRegistry). It keeps every process, and records each batch of votes and
-                    each result only after checking its proof.
+                    The voting contract (ProcessRegistry). It keeps every election, and records each batch of votes and
+                    the results only after checking their proofs.
                   </Trans>
                 </Explain>
               </span>
@@ -103,8 +103,8 @@ export function NetworkCard() {
                 <Trans>Verifier</Trans>
                 <Explain>
                   <Trans>
-                    The contract that checks every proof for the registry, for each batch and each result (the ZisK
-                    PLONK verifier).
+                    The contract that checks every proof for the registry, for each batch and for the results. It is the
+                    ZisK PLONK verifier.
                   </Trans>
                 </Explain>
               </span>
@@ -114,11 +114,11 @@ export function NetworkCard() {
           {
             label: (
               <span className='inline-flex items-center gap-1'>
-                <Trans>DKG adapter</Trans>
+                <Trans>Key committee adapter</Trans>
                 <Explain>
                   <Trans>
-                    The registry’s link to the key committee’s contracts (davinci-dkg). Without it, no process can use a
-                    committee key.
+                    The registry’s link to the key committee’s contracts (davinci-dkg). Without it, no election can use
+                    a committee key.
                   </Trans>
                 </Explain>
               </span>
@@ -128,7 +128,7 @@ export function NetworkCard() {
                 <Address value={registry.dkgAdapter} />
               ) : (
                 <span className='text-ash'>
-                  <Trans>none: DKG key modes disabled</Trans>
+                  <Trans>none: committee keys disabled</Trans>
                 </span>
               )
             ) : (

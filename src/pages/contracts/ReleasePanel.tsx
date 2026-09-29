@@ -68,7 +68,7 @@ export function ReleasePanel({
                 <p className='mt-1 text-[12px] text-pewter'>{i18n._(PIN_DETAILS[c.pin].what)}</p>
                 <dl className='mt-1.5 grid gap-x-4 gap-y-1 text-[12px] sm:grid-cols-[auto_minmax(0,1fr)]'>
                   <dt className='text-ash'>
-                    <Trans>On chain</Trans>
+                    <Trans>On the chain</Trans>
                   </dt>
                   <dd className='min-w-0'>{c.actual ? <Hash value={c.actual} chars={10} /> : '…'}</dd>
                   <dt className='text-ash'>

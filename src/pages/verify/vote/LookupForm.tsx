@@ -101,7 +101,7 @@ export function LookupForm({ initialPid, initialVote }: { initialPid: string; in
             autoComplete='off'
             spellCheck={false}
             error={touched ? query.voteError : undefined}
-            hint={t`0x and 16 hex digits, from the app you voted with.`}
+            hint={t`0x and 16 hex digits, from your voting app.`}
           />
         </div>
         <div className='flex flex-col gap-3 border-t border-charcoal pt-4 sm:flex-row sm:items-center sm:justify-between'>

@@ -1,4 +1,4 @@
-// The lifecycle strip of a process page: created → start → transitions → end
+// The lifecycle strip of a process page: created → start → batches → end
 // → results, each step done, in progress, still ahead, or skipped (a canceled
 // process never ends normally and never gets results).
 
@@ -52,7 +52,7 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
     },
     {
       id: 'transitions',
-      label: t`Transitions`,
+      label: t`Batches`,
       state:
         phase === 'open' || phase === 'paused'
           ? 'current'
@@ -66,8 +66,8 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
         batches > 0
           ? t`${plural(batches, { one: '# batch', other: '# batches' })}, ${plural(ballots, { one: '# vote', other: '# votes' })}`
           : phase === 'open'
-            ? t`No batch settled yet`
-            : t`No batch settled`,
+            ? t`No batch recorded yet`
+            : t`No batch recorded`,
       tx: last?.tx ?? null,
     },
     {
@@ -98,7 +98,7 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
           label: t`Results`,
           state: 'done',
           time: results.timestamp,
-          detail: t`Published on chain`,
+          detail: t`Published on the chain`,
           tx: results.tx,
         }
       : canceled

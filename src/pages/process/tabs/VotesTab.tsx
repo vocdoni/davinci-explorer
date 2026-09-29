@@ -58,8 +58,8 @@ export function VotesTab({ view }: { view: ProcessView }) {
         description={
           <Trans>
             Your voting app shows a <Term id='vote-id'>vote id</Term> when you vote. Enter it to check your vote: the
-            explorer finds the batch that recorded it and checks the sequencer’s proof that it is in a state the
-            registry accepted.
+            explorer finds the batch that recorded it and checks the sequencer’s receipt, which shows it is in a state
+            the registry recorded.
           </Trans>
         }
       >
@@ -84,12 +84,12 @@ export function VotesTab({ view }: { view: ProcessView }) {
       </Panel>
 
       <Panel
-        title={t`Vote ids per transition`}
-        label={t`From the blobs`}
+        title={t`Vote ids per batch`}
+        label={t`From the published data`}
         description={
           <Trans>
-            Each batch publishes the vote ids it recorded in its <Term id='blob'>blobs</Term>, so anyone can find a
-            vote.
+            Each batch publishes the vote ids it recorded, in its <Term id='blob'>data blobs</Term>, so anyone can find
+            a vote.
           </Trans>
         }
       >
@@ -100,8 +100,8 @@ export function VotesTab({ view }: { view: ProcessView }) {
             </dt>
             <dd className='mt-1 text-silver'>
               <Trans>
-                Every vote id, and who voted and when: a first vote fills an empty slot, and with a Merkle census a
-                voter’s slot follows from their address.
+                Every vote id, and who voted and when: a first vote fills an empty slot, and unless a credential service
+                signs the votes, a voter’s slot follows from their address.
               </Trans>
             </dd>
           </div>
@@ -111,9 +111,9 @@ export function VotesTab({ view }: { view: ProcessView }) {
             </dt>
             <dd className='mt-1 text-silver'>
               <Trans>
-                Which later votes changed a ballot. An <Term id='overwrite'>overwrite</Term> and a{' '}
-                <Term id='silent-refresh'>silent refresh</Term> look the same in the data, so nobody can tell a revote
-                from routine re-encryption.
+                Which slots got a changed vote. A <Term id='overwrite'>changed vote</Term> and a{' '}
+                <Term id='silent-refresh'>silent refresh</Term> look the same in the data, so nobody can tell one from
+                the other.
               </Trans>
             </dd>
           </div>
@@ -121,16 +121,17 @@ export function VotesTab({ view }: { view: ProcessView }) {
         <Disclosure summary={<Trans>Technical details</Trans>} variant='plain' className='mb-4'>
           <p className='text-[13px] leading-relaxed text-ash'>
             <Trans>
-              Each transition publishes its data in EIP-4844 blobs: the vote ids of the batch, then every ballot slot it
-              wrote with the new ciphertexts, then the new encrypted tally.
+              Each batch (a state transition) publishes its data in EIP-4844 blobs: the vote ids of the batch, then
+              every ballot slot it wrote with the new ciphertexts, then the new accumulator. With a Merkle census a
+              voter’s slot is derived from their address; with a credential service, from the index the service signs.
             </Trans>
           </p>
         </Disclosure>
         {transitions.length === 0 ? (
           <EmptyState
             compact
-            title={t`No transitions yet`}
-            description={t`Vote ids appear here once a sequencer records the first batch of this process.`}
+            title={t`No batches yet`}
+            description={t`Vote ids appear here once a sequencer records the first batch of this election.`}
           />
         ) : (
           <div className='flex flex-col gap-4'>
@@ -138,14 +139,14 @@ export function VotesTab({ view }: { view: ProcessView }) {
               <Button
                 size='icon'
                 variant='subtle'
-                aria-label={t`Older transition`}
+                aria-label={t`Older batch`}
                 disabled={index <= 0}
                 onClick={() => select(index - 1)}
               >
                 <ChevronLeftIcon />
               </Button>
               <Select
-                aria-label={t`Transition`}
+                aria-label={t`Batch`}
                 wrapperClassName='min-w-0 flex-1 sm:max-w-md'
                 value={String(index)}
                 onChange={(e) => select(Number(e.target.value))}
@@ -155,21 +156,21 @@ export function VotesTab({ view }: { view: ProcessView }) {
                   const blobs = tr.nBlobs
                   return {
                     value: String(position),
-                    label: t`#${position} · ${plural(votes, { one: '# vote', other: '# votes' })} · ${plural(blobs, { one: '# blob', other: '# blobs' })}`,
+                    label: t`#${position} · ${plural(votes, { one: '# vote', other: '# votes' })} · ${plural(blobs, { one: '# data blob', other: '# data blobs' })}`,
                   }
                 })}
               />
               <Button
                 size='icon'
                 variant='subtle'
-                aria-label={t`Newer transition`}
+                aria-label={t`Newer batch`}
                 disabled={index >= newest}
                 onClick={() => select(index + 1)}
               >
                 <ChevronRightIcon />
               </Button>
               <Link to={paths.transition(p.id, index)} className={buttonClasses('ghost', 'md', 'ml-auto')}>
-                <Trans>Open transition #{index}</Trans>
+                <Trans>Open batch #{index}</Trans>
               </Link>
             </div>
             <TransitionVotes key={index} view={view} index={index} highlight={lookupId} />
@@ -208,8 +209,8 @@ function TransitionVotes({ view, index, highlight }: { view: ProcessView; index:
       <Trans>
         Recorded <Timestamp value={row.timestamp} /> in block {block}:{' '}
         <Plural value={newVoters} one='# new voter' other='# new voters' /> and{' '}
-        <Plural value={overwrites} one='# overwrite' other='# overwrites' />, in{' '}
-        <Plural value={nBlobs} one='# blob' other='# blobs' />.
+        <Plural value={overwrites} one='# changed vote' other='# changed votes' />, in{' '}
+        <Plural value={nBlobs} one='# data blob' other='# data blobs' />.
       </Trans>
     </p>
   )
@@ -220,8 +221,8 @@ function TransitionVotes({ view, index, highlight }: { view: ProcessView; index:
         {header}
         <p className='text-[13px] text-ash'>
           {waitingForTx
-            ? t`Reading the batch’s transaction to find its blobs…`
-            : t`${plural(nBlobs, { one: 'Fetching # blob…', other: 'Fetching # blobs…' })}`}
+            ? t`Reading the batch’s transaction to find its data blobs…`
+            : t`${plural(nBlobs, { one: 'Fetching # data blob…', other: 'Fetching # data blobs…' })}`}
         </p>
         <SkeletonText lines={4} />
       </div>
@@ -231,11 +232,11 @@ function TransitionVotes({ view, index, highlight }: { view: ProcessView; index:
     return (
       <div className='flex flex-col gap-3'>
         {header}
-        <Callout tone='warn' title={t`The blobs could not be fetched`}>
+        <Callout tone='warn' title={t`The published data could not be fetched`}>
           <p>{blobs.error instanceof Error ? blobs.error.message : String(blobs.error)}</p>
           <p className='mt-1'>
             <Trans>
-              The network keeps blobs for about two weeks: about 15 days on Gnosis Chain (16384 epochs of 80 s) and
+              The network keeps data blobs for about two weeks: about 15 days on Gnosis Chain (16384 epochs of 80 s) and
               about 18 on Ethereum mainnet. After that only a sequencer that stored them, or an archive, can serve them.
               The transaction still carries their fingerprints (versioned hashes).
             </Trans>
@@ -250,7 +251,7 @@ function TransitionVotes({ view, index, highlight }: { view: ProcessView; index:
     return (
       <div className='flex flex-col gap-3'>
         {header}
-        <Callout tone='danger' title={t`The blobs did not decode`}>
+        <Callout tone='danger' title={t`The published data could not be decoded`}>
           {data.decodeError}
         </Callout>
       </div>
@@ -280,8 +281,8 @@ function TransitionVotes({ view, index, highlight }: { view: ProcessView; index:
           <Trans>
             The counts are public (the registry event carries them), and so is a slot’s first write, since refreshes
             only touch slots that already hold a ballot. Which of those got a new vote and which were only refreshed is
-            not: every batch re-encrypts a random sample of occupied slots it did not write, so an overwrite hides among
-            the refreshes.
+            not: every batch re-encrypts a random sample of occupied slots it did not write, so a changed vote hides
+            among the refreshes.
           </Trans>
         </Explain>
       </p>
@@ -296,7 +297,7 @@ function TransitionVotes({ view, index, highlight }: { view: ProcessView; index:
       </p>
       {missing != null ? (
         <p className='text-xs text-amber'>
-          <Trans>This transition does not list {missing}.</Trans>
+          <Trans>This batch does not list {missing}.</Trans>
         </p>
       ) : null}
       <ul className='grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-4'>

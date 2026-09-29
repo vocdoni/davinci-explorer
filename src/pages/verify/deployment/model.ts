@@ -14,7 +14,7 @@ import { combine, fromCheckState, type VerifyStatus } from '../status'
  */
 export const PIN_PLAIN: Record<PinName, MessageDescriptor> = {
   batchProgramVK: msg`The program that checks every batch of votes. This value is its fingerprint.`,
-  resultsProgramVK: msg`The program that checks every result of an election with a sequencer key.`,
+  resultsProgramVK: msg`The program that checks the results of every election whose key a sequencer holds.`,
   rootCVadcopFinal: msg`The setup the proofs are made with, shared by both programs.`,
   ziskVerifierCodeHash: msg`The contract that verifies every proof, known by the fingerprint of its code.`,
   ballotVKHash: msg`The key every voter’s ballot proof is checked against.`,

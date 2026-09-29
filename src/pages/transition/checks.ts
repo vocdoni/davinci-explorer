@@ -41,7 +41,7 @@ export const CHECK_ORDER: RecheckId[] = [
 /** The two checks only the chain runs: plain statements, like the recomputed ones. */
 export const ONCHAIN_LABELS: Record<'plonk' | 'kzg-openings', MessageDescriptor> = {
   plonk: msg`The proof itself is valid`,
-  'kzg-openings': msg`Each blob holds the data the proof describes`,
+  'kzg-openings': msg`Each data blob holds the data the proof describes`,
 }
 
 export function checkCopy(id: RecheckId, censusOrigin: CensusOriginName | null): CheckCopy {
@@ -79,7 +79,7 @@ export function checkCopy(id: RecheckId, censusOrigin: CensusOriginName | null):
             meaning: msg`Every voter in the batch was on this election’s list of voters. Here a contract keeps the list, so the registry asks it.`,
             enforced: msg({
               message:
-                'The registry asks the census contract for `getRootBlockNumber(root)`, with the list fingerprint in registers 20 to 27. The answer must be non-zero, no later than the block of the batch and no earlier than the block the process was created in, or the call reverts with `InvalidCensusRoot`.',
+                'The registry asks the census contract for `getRootBlockNumber(root)`, with the list fingerprint from registers 20 to 27, bytes reversed. The contract answers the last block that fingerprint was valid: the current block for its current list, the block it was replaced in for an older one, 0 for one it never held. The answer must be non-zero, no later than the block of the batch and no earlier than the block the process was created in, or the call reverts with `InvalidCensusRoot`.',
             }),
             formula: 'createdBlock ≤ getRootBlockNumber(CensusRoot) ≤ block',
             recheck: msg`Ask the census contract yourself, at the block the batch was recorded in. The explorer cannot recompute this one from the registry’s events.`,
@@ -88,7 +88,7 @@ export function checkCopy(id: RecheckId, censusOrigin: CensusOriginName | null):
             meaning: msg`Every voter in the batch was on this election’s list of voters, and on no other list.`,
             enforced: msg({
               message:
-                'Registers 20 to 27, read as a big-endian integer, must equal the census root stored for the process, or the call reverts with `InvalidCensusRoot`. For a credential service (CSP) the root is the service’s signing address. An updatable list accepts only its current root, so a batch proven against a replaced list stops being accepted.',
+                'Registers 20 to 27, with their bytes reversed, must equal the census root stored for the process, or the call reverts with `InvalidCensusRoot`. For a credential service (CSP) the root is the service’s signing address. An updatable list accepts only its current root, so a batch proven against a replaced list stops being accepted.',
             }),
             formula: 'CensusRoot = census.censusRoot',
             recheck: msg`In the same registry read, the census is the sixteenth value; its second field is the root this batch had to be proven against.`,
@@ -145,12 +145,12 @@ export function checkCopy(id: RecheckId, censusOrigin: CensusOriginName | null):
           message:
             'The verifier contract (`ZiskVerifier`, its `verifySnarkProof`) must accept the proof under the two keys fixed in the registry, `batchProgramVK` and `rootCVadcopFinal`, or the call reverts with `InvalidProof`. The verifier hashes both keys with the public values into the one input the proof must match.',
         }),
-        formula: 'publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)',
+        formula: 'publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal) mod r_BN254',
         recheck: msg({ message: 'Make the same call: it returns `0x` when the proof verifies and reverts otherwise.' }),
       }
     case 'blob-hashes':
       return {
-        meaning: msg`The blob fingerprints the proof used are the fingerprints of the blobs this transaction really carries.`,
+        meaning: msg`The fingerprints of the published data the proof used are those of the data blobs this transaction really carries.`,
         enforced: msg({
           message:
             'A blob’s versioned hash, what `BLOBHASH` returns, is built from its commitment as below. The point-evaluation precompile rejects a commitment that does not match the transaction’s hash.',
@@ -160,12 +160,12 @@ export function checkCopy(id: RecheckId, censusOrigin: CensusOriginName | null):
       }
     case 'kzg-openings':
       return {
-        meaning: msg`Each blob on the chain holds the data the proof was made for, checked at a point nobody could choose in advance.`,
+        meaning: msg`Each data blob on the chain holds the data the proof was made for, checked at a point nobody could choose in advance.`,
         enforced: msg({
           message:
-            'For every blob the registry calls the point-evaluation precompile with the versioned hash, the point `z` below, the evaluation `y` and the KZG proof, or the call reverts with `InvalidBlobOpening`. The proven program evaluated the blob it laid out itself at the same point, so the blobs on the chain are the ones the proof covers.',
+            'For every blob the registry calls the point-evaluation precompile with the versioned hash, the point `z` below, the evaluation `y` and the KZG proof, or the call reverts with `InvalidBlobOpening`. The point hashes the process id padded to 32 bytes, the fingerprint of the state before with its bytes reversed, and the 48-byte commitment. The proven program evaluated the blob it laid out itself at the same point, so the blobs on the chain are the ones the proof covers.',
         }),
-        formula: 'z = sha256(processId ‖ rootBefore ‖ commitment) mod r_BLS',
+        formula: 'z = sha256(be32(processId) ‖ reverse(rootBefore) ‖ commitment) mod r_BLS',
         recheck: msg`Send the same 192 bytes to the precompile: it answers 4096 and the BLS12-381 modulus when the opening holds, and fails otherwise.`,
       }
     case 'root-after':
@@ -178,7 +178,7 @@ export function checkCopy(id: RecheckId, censusOrigin: CensusOriginName | null):
         formula: 'latestStateRoot ← RootHashAfter',
         recheck: msg({
           message:
-            'The `ProcessStateTransitioned` log in the receipt carries `newStateRoot` as the second 32-byte word of its data.',
+            'The `ProcessStateTransitioned` log in the transaction receipt carries `newStateRoot` as the second 32-byte word of its data.',
         }),
       }
   }

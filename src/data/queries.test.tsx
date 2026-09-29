@@ -152,7 +152,7 @@ describe('useVoteInclusion', () => {
     })
     await waitFor(() => expect(result.current.state).toBe('found'))
     expect(result.current.transitionIndex).toBe(0)
-    expect(result.current.errors).toEqual([`#${last}: the settlement transaction could not be read from the RPC`])
+    expect(result.current.errors).toEqual([`Batch #${last}: its transaction could not be read from the RPC`])
   })
 })
 

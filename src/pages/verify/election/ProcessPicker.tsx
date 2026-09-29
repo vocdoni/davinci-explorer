@@ -73,7 +73,7 @@ export function ProcessPicker() {
           {shown.map((r) => {
             const named = titles.get(r.id)
             const created = r.createdAt != null ? formatDate(r.createdAt) : null
-            const ballots = r.votersCount + r.overwrittenVotesCount
+            const votes = r.votersCount + r.overwrittenVotesCount
             return (
               <li key={r.id}>
                 <Link
@@ -98,7 +98,7 @@ export function ProcessPicker() {
                         </span>
                       ) : null}
                       <span>
-                        <Plural value={ballots} one='# ballot' other='# ballots' />
+                        <Plural value={votes} one='# vote' other='# votes' />
                       </span>
                     </span>
                   </span>

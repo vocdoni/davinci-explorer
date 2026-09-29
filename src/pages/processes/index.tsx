@@ -66,7 +66,7 @@ export function ProcessesPage() {
         ),
         meta: {
           width: '240px',
-          headerTooltip: t`The process’s title and id. Sorts by creation time.`,
+          headerTooltip: t`The election’s title and its process id. Sorts by creation time.`,
         },
       },
       {
@@ -80,7 +80,7 @@ export function ProcessesPage() {
             explorer={false}
           />
         ),
-        meta: { headerTooltip: t`The account that created the process; click to list only its processes.` },
+        meta: { headerTooltip: t`The account that created the election. Click it to list only its processes.` },
       },
       {
         id: 'phase',
@@ -97,15 +97,15 @@ export function ProcessesPage() {
       },
       {
         id: 'census',
-        header: t`Census`,
+        header: t`List of voters`,
         accessorFn: (r) => r.censusOrigin ?? '',
         cell: ({ row }) =>
           row.original.censusOrigin ? <CensusOriginBadge origin={row.original.censusOrigin} size='sm' /> : '—',
-        meta: { headerTooltip: t`Where the list of eligible voters comes from.` },
+        meta: { headerTooltip: t`Where the list of voters comes from.` },
       },
       {
         id: 'voters',
-        header: t`Voters / overwrites`,
+        header: t`Voters / changed votes`,
         accessorKey: 'votersCount',
         cell: ({ row }) => {
           const r = row.original
@@ -176,9 +176,10 @@ export function ProcessesPage() {
         title={t`Every voting process on the registry`}
         description={
           <Trans>
-            Each process sets its <Term id='ballot-mode'>ballot rules</Term>, its list of voters (the{' '}
-            <Term id='census'>census</Term>) and its <Term id='encryption-key'>encryption key</Term> when it is created.
-            Votes are then recorded in <Term id='batch'>batches</Term> until voting ends and the results are published.
+            Each process is one election. It sets its <Term id='ballot-mode'>ballot rules</Term>, its{' '}
+            <Term id='census'>list of voters</Term> and its <Term id='encryption-key'>election key</Term> when it is
+            created. Votes are then recorded in <Term id='batch'>batches</Term> until voting ends and the results are
+            published.
           </Trans>
         }
       />
@@ -204,20 +205,20 @@ export function ProcessesPage() {
             ]}
           />
           <Select
-            label={t`Key mode`}
+            label={t`Key holder`}
             value={list.keyMode ?? ''}
             onChange={(e) => apply({ keyMode: e.target.value || undefined })}
             options={[
-              { value: '', label: t`Any key mode` },
+              { value: '', label: t`Any key holder` },
               ...KEY_MODE_OPTIONS.map((value) => ({ value, label: KEY_MODE_INFO[value].label })),
             ]}
           />
           <Select
-            label={t`Census`}
+            label={t`List of voters`}
             value={list.census ?? ''}
             onChange={(e) => apply({ census: e.target.value || undefined })}
             options={[
-              { value: '', label: t`Any census` },
+              { value: '', label: t`Any list` },
               ...CENSUS_OPTIONS.map((value) => ({ value, label: CENSUS_ORIGIN_INFO[value].label })),
             ]}
           />
@@ -255,8 +256,9 @@ export function ProcessesPage() {
             )}
             <Explain className='ml-1'>
               <Trans>
-                The phase combines the status on chain with the clock. After its end time a process still reads Ready on
-                chain until someone ends it or publishes the results; the explorer shows that as Voting closed.
+                The phase combines the status on the chain with the clock. After its end time an election still reads
+                Ready on the chain until someone ends it or publishes the results; the explorer shows that as Voting
+                closed.
               </Trans>
             </Explain>
           </p>
@@ -283,7 +285,7 @@ export function ProcessesPage() {
             filtered ? (
               <EmptyState
                 title={t`No process matches these filters`}
-                description={t`Widen the phase, key mode or census, or clear the search.`}
+                description={t`Widen the phase, key holder or list of voters, or clear the search.`}
                 action={
                   <Button size='sm' variant='ghost' onClick={() => navigate(paths.processes(), { replace: true })}>
                     <Trans>Clear filters</Trans>
@@ -293,7 +295,7 @@ export function ProcessesPage() {
             ) : (
               <EmptyState
                 title={t`No processes yet`}
-                description={t`When an organizer creates a process (newProcess on the registry), it appears here with its phase, key mode, list of voters and progress.`}
+                description={t`When an organizer creates an election (newProcess on the registry), it appears here with its phase, key holder, list of voters and progress.`}
               />
             )
           }

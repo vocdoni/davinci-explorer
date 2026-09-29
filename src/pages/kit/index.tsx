@@ -108,7 +108,7 @@ export function KitPage() {
         cell: ({ row }) => <BlockCell block={row.original.block} />,
       },
       { id: 'votes', header: t`Votes`, accessorKey: 'votes', meta: { numeric: true } },
-      { id: 'blobs', header: t`Blobs`, accessorKey: 'blobs', meta: { numeric: true } },
+      { id: 'blobs', header: t`Data blobs`, accessorKey: 'blobs', meta: { numeric: true } },
     ],
     [t]
   )
@@ -190,12 +190,12 @@ export function KitPage() {
               <ProcessPhaseBadge key={phase} phase={phase} />
             ))}
           </BadgeRow>
-          <BadgeRow label={t`Key modes`}>
+          <BadgeRow label={t`Key holders`}>
             {KEY_MODES.map((mode) => (
               <KeyModeBadge key={mode} mode={mode} />
             ))}
           </BadgeRow>
-          <BadgeRow label={t`Census origins`}>
+          <BadgeRow label={t`Lists of voters`}>
             {CENSUS_ORIGINS.map((origin) => (
               <CensusOriginBadge key={origin} origin={origin} />
             ))}
@@ -229,15 +229,15 @@ export function KitPage() {
             <UriLink uri={SAMPLE_URI} href={SAMPLE_URI} label={t`Open the document`} />
           </BadgeRow>
           <BadgeRow label={t`Not a web link`}>
-            <UriLink uri={SAMPLE_FILE_URI} href={null} label={t`Open the census file`} />
+            <UriLink uri={SAMPLE_FILE_URI} href={null} label={t`Open the list`} />
           </BadgeRow>
         </div>
       </Panel>
 
       <StatRow>
         <StatCell label={t`Processes`} value={formatNumber(12)} mono hint={t`3 open`} />
-        <StatCell label={t`Ballots`} value={formatNumber(4210)} mono tone='accent' />
-        <StatCell label={t`Blobs`} value={formatNumber(96)} mono />
+        <StatCell label={t`Votes`} value={formatNumber(4210)} mono tone='accent' />
+        <StatCell label={t`Data blobs`} value={formatNumber(96)} mono />
         <StatCell label={t`Loading`} value='' loading />
       </StatRow>
 
@@ -290,13 +290,13 @@ export function KitPage() {
                 <Formula expr='0x01 ‖ sha256(commitment)[1..]' />, and a vote id is at least <Formula expr='2^63' />.
               </Trans>
             </p>
-            <Formula block expr='sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)' />
+            <Formula block expr='publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal) mod r_BN254' />
           </Stack>
           <NumberedList
             items={[
               <Trans key='1'>The registry checks the proof.</Trans>,
               <Trans key='2'>It checks the batch starts where the previous one ended.</Trans>,
-              <Trans key='3'>It stores the new state root.</Trans>,
+              <Trans key='3'>It stores the new fingerprint of the election’s state.</Trans>,
             ]}
           />
         </div>
@@ -307,7 +307,7 @@ export function KitPage() {
           data={activity}
           series={[
             { key: 'votes', label: t`votes` },
-            { key: 'overwrites', label: t`overwrites` },
+            { key: 'overwrites', label: t`changed votes` },
           ]}
           height={180}
         />
@@ -350,7 +350,7 @@ export function KitPage() {
         <ProgressBar className='mt-6 max-w-md' value={620} total={1000} label={t`voters`} />
         <Timeline className='mt-6'>
           <TimelineRow title={t`Created`} meta='#48476748' tone='ok' />
-          <TimelineRow title={t`Transition #${index}`} meta='#48477140' tone='ok' />
+          <TimelineRow title={t`Batch #${index}`} meta='#48477140' tone='ok' />
           <TimelineRow title={t`Results`} meta='—' tone='muted' last />
         </Timeline>
         <div className='mt-6'>
@@ -367,7 +367,7 @@ export function KitPage() {
               },
               {
                 value: 'b',
-                label: t`Transitions`,
+                label: t`Batches`,
                 meta: 12,
                 content: (
                   <p className='text-[13px] text-ash'>

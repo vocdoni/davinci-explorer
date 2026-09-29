@@ -22,7 +22,7 @@ const SECTIONS: Array<[string, MessageDescriptor]> = [
 ]
 
 /**
- * One settled batch: what it recorded in a few sentences, its facts, the
+ * One recorded batch: what it recorded in a few sentences, its facts, the
  * proof's public values, the blobs that carry its data, the proof, and every
  * check the registry ran with the commands to rerun it.
  */
@@ -38,9 +38,9 @@ export function TransitionPage() {
   if (!pid || i == null || !detail) return <MissingEntity what='transition' index={param} processId={pid} />
   const { previous, next, process } = detail
   const index = detail.transition.index
-  // Shown on the disabled step buttons at either end of the process's transitions.
-  const previousLabel = previous ? `#${previous.index}` : t({ message: 'First', comment: 'The first transition' })
-  const nextLabel = next ? `#${next.index}` : t({ message: 'Latest', comment: 'The latest transition' })
+  // Shown on the disabled step buttons at either end of the process's batches.
+  const previousLabel = previous ? `#${previous.index}` : t({ message: 'First', comment: 'The first batch' })
+  const nextLabel = next ? `#${next.index}` : t({ message: 'Latest', comment: 'The latest batch' })
 
   const nav = (to: number | null, label: string, dir: 'prev' | 'next') =>
     to == null ? (
@@ -61,8 +61,8 @@ export function TransitionPage() {
     <Stack data-testid='page-transition'>
       <SectionHeader
         size='page'
-        label={t`State transition`}
-        title={t`Transition #${index}`}
+        label={t`Batch of votes`}
+        title={t`Batch #${index}`}
         description={
           <Trans>
             A <Term id='batch'>batch</Term> of votes for process <ProcessIdLink id={process.id} chars={8} />, proven and

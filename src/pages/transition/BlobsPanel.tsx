@@ -54,8 +54,8 @@ const COLUMNS: Array<[string, MessageDescriptor, MessageDescriptor | null, strin
   [
     'z',
     msg`Point z`,
-    msg`A point that depends on this process, the state before the batch and the commitment, computed here in the BLS12-381 scalar field. It ties the blob to this batch, so a commitment from another batch is useless.`,
-    'z = sha256(processId ‖ rootBefore ‖ commitment) mod r_BLS',
+    msg`A point that depends on this election, the state before the batch and the commitment, computed here in the BLS12-381 scalar field: the process id padded to 32 bytes, the fingerprint of the state before with its bytes reversed, and the 48-byte commitment. It ties the blob to this batch, so a commitment from another batch is useless.`,
+    'z = sha256(be32(processId) ‖ reverse(rootBefore) ‖ commitment) mod r_BLS',
   ],
   [
     'y',
@@ -76,7 +76,7 @@ function isPruned(message: string): boolean {
 }
 
 /**
- * The transition's EIP-4844 blobs: what they hold and reveal, what binds each
+ * The batch's EIP-4844 blobs: what they hold and reveal, what binds each
  * one to the proof, and the data they carry once fetched from the beacon (or
  * a sequencer) and decoded.
  */
@@ -98,18 +98,18 @@ export function BlobsPanel({
   const refreshes = decoded && publics ? decoded.updates.length - publics.voters : null
   const minRefresh = publics ? requiredRefresh(publics.voters, publics.overwrites, publics.occupiedBefore) : null
   const cellTotal = blobs.data ? formatNumber(blobs.data.blobs.length * CELLS_PER_BLOB) : null
-  const ballotCount = publics?.voters ?? 0
+  const voteCount = publics?.voters ?? 0
   const refreshCount = refreshes ?? 0
 
   return (
     <Panel
-      label={t`Data availability`}
-      title={t`Blobs`}
+      label={t`Data blobs`}
+      title={t`The published data`}
       description={
         <Trans>
-          Everything needed to rebuild the election’s state after this batch is published in data{' '}
-          <Term id='blob'>blobs</Term> attached to the transaction (EIP-4844). Anyone can apply them to the previous
-          state and arrive at the same new fingerprint.
+          Everything needed to rebuild the election’s state after this batch is published with its transaction, in{' '}
+          <Term id='blob'>data blobs</Term> (EIP-4844). Anyone can apply it to the previous state and arrive at the same
+          new fingerprint the registry recorded.
         </Trans>
       }
     >
@@ -189,7 +189,7 @@ export function BlobsPanel({
                 value={formatNumber(decoded.updates.length)}
                 hint={
                   refreshes != null && refreshes >= 0
-                    ? t`${plural(ballotCount, { one: '# ballot', other: '# ballots' })} + ${plural(refreshCount, {
+                    ? t`${plural(voteCount, { one: '# vote', other: '# votes' })} + ${plural(refreshCount, {
                         one: '# silent refresh',
                         other: '# silent refreshes',
                       })}`
@@ -200,7 +200,7 @@ export function BlobsPanel({
               <StatCell
                 label={t`Fields per ballot`}
                 value={formatNumber(decoded.numFields)}
-                hint={t`encrypted values per ballot and in the running total`}
+                hint={t`encrypted values per ballot and in the encrypted total`}
                 mono
               />
               <StatCell
@@ -242,17 +242,17 @@ export function BlobsPanel({
                 },
                 {
                   value: 'accumulator',
-                  label: t`Accumulator`,
+                  label: t`Encrypted total`,
                   meta: formatNumber(decoded.accumulator.length),
                   content: (
                     <div className='flex flex-col gap-3'>
                       <p className='text-[12px] leading-relaxed text-ash'>
                         <Trans>
-                          The <Term id='accumulator'>encrypted running total</Term> after this batch, one encrypted
-                          value per ballot field: the previous total, plus every new ballot, minus the ballots they
-                          replaced, plus the silent refreshes’ encryptions of zero, which change no count. Only the
-                          final total is decrypted, when the results are published. The holder of the election key could
-                          decrypt this one, or any ballot in the blobs.
+                          The <Term id='accumulator'>encrypted total</Term> after this batch (the accumulator), one
+                          encrypted value per ballot field: the previous total, plus every new ballot, minus the ballots
+                          they replaced, plus the silent refreshes’ encryptions of zero, which change no result. Only
+                          the final total is decrypted, when the results are published. The key holder could decrypt
+                          this one, or any ballot in the published data.
                         </Trans>
                       </p>
                       <CiphertextTable ciphertexts={decoded.accumulator} />
@@ -290,7 +290,7 @@ function RefreshRequirement({ required, carried }: { required: number; carried: 
       <Explain>
         <span className='flex flex-col gap-1.5'>
           <Trans>
-            The minimum depends on how many people had voted before and on the batch’s own votes. The count is public;
+            The minimum depends on how many people had voted before and on the batch’s own votes. The number is public;
             which ballots were refreshed is not.
           </Trans>
           <Formula expr='min(target, occupied_before − overwrites)' className='w-fit bg-carbon' />
@@ -307,13 +307,13 @@ function Layout() {
     <div className='grid gap-5 text-[13px] leading-relaxed text-ash md:grid-cols-2'>
       <div className='flex flex-col gap-2.5'>
         <h3 className='text-[13px] font-semibold text-ghost'>
-          <Trans>What the blobs hold, in order</Trans>
+          <Trans>What the published data holds, in order</Trans>
         </h3>
         <NumberedList
           items={[
             t`The vote ids of the batch, sorted.`,
             t`Every ballot the batch wrote, sorted by slot: new votes, changed votes and silent refreshes alike, each compressed to one cell per curve point.`,
-            t`The new encrypted running total (the accumulator).`,
+            t`The new encrypted total (the accumulator).`,
             t`Zeros to the end of the last blob.`,
           ]}
         />
@@ -337,9 +337,10 @@ function Layout() {
         </p>
         <p>
           <Trans>
-            A voter’s first vote is visible, though, because refreshes only touch slots already written. With a Merkle
-            census the slot follows from the voter’s address, so who voted and when is public. The vote ids and the
-            slots are sorted separately, but in a small batch the new vote ids and the new slots can still be matched.
+            A voter’s first vote is visible, though, because silent refreshes only touch slots already written. When the
+            list of voters is a Merkle tree (a Merkle census), the slot follows from the voter’s address, so who voted
+            and when is public. The vote ids and the slots are sorted separately, but in a small batch the new vote ids
+            and the new slots can still be matched.
           </Trans>
         </p>
       </div>
@@ -367,7 +368,7 @@ function Content({
   if (blobs.data?.decodeError) {
     const reason = blobs.data.decodeError
     return (
-      <Callout tone='danger' title={t`The blob data does not decode`}>
+      <Callout tone='danger' title={t`The published data does not decode`}>
         <Trans>
           {reason}. The decoder checks the layout the proven program produces; a batch the registry accepted can only
           fail here if the bytes are not the blob the transaction carried, or the ballot field count is not known yet.
@@ -384,15 +385,15 @@ function Content({
           <p>
             <Trans>
               Beacon nodes keep blobs for about 15 days on Gnosis Chain (16384 epochs of 80 s) and about 18 on Ethereum
-              mainnet, then prune them. This transition's blobs are gone from the configured beacon, and this explorer
+              mainnet, then prune them. This batch’s data blobs are gone from the configured beacon, and this explorer
               has no sequencer node to ask: nodes archive the blobs they saw and serve them at {route}.
             </Trans>
           </p>
           <p className='mt-2'>
             <Trans>
-              The settlement is not in doubt. The registry checked the real blobs when they were fresh, against the
-              commitments, evaluations and KZG proofs that stay in the call’s data, and the checks below still hold.
-              Only the content cannot be shown.
+              That the batch was recorded correctly is not in doubt. The registry checked the real blobs when they were
+              fresh, against the commitments, evaluations and KZG proofs that stay in the call’s data, and the checks
+              below still hold. Only the content cannot be shown.
             </Trans>
           </p>
           <Attempts attempts={[]} raw={message} />
@@ -400,7 +401,7 @@ function Content({
       )
     }
     return (
-      <Callout tone='danger' title={t`The blobs could not be fetched`}>
+      <Callout tone='danger' title={t`The data blobs could not be fetched`}>
         <p>{message}</p>
       </Callout>
     )
@@ -410,7 +411,7 @@ function Content({
     return (
       <div className='flex flex-col gap-2' aria-busy='true'>
         <p className='text-[12px] text-ash'>
-          <Trans>Fetching the blobs from the beacon…</Trans>
+          <Trans>Fetching the data blobs from the beacon…</Trans>
         </p>
         <Skeleton className='h-24 w-full' />
       </div>
@@ -420,7 +421,7 @@ function Content({
     <EmptyState
       compact
       title={t`Waiting for the transaction`}
-      description={t`The blobs are fetched once the transaction that recorded the batch and the ballot’s field count are known.`}
+      description={t`The data blobs are fetched once the transaction that recorded the batch and the ballot’s field count are known.`}
     />
   )
 }

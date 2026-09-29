@@ -12,7 +12,7 @@ import { STATUS_INFO, STATUS_STEPS, statusStep } from './lookup'
 function errorText(err: Error): { tone: BadgeTone; label: MessageDescriptor; text: MessageDescriptor | string } {
   if (err instanceof SequencerApiError && err.status === 404) {
     return err.code === 40402
-      ? { tone: 'neutral', label: msg`Unknown process`, text: msg`This node does not serve this process.` }
+      ? { tone: 'neutral', label: msg`Unknown election`, text: msg`This node does not serve this election.` }
       : {
           tone: 'neutral',
           label: msg`Unknown vote`,

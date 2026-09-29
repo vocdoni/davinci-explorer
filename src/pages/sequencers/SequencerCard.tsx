@@ -64,7 +64,7 @@ export function NodeBadges({
         <Tooltip
           content={
             data.observer
-              ? t`An observer has no key: it follows every process and answers questions about it, but never records a batch.`
+              ? t`An observer has no key: it follows every election and answers questions about it, but never records a batch.`
               : t`A signer has a key: it proves batches of votes and records them on the registry.`
           }
         >
@@ -103,9 +103,9 @@ export function SequencerCard({
   const served = onchain?.processes ?? 0
   const release = data ? nodeRelease(data) : null
   const settlingHint = data?.observer
-    ? t`An observer has no key: it follows every process and answers questions about it, but never records a batch.`
+    ? t`An observer has no key: it follows every election and answers questions about it, but never records a batch.`
     : onchain
-      ? t`sent ${plural(sent, { one: '# transition', other: '# transitions' })} on this registry, for ${plural(served, { one: '# process', other: '# processes' })}`
+      ? t`recorded ${plural(sent, { one: '# batch', other: '# batches' })} on this registry, for ${plural(served, { one: '# election', other: '# elections' })}`
       : t`has not recorded a batch on this registry yet`
 
   return (
@@ -302,7 +302,7 @@ function ServedProcesses({
                     <Trans>Process</Trans>
                   </th>
                   <th className='label-caps px-3 py-2 text-[11px] font-semibold'>
-                    <Trans>On chain</Trans>
+                    <Trans>On the chain</Trans>
                   </th>
                   <th className='label-caps px-3 py-2 text-[11px] font-semibold'>
                     <Trans>Votes</Trans>
@@ -357,7 +357,7 @@ function ServedProcesses({
                             <Hash value={view.data.localStateRoot} chars={6} copy={false} />
                             <span className='text-ash'>
                               {sync === 'in-sync'
-                                ? t`at the on-chain root`
+                                ? t`at the fingerprint the registry holds`
                                 : sync === 'differs'
                                   ? t`not there yet`
                                   : ''}

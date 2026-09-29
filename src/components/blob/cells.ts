@@ -109,7 +109,7 @@ export function describeCell(c: CellCounts, index: number): CellInfo {
       section: 'accumulator',
       item: null,
       field,
-      label: t`Accumulator field ${field} ${half}`,
+      label: t`Encrypted total, field ${field} ${half}`,
     }
   }
   return { ...base, kind: 'padding', section: 'padding', item: null, field: null, label: t`Padding (zero)` }

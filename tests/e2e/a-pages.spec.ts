@@ -38,7 +38,7 @@ test.describe('overview', () => {
     await expect(
       root.getByRole('list', { name: 'Release pin checks' }).getByRole('img', { name: 'passed' })
     ).toHaveCount(5)
-    await expect(root.getByRole('link', { name: /^Transition #\d+/ }).first()).toBeVisible()
+    await expect(root.getByRole('link', { name: /^Batch #\d+/ }).first()).toBeVisible()
     await expect(root.getByRole('img', { name: 'Stacked activity chart' })).toBeVisible()
     expect(errors).toEqual([])
   })
@@ -61,14 +61,14 @@ test.describe('processes list', () => {
     await page.getByLabel('Phase').selectOption('results')
     await expect(page).toHaveURL(/status=results/)
     await expect(page.getByTestId('process-count')).toHaveText('2 processes')
-    await page.getByLabel('Key mode').selectOption('dkg-automatic')
+    await page.getByLabel('Key holder').selectOption('dkg-automatic')
     await expect(page).toHaveURL(/keyMode=dkg-automatic/)
     await expect(page.getByTestId('process-count')).toHaveText('1 process')
     await page.getByRole('button', { name: 'Clear filters' }).first().click()
     await expect(page.getByTestId('process-count')).toHaveText('10 processes')
 
     await demo(page, '/processes?census=csp')
-    await expect(page.getByLabel('Census')).toHaveValue('csp')
+    await expect(page.getByLabel('List of voters')).toHaveValue('csp')
     await expect(page.getByTestId('process-count')).toHaveText('2 processes')
   })
 
@@ -101,8 +101,8 @@ test.describe('process page', () => {
     await expect(page.getByRole('heading', { name: 'Community fund round' })).toBeVisible()
     await expect(page.getByTestId('process-lifecycle')).toContainText('40 batches')
     for (const [name, tab] of [
-      ['Encryption key', 'key'],
-      ['Transitions', 'transitions'],
+      ['Election key', 'key'],
+      ['Batches', 'transitions'],
       ['Votes', 'votes'],
       ['Results', 'results'],
       ['Raw', 'raw'],
@@ -122,7 +122,7 @@ test.describe('process page', () => {
     const tab = page.getByTestId('tab-overview')
     await expect(tab.getByTestId('ballot-rules')).toContainText('The ballot has 16 fields')
     await expect(tab).toContainText('Reads as:')
-    await expect(tab).toContainText('any root the census contract recorded at or after the creation block')
+    await expect(tab).toContainText('any version of it the contract has held since the election was created')
     await expect(tab).toContainText('matches this registry')
     await expect(tab.getByTestId('process-metadata')).toContainText('Community fund round')
     await expect(tab.getByText('field 16: Option 16')).toBeVisible()
@@ -141,12 +141,17 @@ test.describe('process page', () => {
     )
   })
 
-  test('transitions tab: root chain and table', async ({ page }) => {
+  test('batches tab: root chain and table', async ({ page }) => {
     await demo(page, `/processes/${OPEN}/transitions`)
-    await expect(page.getByTestId('transition-summary')).toContainText('40 transitions')
+    await expect(page.getByTestId('transition-summary')).toContainText('40 batches')
     await expect(page.getByTestId('transition-summary')).toContainText('the chain is continuous')
-    await expect(page.getByTestId('transition-summary')).toContainText('the last root is the registry’s current root')
-    await page.getByRole('list', { name: 'State roots' }).getByRole('link', { name: '#3', exact: true }).click()
+    await expect(page.getByTestId('transition-summary')).toContainText(
+      'the last fingerprint is the one the registry holds now'
+    )
+    await page
+      .getByRole('list', { name: 'The fingerprint of each state' })
+      .getByRole('link', { name: '#3', exact: true })
+      .click()
     await expect(page).toHaveURL(new RegExp(`/processes/${OPEN}/transitions/3$`))
   })
 
@@ -158,7 +163,7 @@ test.describe('process page', () => {
     const voteId = (await first.textContent())!.trim()
     expect(voteId).toMatch(/^0x[0-9a-f]{16}$/)
 
-    await page.getByLabel('Transition', { exact: true }).selectOption('0')
+    await page.getByLabel('Batch', { exact: true }).selectOption('0')
     await expect(page).toHaveURL(/t=0/)
     await expect(page.getByTestId('vote-ids')).toBeVisible()
 
@@ -178,7 +183,7 @@ test.describe('process page', () => {
     await expect(tab.getByRole('img', { name: 'passed' })).toHaveCount(4)
 
     await demo(page, `/processes/${DKG_RESULTS}/results`)
-    await expect(page.getByTestId('tab-results')).toContainText('Every value sent to the committee is decrypted')
+    await expect(page.getByTestId('tab-results')).toContainText('Every value sent to the key committee is decrypted')
 
     await demo(page, `/processes/${OPEN}/results`)
     await expect(page.getByTestId('no-results')).toContainText('No results yet')

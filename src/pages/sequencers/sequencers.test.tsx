@@ -73,13 +73,13 @@ describe('SequencersPage', () => {
     expect(page).toHaveTextContent(checksum(busiest.address))
     // The table is virtualised above 50 rows and jsdom has no layout to window: check its count.
     expect(within(page).getByTestId('sequencer-transitions')).toBeInTheDocument()
-    expect(within(page).getByText(`${busiest.transitions} transitions`)).toBeInTheDocument()
+    expect(within(page).getByText(`${busiest.transitions} batches`)).toBeInTheDocument()
     const card = await within(page).findByTestId('sequencer-0')
     await waitFor(() => expect(within(card).getByText('davinci-zkvm v0.1.0')).toBeInTheDocument())
     expect(
       within(within(card).getByTestId('sequencer-info-checks')).getAllByRole('img', { name: 'passed' })
     ).toHaveLength(5)
-    expect(within(card).getByText(/^sent \d+ transitions? on this registry, for \d+ process(es)?$/)).toBeInTheDocument()
+    expect(within(card).getByText(/^recorded \d+ batch(es)? on this registry, for \d+ elections?$/)).toBeInTheDocument()
   })
 
   it('shows a node that reports no account under its node key', async () => {

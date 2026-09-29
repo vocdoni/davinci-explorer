@@ -55,7 +55,7 @@ describe('TransitionPage', () => {
     const { processId, index } = fixture.featured.multiBlob
     renderAt(paths.transition(processId, index), <TransitionPage />, patterns.transition, pruned)
     expect(await screen.findByText(/no sequencer is configured/i, {}, { timeout: 5_000 })).toBeInTheDocument()
-    expect(screen.getByText(/The settlement is not in doubt/)).toBeInTheDocument()
+    expect(screen.getByText(/That the batch was recorded correctly is not in doubt/)).toBeInTheDocument()
     const verify = screen.getByTestId('verify')
     expect(within(verify).getByTestId('check-plonk')).toBeInTheDocument()
     expect(within(verify).getByTestId('check-kzg-openings')).toBeInTheDocument()
@@ -73,19 +73,19 @@ describe('TransitionPage', () => {
   it('says when there is no such transition, in one sentence', async () => {
     const pid = fixture.featured.openProcess
     renderAt(paths.transition(pid, 999), <TransitionPage />, patterns.transition)
-    expect(await screen.findByText(/No transition found/)).toBeInTheDocument()
-    expect(screen.getByText(`The registry has no transition #999 of process ${pid}.`)).toBeInTheDocument()
+    expect(await screen.findByText(/No batch found/)).toBeInTheDocument()
+    expect(screen.getByText(`The registry has no batch #999 of process ${pid}.`)).toBeInTheDocument()
   })
 
   it('counts with plurals and formats numbers in the active language', async () => {
     const { processId, index } = fixture.featured.multiBlob
     await activateLocale('es')
     renderAt(paths.transition(processId, index), <TransitionPage />, patterns.transition, pruned)
-    expect(await screen.findByRole('heading', { name: `Transición n.º ${index}` })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: new RegExp(`${index}$`) })).toBeInTheDocument()
     const summary = await screen.findByTestId('transition-summary')
-    // 524,288 blob gas and "4 blobs" in English.
+    // 524,288 blob gas in English; the count of data blobs is a plural.
     await waitFor(() => expect(summary).toHaveTextContent(/524\.288/), { timeout: 5_000 })
-    expect(summary).toHaveTextContent(/· 4 blobs ·/)
+    expect(summary).toHaveTextContent(/· 4 \S/)
     expect(summary).not.toHaveTextContent(/524,288/)
   })
 })

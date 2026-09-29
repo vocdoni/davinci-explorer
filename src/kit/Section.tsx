@@ -52,7 +52,7 @@ export function SectionHeader({ label, title, description, actions, className, s
         </h1>
         {description ? <p className='mt-2 max-w-2xl text-sm leading-relaxed text-ash'>{description}</p> : null}
       </div>
-      {actions ? <div className='flex shrink-0 flex-wrap items-center gap-2'>{actions}</div> : null}
+      {actions ? <div className='flex max-w-full shrink-0 flex-wrap items-center gap-2'>{actions}</div> : null}
     </div>
   )
 }

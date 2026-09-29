@@ -56,6 +56,18 @@ describe('tokenizeFormula', () => {
     expect(kinds('sha256("davinci-slot-v1" ‖ address) mod r')).toContain('lit:"davinci-slot-v1"')
     expect(kinds('x mod r')).toEqual(['var:x', 'op:mod', 'var:r'])
   })
+
+  it('keeps the sign of a negative exponent with it, as a minus sign', () => {
+    expect(kinds('2^−7.6')).toEqual(['lit:2', 'op:^', 'lit:−7.6'])
+    expect(kinds('2^-7.6')).toEqual(['lit:2', 'op:^', 'lit:−7.6'])
+    expect(kinds('2^-k')).toEqual(['lit:2', 'op:^', 'var:−k'])
+    // Only right after a caret: elsewhere a minus is still a spaced operator.
+    const text = tokenizeFormula('2^63 − 16')
+      .map((t) => t.text)
+      .join('')
+    expect(text).toBe('2^63 − 16')
+    expect(kinds('a-1')).toEqual(['var:a', 'op:-', 'lit:1'])
+  })
 })
 
 describe('Formula', () => {
@@ -70,5 +82,13 @@ describe('Formula', () => {
     const { container } = render(<Formula expr='10^12 / maxVoters' />)
     expect(container.querySelector('sup')).toHaveTextContent('12')
     expect(container.textContent).toBe('10^12 / maxVoters')
+  })
+  it('sets a negative exponent, sign included, as a superscript', () => {
+    for (const expr of ['2^−7.6', '2^-7.6']) {
+      const { container, unmount } = render(<Formula expr={expr} />)
+      expect(container.querySelector('sup')).toHaveTextContent(/^−7\.6$/)
+      expect(container.textContent).toBe('2^−7.6')
+      unmount()
+    }
   })
 })

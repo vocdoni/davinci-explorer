@@ -26,19 +26,19 @@ export const TOPICS: TopicMeta[] = [
   {
     slug: 'how-it-works',
     title: msg`How DAVINCI works`,
-    summary: msg`The whole path of a vote, from a new process to its proven results: who does what, and what each step proves.`,
+    summary: msg`The whole path of a vote, from a new election to its proven results: who does what, and what each step proves.`,
     group: 'protocol',
   },
   {
     slug: 'key-modes',
     title: msg`Who holds the key (key modes)`,
-    summary: msg`Who could read the ballots and who publishes the results: one sequencer, a committee, or a committee and the organizer.`,
+    summary: msg`Who could read the ballots and who publishes the results: one sequencer, a key committee, or the committee and the organizer.`,
     group: 'protocol',
   },
   {
     slug: 'census',
     title: msg`Who may vote (census)`,
-    summary: msg`The four ways a process lists who may vote, and where each voter’s ballot is kept.`,
+    summary: msg`The four kinds of list of voters, and where each voter’s ballot is kept.`,
     group: 'protocol',
   },
   {
@@ -56,7 +56,7 @@ export const TOPICS: TopicMeta[] = [
   {
     slug: 'settlement',
     title: msg`What the chain checks for each batch`,
-    summary: msg`The checks the registry runs, in order, before it accepts a batch of votes, and what it reads from the proof.`,
+    summary: msg`The checks the registry runs, in order, before it records a batch of votes, and what it reads from the proof.`,
     group: 'protocol',
   },
   {

@@ -63,9 +63,9 @@ export const PIN_NAMES: PinName[] = [
 export const PIN_LABELS: Readonly<Record<PinName, string>> = withText(
   {},
   {
-    batchProgramVK: msg`Vote-batch program`,
+    batchProgramVK: msg`Batch program`,
     resultsProgramVK: msg`Results program`,
-    rootCVadcopFinal: msg`ZisK proving setup`,
+    rootCVadcopFinal: msg`Proving setup`,
     ziskVerifierCodeHash: msg`Verifier contract code`,
     ballotVKHash: msg`Ballot proof key`,
   }

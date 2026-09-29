@@ -102,7 +102,7 @@ export function VerifyPage() {
         >
           <Trans>
             Find the batch that carried your vote onto the chain, check that it passed every check, and see it go into
-            the result.
+            the results.
           </Trans>
         </Choice>
         <Choice
@@ -114,7 +114,7 @@ export function VerifyPage() {
           needs={<Trans>Pick the election from a list, or paste its id.</Trans>}
         >
           <Trans>
-            Who could vote and who can open the ballots, every batch of votes and its checks, and how the result was
+            Who could vote and who can open the ballots, every batch of votes and its checks, and how the results were
             produced.
           </Trans>
         </Choice>
@@ -127,8 +127,8 @@ export function VerifyPage() {
           needs={<Trans>Nothing to enter: it checks {networkName}.</Trans>}
         >
           <Trans>
-            The programs and keys the contracts accept proofs from, the contracts and their source code, and the
-            decryption committee.
+            The programs and keys the contracts accept proofs from, the contracts and their source code, and the key
+            committee.
           </Trans>
         </Choice>
       </nav>

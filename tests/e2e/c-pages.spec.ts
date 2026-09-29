@@ -81,7 +81,7 @@ test.describe('contracts', () => {
 
   test('the section links scroll to their section', async ({ page }) => {
     await demo(page, '/contracts')
-    await page.getByRole('navigation', { name: 'On this page' }).getByRole('link', { name: 'DKG committee' }).click()
+    await page.getByRole('navigation', { name: 'On this page' }).getByRole('link', { name: 'Key committee' }).click()
     await expect(page).toHaveURL(/#dkg$/)
     await expect(page.getByTestId('dkg-epoch')).toBeInViewport()
   })
@@ -112,9 +112,9 @@ test.describe('sequencers', () => {
     const table = page.getByTestId('sequencer-table')
     const first = table.getByRole('row').nth(1)
     // Numbers sort busiest first, then the other way round.
-    await table.getByRole('columnheader', { name: 'Transitions' }).click()
+    await table.getByRole('columnheader', { name: 'Batches' }).click()
     await expect(first).toContainText('sequencer-1.demo.invalid')
-    await table.getByRole('columnheader', { name: 'Transitions' }).click()
+    await table.getByRole('columnheader', { name: 'Batches' }).click()
     await expect(first).toContainText('observer.demo.invalid')
   })
 
@@ -132,7 +132,7 @@ test.describe('sequencers', () => {
     ).toBeVisible()
     const node = page.getByTestId('sequencer-0')
     await expect(node.getByTestId('sequencer-info-checks').getByRole('img', { name: 'passed' })).toHaveCount(5)
-    await expect(node.getByText('at the on-chain root').first()).toBeVisible()
+    await expect(node.getByText('at the fingerprint the registry holds').first()).toBeVisible()
     await root
       .getByTestId('sequencer-transitions')
       .getByRole('link', { name: /^#\d+$/ })

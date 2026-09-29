@@ -23,11 +23,11 @@ export function MissingEntity(props: MissingEntityProps) {
     const { index, processId } = props
     return (
       <EmptyState
-        title={t`No transition found`}
+        title={t`No batch found`}
         description={
           index && processId
-            ? t`The registry has no transition #${index} of process ${processId}.`
-            : t`The registry has no such transition.`
+            ? t`The registry has no batch #${index} of process ${processId}.`
+            : t`The registry has no such batch.`
         }
       />
     )

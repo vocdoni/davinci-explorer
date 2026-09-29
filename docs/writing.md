@@ -31,7 +31,7 @@ are described in [EXPLORER.md](../EXPLORER.md).
    Hashes, addresses and ids go through the kit (`Hash`, `Address`,
    `ProcessIdLink`, `TxLink`).
 6. **Numbers carry their meaning**: "22 of at most 50 voters", "3 batches,
-   41 ballots". A bare number needs a label next to it.
+   41 votes". A bare number needs a label next to it.
 7. **Visual structure**: short paragraphs; a list for steps or rules; at most
    one bold phrase per paragraph, for the key point. Callout tones mean the
    same everywhere (below). Status colours come only from the badge and check
@@ -45,33 +45,65 @@ are described in [EXPLORER.md](../EXPLORER.md).
 
 ## Words
 
-Use the plain word on first mention and the technical one in brackets when
-the reader will meet it again (in a label, a command, a table header). After
-that either is fine, but stay consistent within a page.
+One plain word per concept, the same on every page. Lead text (a panel's
+description, a check's title and summary, the first sentence of a callout or
+a tooltip, an empty state) and labels use the plain word. The technical term
+belongs to the details layer, or appears once in brackets where the reader
+will meet it again in a label, a command or a table header: "a batch of
+votes (a state transition)". Never use two plain words for one thing.
 
-| Technical                      | Plain                                            |
-| ------------------------------ | ------------------------------------------------ |
-| hash, digest, root (of a tree) | fingerprint                                      |
-| state root                     | the fingerprint of the process's state           |
-| genesis root                   | the starting fingerprint, before any vote        |
-| state transition               | a batch of votes; "settled batch" once on chain  |
-| settle, settlement             | record on chain (the registry accepts the batch) |
-| registry, `ProcessRegistry`    | the registry, the voting contract                |
-| ciphertext, plaintext          | encrypted value, decrypted value                 |
-| accumulator                    | the encrypted running total                      |
-| tally                          | the count, the results                           |
-| census                         | the list of voters                               |
-| census root                    | the fingerprint of the list of voters            |
-| overwrite                      | a changed vote (a revote)                        |
-| silent refresh                 | a fresh encryption of a ballot nobody changed    |
-| key mode                       | who holds the key                                |
-| election key, encryption key   | the key voters encrypt their ballots to          |
-| program vk                     | the program's fingerprint                        |
-| public values, publics         | what the proof makes public                      |
-| fail mask                      | the failed checks (zero when none failed)        |
-| guest                          | the proven program                               |
-| blob                           | data blob (published data)                       |
-| on-chain                       | on the chain, recorded on chain                  |
+| Concept                                        | Plain word                                                                                   | Technical term (details layer)                         |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| a vote as a whole, from its rules to results   | election (see below for process)                                                             | process, `processId`                                   |
+| the votes a sequencer proves and sends at once | batch, "a batch of votes"; its page is "Batch #12"                                           | state transition, transition                           |
+| the registry accepting a batch or results      | recorded (on the chain)                                                                      | settle, settlement, `submitStateTransition`            |
+| where it is recorded                           | on the chain                                                                                 | on-chain                                               |
+| what a voter casts, and what is counted        | vote ("41 votes")                                                                            |                                                        |
+| what a vote carries, encrypted                 | ballot (a ballot's answers, the ballot rules, a ballot proof)                                | ciphertexts, ballot mode                               |
+| a later vote by the same voter                 | changed vote; the action is "vote again"                                                     | overwrite, `overwrittenVotesCount`                     |
+| a re-encryption of a ballot nobody changed     | silent refresh                                                                               | re-encryption, `Enc(0; r)`                             |
+| what the count ends in                         | results                                                                                      | tally                                                  |
+| the encrypted sum of every counted ballot      | encrypted total                                                                              | accumulator, leaf `0x04`                               |
+| who may vote                                   | list of voters                                                                               | census, census origin                                  |
+| hash, digest, root of a tree                   | fingerprint                                                                                  | hash, root, digest, SHA-256, keccak256                 |
+| the fingerprint of an election's state         | the fingerprint of the election's state                                                      | state root                                             |
+| the first one                                  | the starting fingerprint, before any vote                                                    | genesis root                                           |
+| the fingerprint of the list of voters          | the fingerprint of the list of voters                                                        | census root                                            |
+| a sequencer's proof that a vote id is included | receipt, "the sequencer's receipt"                                                           | tracker proof                                          |
+| the key voters encrypt their ballots to        | election key                                                                                 | encryption key (`encryptionKey`), leaf `0x03`, ElGamal |
+| whoever can decrypt                            | key holder: one sequencer, or the key committee                                              | key mode                                               |
+| the DKG operators that share a key             | key committee on a page's first mention and in titles; then committee                        | davinci-dkg, DKG, threshold                            |
+| one setup of the key committee                 | round; the contracts page, which lists them, says "rounds called epochs" once and then epoch | epoch, pool key                                        |
+| the organizer's half of a locked key           | organizer secret                                                                             | `sk_org`, `revealProcessKey`                           |
+| the app a voter votes with                     | voting app                                                                                   | client                                                 |
+| a blob                                         | published data; "data blobs" when naming or counting them                                    | blob (EIP-4844), KZG commitment                        |
+| guest, zkVM program                            | program: the batch program, the results program                                              | guest, vote-batch guest, results guest                 |
+| program vk                                     | the program's fingerprint                                                                    | program vk                                             |
+| public values, publics                         | what the proof makes public                                                                  | public values, registers                               |
+| fail mask                                      | the failed checks (zero when none failed)                                                    | `fail_mask`                                            |
+| ciphertext, plaintext                          | encrypted value, decrypted value                                                             | ciphertext, plaintext                                  |
+| registry, `ProcessRegistry`                    | the registry                                                                                 | `ProcessRegistry`                                      |
+
+**Election and process.** "Process" is the explorer's name for the record
+the registry keeps: the navigation, the Processes list, a process page's
+label and tabs, "process id", the filters and columns, and the count of rows
+in a list. Running text says "election": "Every vote in this election was
+counted once". The Processes list and the process page tie the two in their
+first lead ("each process is one election on this registry"), and the
+technical details say "process", as the contracts do.
+
+**Counts.** Batches carry votes, and a count of them is a count of votes:
+"3 batches, 41 votes". "Ballot" is for what a vote carries: its encrypted
+answers, the rules they follow and the proof that they do.
+
+**Labels.** The same words name things in the interface. A process page's
+tabs are Overview, Election key, Batches, Votes, Results and Raw (the route
+ids stay `key` and `transitions`), and its counters Voters, Changed votes,
+Batches and Data blobs. A batch's page is "Batch #12". The key-mode badges
+read Sequencer key, Committee, automatic and Committee, organizer-locked; the
+kinds of list Fixed list, Updatable list, List kept by a contract and
+Credential service provider; the pins Batch program, Results program,
+Proving setup, Verifier contract code and Ballot proof key.
 
 Names from the code (`votersCount`, `submitStateTransition`, `leaf 0x04`)
 stay exact and in `<code>`, and are never translated.
@@ -84,7 +116,7 @@ stay exact and in `<code>`, and are never translated.
 import { Term } from '~components/Term'
 
 ;<Trans>
-  Your <Term id='vote-id'>vote id</Term> is in the blob of this batch.
+  Your <Term id='vote-id'>vote id</Term> is in the published data of this batch.
 </Trans>
 ```
 
@@ -115,7 +147,8 @@ entry. `id` is typed (`GlossaryId`), so a missing entry fails the type check.
 ```
 
 Mono font, one colour per kind of token (function, name, literal,
-operator), `||` drawn as ‖ and `2^63` as a superscript. `expr` keeps the
+operator), `||` drawn as ‖, and `2^63` or `2^−7.6` as a superscript, a
+negative exponent with its sign. `expr` keeps the
 formula out of the catalog: inside a `<Trans>` it becomes an empty `<0/>`
 tag. `block` sets a formula apart on its own line, for the one a paragraph is
 about. A formula in a string table (a register's meaning, a check's detail)

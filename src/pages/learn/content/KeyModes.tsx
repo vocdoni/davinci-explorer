@@ -11,19 +11,19 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
     <>
       <InShort className='mb-8'>
         <Trans>
-          Ballots are encrypted to one key per process. Whoever holds the matching secret could read the ballots, and is
-          the one who can publish the results. There are three choices: one sequencer holds it, a committee holds it in
-          shares, or the committee and the organizer each hold a part.
+          Ballots are encrypted to one key per election. Whoever holds the matching secret could read the ballots, and
+          is the one who can publish the results. There are three choices: one sequencer holds it, a key committee holds
+          it in shares, or the committee and the organizer each hold a part.
         </Trans>
       </InShort>
 
       <Section id='why-the-key-matters' title={t`Why the key matters`}>
         <P>
           <Trans>
-            Every ballot is encrypted to the process’s key. Whoever can use the matching secret could open any ballot in
-            the published blobs, and is the one who can publish the results. The organizer decides who that is when
-            creating the process (the <Term id='key-mode'>key mode</Term>). The programs that check the batches are the
-            same in every mode.
+            Every ballot is encrypted to the <Term id='encryption-key'>election key</Term>. Whoever can use the matching
+            secret could open any ballot in the published data, and is the one who can publish the results. The
+            organizer decides who that is when creating the election (the <Term id='key-mode'>key mode</Term>). The
+            programs that check the batches are the same in every mode.
           </Trans>
         </P>
         <SimpleTable
@@ -35,12 +35,12 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
               t`That node decrypts the total and proves the decryption is correct.`,
             ],
             [
-              t`DKG automatic`,
-              t`Nobody holds it whole: each member of a committee holds one share.`,
+              t`Committee, automatic`,
+              t`Nobody holds it whole: each member of a key committee holds one share.`,
               t`Enough committee members decrypt together, once voting has ended.`,
             ],
             [
-              t`DKG locked`,
+              t`Committee, organizer-locked`,
               t`The committee, plus a secret the organizer keeps.`,
               t`The committee decrypts only after the organizer reveals its secret.`,
             ],
@@ -60,9 +60,9 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
       <Section id='sequencer-key' title={t`Sequencer key`}>
         <P>
           <Trans>
-            The organizer asks a sequencer for the key before creating the process. That sequencer is then the only one
-            that can publish the results, and it could also open every ballot in the blobs. This mode trusts one node
-            with ballot secrecy: it suits testing, and organizers who accept that trust.
+            The organizer asks a sequencer for the key before creating the election. That sequencer is then the only one
+            that can publish the results, and it could also open every ballot in the published data. This mode trusts
+            one node with ballot secrecy: it suits testing, and organizers who accept that trust.
           </Trans>
         </P>
         <Details>
@@ -76,10 +76,10 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
         </Details>
       </Section>
 
-      <Section id='dkg-automatic' title={t`DKG automatic`}>
+      <Section id='dkg-automatic' title={t`Committee, automatic`}>
         <P>
           <Trans>
-            The key comes from a <Term id='committee'>committee</Term> of independent operators, which creates keys
+            The key comes from a <Term id='committee'>key committee</Term> of independent operators, which creates keys
             together so that no member ever knows a whole secret: each holds one share. No sequencer and no organizer
             holds the secret.
           </Trans>
@@ -87,9 +87,9 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
         <P>
           <Trans>
             After voting ends, anyone can ask for the results; sequencers ask on their own shortly after the end. The
-            registry first checks that the encrypted total is the one in the process’s final state, then hands it to the
-            committee. Enough members (the <Term id='threshold'>threshold</Term>) decrypt it together, each step with a
-            proof.
+            registry first checks that the encrypted total is the one in the election’s final state, then hands it to
+            the committee. Enough members (the <Term id='threshold'>threshold</Term>) decrypt it together, each step
+            with a proof.
           </Trans>
         </P>
         <Details>
@@ -110,12 +110,13 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
         </Details>
       </Section>
 
-      <Section id='dkg-locked' title={t`DKG locked`}>
+      <Section id='dkg-locked' title={t`Committee, organizer-locked`}>
         <P>
           <Trans>
-            The key combines a committee key with a key of the organizer’s. The organizer receives its secret when
-            creating the process, and the registry never stores it. The committee cannot start decrypting until the
-            organizer reveals the secret, so the organizer decides when the results appear, but not what they are.
+            The key combines a committee key with a key of the organizer’s. The organizer receives its secret (the{' '}
+            <Term id='organizer-secret'>organizer secret</Term>) when creating the election, and the registry never
+            stores it. The committee cannot start decrypting until the organizer reveals the secret, so the organizer
+            decides when the results appear, but not what they are.
           </Trans>
         </P>
         <UL>
@@ -125,13 +126,13 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
           <li>
             <Trans>
               The secret can be revealed at any time. An organizer that reveals it while voting is open leaves the
-              process with the trust of the automatic mode.
+              election with the trust of the automatic mode.
             </Trans>
           </li>
           <li>
             <Trans>
-              The organizer’s proof of owning its key names the committee round (the epoch), so a locked process names
-              its epoch; apps read it from the adapter’s <C>registrationEpoch()</C>.
+              The organizer’s proof of owning its key names the committee round, so the organizer picks the round when
+              creating the election.
             </Trans>
           </li>
         </UL>
@@ -141,19 +142,20 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
               The process key is the pool key plus the organizer key, <Formula expr='P_j + PK_org' />. The organizer’s
               secret <Formula expr='sk_org' /> is returned to the organizer at creation and never stored by the
               registry. The committee’s partial decryptions do not begin until the organizer calls{' '}
-              <C>revealProcessKey</C> with it. The organizer’s proof of possession binds the epoch.
+              <C>revealProcessKey</C> with it. The organizer’s proof of possession binds the epoch, so a locked process
+              names its epoch; apps read it from the adapter’s <C>registrationEpoch()</C>.
             </Trans>
           </P>
         </Details>
       </Section>
 
-      <Section id='what-the-committee-never-does' title={t`What the committee never does`}>
+      <Section id='what-the-committee-never-does' title={t`What the key committee never does`}>
         <P>
           <Trans>
-            The committee never rebuilds the process’s secret, which would open every ballot in the blobs. It decrypts
-            only the final total, one encrypted number per ballot field. A field whose encrypted total is still empty
-            (as in a process that never counted a ballot) decrypts to 0 under any key, so the registry records 0 for it
-            without asking the committee.
+            The committee never rebuilds the election’s secret, which would open every ballot in the published data. It
+            decrypts only the final total, one encrypted number per ballot field. A field whose encrypted total is still
+            empty (as in an election that never counted a ballot) decrypts to 0 under any key, so the registry records 0
+            for it without asking the committee.
           </Trans>
         </P>
         <Details>
@@ -179,20 +181,20 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
           </li>
         </UL>
         <H3>
-          <Trans>DKG keys</Trans>
+          <Trans>Committee keys</Trans>
         </H3>
         <UL>
           <li>
             <Trans>
               Enough members of one committee round (a threshold of the epoch’s committee) could together decrypt every
-              ballot of the processes keyed on that round, with the organizer secret as well in locked mode. The design
+              ballot of the elections keyed on that round, with the organizer secret as well in locked mode. The design
               trusts the threshold not to collude.
             </Trans>
           </li>
           <li>
             <Trans>
-              A process’s key belongs to one round’s committee and cannot move to another (there is no resharing). If
-              more than <Formula expr='n − t' /> of its members leave before the process ends, its results are lost.
+              An election’s key belongs to one round’s committee and cannot move to another (there is no resharing). If
+              more than <Formula expr='n − t' /> of its members leave before the election ends, its results are lost.
             </Trans>
           </li>
           <li>
@@ -204,16 +206,16 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
           <li>
             <Trans>
               Anyone can register applications on the committee, and each takes one of the round’s pool keys, so sixteen
-              cheap calls use a round up. The operators then create the next round at once, and creating DKG-mode
-              processes pauses for one round’s setup.
+              cheap calls use a round up. The operators then create the next round at once, and creating elections with
+              a committee key pauses for one round’s setup.
             </Trans>
           </li>
           <li>
             <Trans>
-              Between the end and the first decryption request, the organizer can still cancel a Ready or Paused process
-              without having seen the results, the same power it has with a sequencer key. The request itself moves the
-              process to Ended, which only the registry can leave, because the decrypted values become public on the DKG
-              before they reach the registry.
+              Between the end and the first decryption request, the organizer can still cancel a Ready or Paused
+              election without having seen the results, the same power it has with a sequencer key. The request itself
+              moves the election to Ended, which only the registry can leave, because the decrypted values become public
+              on the key committee’s contracts before they reach the registry.
             </Trans>
           </li>
         </UL>
@@ -222,22 +224,22 @@ export function KeyModes({ ex }: { ex: LearnExamples }) {
       <Section id='where-to-see-it' title={t`Where to see it`}>
         <P>
           <Trans>
-            A process’s <strong className='font-medium text-silver'>Encryption key</strong> tab shows its mode and its
-            key and, in the DKG modes, the epoch, the application id, the pool key and whether the organizer secret was
-            revealed. The contracts page shows the committee itself.
+            A process page’s <strong className='font-medium text-silver'>Election key</strong> tab shows who holds the
+            key and the key itself and, with a committee key, the round (epoch), the application id, the pool key and
+            whether the organizer secret was revealed. The contracts page shows the key committee itself.
           </Trans>
         </P>
         {ex.dkg ? (
           <SeeIt to={paths.process(ex.dkg.id, 'key')}>
-            <Trans>The key of a DKG-mode process</Trans>
+            <Trans>The key of an election with a committee key</Trans>
           </SeeIt>
         ) : ex.newest ? (
           <SeeIt to={paths.process(ex.newest.id, 'key')}>
-            <Trans>The key of the newest process</Trans>
+            <Trans>The key of the newest election</Trans>
           </SeeIt>
         ) : null}
         <SeeIt to={`${paths.contracts()}#dkg`}>
-          <Trans>The DKG committee behind this registry</Trans>
+          <Trans>The key committee behind this registry</Trans>
         </SeeIt>
         <P>
           <Trans>

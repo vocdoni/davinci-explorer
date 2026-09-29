@@ -168,7 +168,8 @@ export function createLiveServices(config: RuntimeConfig, client: PublicClient |
     async readDkgApplication(process, registry) {
       const dkg = process.state?.dkg
       if (!dkg || !client) return null
-      if (!registry?.dkgManager || !registry.dkgAppManager) throw new ServiceError(msg`The registry has no DKG adapter`)
+      if (!registry?.dkgManager || !registry.dkgAppManager)
+        throw new ServiceError(msg`The registry has no key committee adapter`)
       const manager = registry.dkgManager
       const appManager = registry.dkgAppManager
       const epochId = dkg.epochId

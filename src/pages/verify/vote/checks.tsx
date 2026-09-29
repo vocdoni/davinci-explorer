@@ -315,9 +315,9 @@ export function SettledCard({
           <p>
             <Trans>
               Every batch a sequencer records publishes the vote ids it added, in data attached to its transaction
-              (EIP-4844 <Term id='blob'>blobs</Term>). The explorer downloads this election’s batches, newest first, and
-              looks for your vote id. Being listed means the batch put your vote id into the election’s state, and the
-              proof the registry checked covers that.
+              (EIP-4844 <Term id='blob'>data blobs</Term>). The explorer downloads this election’s batches, newest
+              first, and looks for your vote id. Being listed means the batch put your vote id into the election’s
+              state, and the proof the registry checked covers that.
             </Trans>
           </p>
           {found ? (
@@ -332,8 +332,8 @@ export function SettledCard({
                     label: t`Batch size`,
                     value: (
                       <Trans>
-                        <Plural value={found.votes} one='# ballot' other='# ballots' /> ·{' '}
-                        <Plural value={found.nBlobs} one='# blob' other='# blobs' />
+                        <Plural value={found.votes} one='# vote' other='# votes' /> ·{' '}
+                        <Plural value={found.nBlobs} one='# data blob' other='# data blobs' />
                       </Trans>
                     ),
                   },
@@ -384,8 +384,8 @@ export function SettledCard({
             <RedoCommand
               note={
                 <Trans>
-                  The transaction lists one fingerprint (versioned hash) per blob; a beacon node serves the blob with
-                  that hash for about two weeks after the block.
+                  The transaction lists one fingerprint (versioned hash) per data blob; a beacon node serves the blob
+                  with that hash for about two weeks after the block.
                 </Trans>
               }
               code={`cast tx ${found.tx} blobVersionedHashes --rpc-url $RPC`}
@@ -511,7 +511,9 @@ export function BatchCard({
             </p>
             {found.tx ? (
               <RedoCommand
-                note={<Trans>A recorded batch’s transaction went through: the receipt says status 1.</Trans>}
+                note={
+                  <Trans>A recorded batch’s transaction went through: the transaction’s receipt says status 1.</Trans>
+                }
                 code={`cast receipt ${found.tx} --rpc-url $RPC`}
               />
             ) : null}
@@ -549,44 +551,44 @@ export function ResultCard({
     <CheckCard
       id='result'
       status={status}
-      title={t`The result includes it`}
+      title={t`The results include it`}
       statusLabel={reason === 'not-yet' ? t`Not yet` : undefined}
       summary={
         reason === 'blocked' ? (
           status === 'pending' ? (
             <Trans>This check runs once your vote is found in a recorded batch.</Trans>
           ) : (
-            <Trans>There is no recorded vote to follow into the result.</Trans>
+            <Trans>There is no recorded vote to follow into the results.</Trans>
           )
         ) : reason === 'canceled' ? (
-          <Trans>The election was canceled, so no result will be published.</Trans>
+          <Trans>The election was canceled, so no results will be published.</Trans>
         ) : reason === 'not-yet' ? (
           end ? (
-            <Trans>The result is not published yet. It comes after the vote ends, on {end}.</Trans>
+            <Trans>The results are not published yet. They come after the vote ends, on {end}.</Trans>
           ) : (
-            <Trans>The result is not published yet. It comes after the vote ends.</Trans>
+            <Trans>The results are not published yet. They come after the vote ends.</Trans>
           )
         ) : status === 'pass' ? (
           when ? (
             <Trans>
               <Link to={to} className={LINK}>
-                The result
+                The results
               </Link>
-              , published on {when}, counts every recorded batch, yours included.
+              , published on {when}, count every recorded batch, yours included.
             </Trans>
           ) : (
             <Trans>
               <Link to={to} className={LINK}>
-                The result
+                The results
               </Link>{' '}
-              counts every recorded batch, yours included.
+              count every recorded batch, yours included.
             </Trans>
           )
         ) : status === 'fail' ? (
           <Trans>
             The chain from your batch to the{' '}
             <Link to={to} className={LINK}>
-              result
+              results
             </Link>{' '}
             does not hold. The details below say where.
           </Trans>
@@ -594,9 +596,9 @@ export function ResultCard({
           <Trans>
             Checking that the{' '}
             <Link to={to} className={LINK}>
-              result
+              results
             </Link>{' '}
-            follows from your batch…
+            follow from your batch…
           </Trans>
         )
       }
@@ -605,9 +607,9 @@ export function ResultCard({
           <>
             <p>
               <Trans>
-                Each batch adds its ballots to an encrypted running total kept in the election’s state. Every later
-                batch must start from the state the previous one left, so the state after your batch leads, batch by
-                batch, to the final state. The result is proven to be the decryption of the total in that final state.
+                Each batch adds its ballots to an encrypted total kept in the election’s state. Every later batch must
+                start from the state the previous one left, so the state after your batch leads, batch by batch, to the
+                final state. The results are proven to be the decryption of the total in that final state.
               </Trans>
             </p>
             <ul className='flex flex-col gap-1.5'>
@@ -645,7 +647,7 @@ export function ResultCard({
                 <Link to={paths.verifyElection(pid)} className={LINK}>
                   election check
                 </Link>{' '}
-                go through how the result was produced.
+                go through how the results were produced.
               </Trans>
             </p>
           </>
@@ -759,7 +761,7 @@ export function TrackerCard({
                     <CheckMark state={data.valid ? 'pass' : 'fail'} className='mt-0.5' />
                     <span>
                       {data.otherVote
-                        ? t`The sequencer answered with a proof for another vote`
+                        ? t`The sequencer answered with a receipt for another vote`
                         : data.valid
                           ? t`The path reaches the root the proof names`
                           : t`The path does not reach its root`}
@@ -789,7 +791,7 @@ export function TrackerCard({
                         ) : data.rootOnChain ? (
                           t`the latest root`
                         ) : (
-                          t`not the genesis root nor any transition root`
+                          t`not the genesis root nor the root after any batch`
                         ),
                       },
                       {
@@ -816,7 +818,7 @@ export function TrackerCard({
                       null,
                       2
                     )}
-                    label={t`Copy the tracker proof`}
+                    label={t`Copy the receipt`}
                     maxHeight={280}
                   />
                 </Disclosure>

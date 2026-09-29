@@ -47,7 +47,7 @@ export function TxPage() {
         <>
           <EmptyState
             title={t`No event of this registry came from this transaction`}
-            description={t`The explorer knows the transactions that changed something on this registry: creating a process, recording a batch of votes, publishing results, asking for a decryption, or changing a process’s status, list of voters, duration or voter limit (each emits a ProcessRegistry event). This one did none of them, or it happened on another network or registry.`}
+            description={t`The explorer knows the transactions that changed something on this registry: creating an election, recording a batch of votes, publishing results, asking for a decryption, or changing an election’s status, list of voters, duration or voter limit (each emits a ProcessRegistry event). This one did none of them, or it happened on another network or registry.`}
             action={
               external ? (
                 <ButtonLink href={external} external variant='ghost' size='sm'>
@@ -73,7 +73,7 @@ export function TxPage() {
       ) : (
         <EmptyState
           title={t`A transaction hash is 0x followed by 64 hex digits`}
-          description={t`Paste the hash of a transaction that recorded a batch of votes, created a process or published results.`}
+          description={t`Paste the hash of a transaction that recorded a batch of votes, created an election or published results.`}
         />
       )}
     </Stack>

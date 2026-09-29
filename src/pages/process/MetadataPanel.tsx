@@ -57,26 +57,26 @@ export function MetadataVerdict({ check, history }: { check: MetadataCheck; hist
   let body: ReactNode
   switch (status) {
     case 'matches':
-      title = t`The document matches the on-chain hash`
+      title = t`The document matches the fingerprint on the chain`
       body = (
         <Trans>
-          The document at this address is, byte for byte, the one the organizer committed on-chain. Its title, question
-          and option names are the organizer’s.
+          The document at this address is, byte for byte, the one whose fingerprint the organizer recorded on the chain.
+          Its title, question and option names are the organizer’s.
         </Trans>
       )
       break
     case 'differs':
-      title = t`The document does not match the on-chain hash`
+      title = t`The document does not match the fingerprint on the chain`
       body =
         older >= 0 ? (
           <Trans>
-            The address serves version {version}, which the organizer has since replaced, not the document committed
-            on-chain now. Do not rely on its title, question or option names.
+            The address serves version {version}, which the organizer has since replaced, not the document whose
+            fingerprint is on the chain now. Do not rely on its title, question or option names.
           </Trans>
         ) : (
           <Trans>
-            The address serves another document than the one the organizer committed on-chain. Do not rely on its title,
-            question or option names: they may not be what voters were shown.
+            The address serves another document than the one whose fingerprint the organizer recorded on the chain. Do
+            not rely on its title, question or option names: they may not be what voters were shown.
           </Trans>
         )
       break
@@ -84,8 +84,8 @@ export function MetadataVerdict({ check, history }: { check: MetadataCheck; hist
       title = t`The document could not be checked`
       body = (
         <Trans>
-          The explorer could not download it ({detail}), so its hash was not compared. The host may be offline or refuse
-          requests from other sites; the command below checks it from a terminal.
+          The explorer could not download it ({detail}), so its fingerprint was not compared. The host may be offline or
+          refuse requests from other sites; the command below checks it from a terminal.
         </Trans>
       )
       break
@@ -93,16 +93,16 @@ export function MetadataVerdict({ check, history }: { check: MetadataCheck; hist
       title = t`The document cannot be checked here`
       body = check.uri ? (
         <Trans>
-          A browser cannot fetch this URI (only http, https and ipfs are read). Download the document yourself and
-          compare its SHA-256 with the committed hash.
+          A browser cannot fetch this address (only http, https and ipfs are read). Download the document yourself and
+          compare its fingerprint (its SHA-256) with the one recorded on the chain.
         </Trans>
       ) : (
-        <Trans>This process has no metadata document.</Trans>
+        <Trans>This election has no description document.</Trans>
       )
       break
     default:
       title = t`Checking the document…`
-      body = <Trans>Downloading it and computing its SHA-256 in your browser.</Trans>
+      body = <Trans>Downloading it and computing its fingerprint in your browser.</Trans>
   }
   const style = VERDICT[status]
   return (
@@ -138,7 +138,7 @@ export function MetadataPanel({ view }: { view: ProcessView }) {
   const size = served ? formatBytes(served.size) : null
   return (
     <Panel
-      title={t`Metadata`}
+      title={t`Description`}
       label={t`Published by the organizer`}
       description={
         <Trans>
@@ -154,7 +154,7 @@ export function MetadataPanel({ view }: { view: ProcessView }) {
         <KeyValue
           items={[
             {
-              label: t`Metadata URI`,
+              label: t`Document address`,
               value: uri ? (
                 <UriLink uri={uri} href={href} label={t`Open the document`} />
               ) : (
@@ -164,21 +164,21 @@ export function MetadataPanel({ view }: { view: ProcessView }) {
               ),
             },
             {
-              label: t`Committed hash`,
+              label: t`Fingerprint on the chain`,
               value: <Hash value={s.metadataHash} chars={10} />,
-              hint: t`the fingerprint the organizer recorded on chain (metadataHash)`,
+              hint: t`recorded by the organizer (metadataHash)`,
             },
             ...(served
               ? [
                   {
-                    label: t`Served hash`,
+                    label: t`Fingerprint of what is served`,
                     value: (
                       <span className='inline-flex items-center gap-2'>
                         <CheckMark state={check.status === 'matches' ? 'pass' : 'fail'} />
                         <Hash value={served.hash} chars={10} />
                       </span>
                     ),
-                    hint: t`the fingerprint of what the address serves now (${size}), computed in your browser`,
+                    hint: t`what the address serves now (${size}), computed in your browser`,
                   },
                 ]
               : []),
@@ -281,8 +281,8 @@ function MetadataHistory({ view }: { view: ProcessView }) {
         </h3>
         <p className='mt-1 text-xs leading-relaxed text-ash'>
           <Trans>
-            Every version recorded on chain. The organizer can publish a new one while the process is open or paused,
-            until the end; after that it cannot change.
+            Every version recorded on the chain. The organizer can publish a new one while the election is open or
+            paused, until the end; after that it cannot change.
           </Trans>
         </p>
       </div>
@@ -319,8 +319,8 @@ function MetadataHistory({ view }: { view: ProcessView }) {
                     <p className='text-[12px] leading-relaxed text-amber'>
                       {v.afterFirstVote ? (
                         <Trans>
-                          The organizer changed the description while voting was open, after votes had settled. Votes
-                          cast before this change were cast under the previous version.
+                          The organizer changed the description while voting was open, after votes had been recorded.
+                          Votes cast before this change were cast under the previous version.
                         </Trans>
                       ) : (
                         <Trans>

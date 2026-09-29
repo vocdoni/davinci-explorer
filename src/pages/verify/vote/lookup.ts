@@ -32,7 +32,7 @@ export function validateLookup(pidInput: string, voteInput: string): LookupQuery
     const n = /^0x[0-9a-fA-F]{1,16}$/.test(v) || /^\d{1,20}$/.test(v) ? BigInt(v) : null
     voteError =
       n != null && n < VOTE_ID_MIN
-        ? t`Vote ids start at 0x8000000000000000 (2^63).`
+        ? t`Vote ids start at 0x8000000000000000 (2⁶³).`
         : n != null && n > U64_MAX
           ? t`A vote id fits in 64 bits.`
           : t`A vote id is 0x followed by 16 hex digits, or its decimal value.`
@@ -63,11 +63,11 @@ export const STATUS_INFO: Record<VoteStatus, { label: MessageDescriptor; descrip
     description: msg`The batch’s proof is ready; the transaction that records it is on its way.`,
   },
   settled: {
-    label: msg`Settled`,
-    description: msg`On the chain: the batch carrying the vote is recorded on the registry.`,
+    label: msg`Recorded`,
+    description: msg`On the chain: the batch carrying the vote is recorded on the registry (the sequencer reports it as settled).`,
   },
   error: {
     label: msg`Error`,
-    description: msg`The vote will not be recorded: a check inside the proof failed, the process closed, the transaction failed or the prover refused the batch.`,
+    description: msg`The vote will not be recorded: a check inside the proof failed, the election closed, the transaction failed or the prover refused the batch.`,
   },
 }

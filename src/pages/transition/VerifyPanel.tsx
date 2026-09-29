@@ -59,7 +59,7 @@ export function VerifyPanel({ detail }: { detail: TransitionDetail }) {
     [chain.registryAddress, chain.registry, tr, process.createdBlock, census, publics, tx]
   )
 
-  // The PLONK and the openings are not recomputed here: a settled
+  // The PLONK and the openings are not recomputed here: a recorded
   // transaction is the evidence the registry accepted both.
   const onchain: CheckState = tx ? (tx.status === 'success' ? 'pass' : 'fail') : 'unknown'
   const onchainDetail = tx
@@ -154,14 +154,14 @@ export function VerifyPanel({ detail }: { detail: TransitionDetail }) {
           <p>
             <Trans>
               Run your own copy of the sequencer software without a signing key, as an{' '}
-              <Term id='observer'>observer</Term>. It follows every process, downloads each batch’s data, rebuilds the
+              <Term id='observer'>observer</Term>. It follows every election, downloads each batch’s data, rebuilds the
               state on your computer and accepts a batch only if it reaches the same fingerprint as the chain. That
               checks every batch, whoever sent it.
             </Trans>
           </p>
           <p className='mt-2 text-[12px]'>
             <Trans>
-              Under the hood it fetches each transition’s blobs, checks them against the transaction’s versioned hashes,
+              Under the hood it fetches each batch’s data blobs, checks them against the transaction’s versioned hashes,
               applies them to its own copy of the state tree and requires the event’s new root.
             </Trans>
           </p>

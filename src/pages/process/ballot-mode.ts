@@ -95,8 +95,8 @@ function sumRule(bm: BallotMode): string {
     if (exact) return t`The fields add up to exactly ${most}.`
     if (weight) {
       return floor
-        ? t`The fields add up to at most the voter's census weight (maxValueSum is 0) and at least ${least}.`
-        : t`The fields add up to at most the voter's census weight (maxValueSum is 0).`
+        ? t`The fields add up to at most the voter's weight on the list of voters (maxValueSum is 0) and at least ${least}.`
+        : t`The fields add up to at most the voter's weight on the list of voters (maxValueSum is 0).`
     }
     return floor
       ? t`The fields add up to at most ${most} and at least ${least}.`
@@ -106,8 +106,8 @@ function sumRule(bm: BallotMode): string {
     if (exact) return t`The sum of the squares of the values is exactly ${most}.`
     if (weight) {
       return floor
-        ? t`The sum of the squares of the values is at most the voter's census weight (maxValueSum is 0) and at least ${least}.`
-        : t`The sum of the squares of the values is at most the voter's census weight (maxValueSum is 0).`
+        ? t`The sum of the squares of the values is at most the voter's weight on the list of voters (maxValueSum is 0) and at least ${least}.`
+        : t`The sum of the squares of the values is at most the voter's weight on the list of voters (maxValueSum is 0).`
     }
     return floor
       ? t`The sum of the squares of the values is at most ${most} and at least ${least}.`
@@ -116,8 +116,8 @@ function sumRule(bm: BallotMode): string {
   if (exact) return t`The sum of each value raised to the power ${exponent} is exactly ${most}.`
   if (weight) {
     return floor
-      ? t`The sum of each value raised to the power ${exponent} is at most the voter's census weight (maxValueSum is 0) and at least ${least}.`
-      : t`The sum of each value raised to the power ${exponent} is at most the voter's census weight (maxValueSum is 0).`
+      ? t`The sum of each value raised to the power ${exponent} is at most the voter's weight on the list of voters (maxValueSum is 0) and at least ${least}.`
+      : t`The sum of each value raised to the power ${exponent} is at most the voter's weight on the list of voters (maxValueSum is 0).`
   }
   return floor
     ? t`The sum of each value raised to the power ${exponent} is at most ${most} and at least ${least}.`
@@ -189,7 +189,7 @@ export function describeBallotMode(bm: BallotMode): BallotModeDescription {
     )
   }
   rules.push(
-    t`The tally adds each field over every voter's latest ballot: an option's result is the sum of the values voters gave it.`
+    t`The results add up each field over every voter's latest vote: an option's result is the sum of the values voters gave it.`
   )
 
   const impossible = unsatisfiable(bm)
@@ -229,7 +229,7 @@ export function describeBallotMode(bm: BallotMode): BallotModeDescription {
     const cost = `v${String(e).replace(/\d/g, (d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[Number(d)]!)}`
     let summary: string
     if (bm.maxValueSum === 0n) {
-      summary = t`Each voter spends as many credits as their census weight across ${plural(options, { one: '# option', other: '# options' })}; putting v votes on one option costs ${cost} credits, at most ${cap} votes per option.`
+      summary = t`Each voter spends as many credits as their weight on the list of voters across ${plural(options, { one: '# option', other: '# options' })}; putting v votes on one option costs ${cost} credits, at most ${cap} votes per option.`
     } else if (bm.minValueSum > 0n) {
       summary = t`Each voter spends between ${least} and ${most} credits across ${plural(options, { one: '# option', other: '# options' })}; putting v votes on one option costs ${cost} credits, at most ${cap} votes per option.`
     } else {
@@ -271,8 +271,8 @@ export function describeBallotMode(bm: BallotMode): BallotModeDescription {
       summary:
         bm.maxValueSum === 0n
           ? bm.minValueSum > 0n
-            ? t`Each voter approves at least ${least} and up to W of ${plural(options, { one: '# option', other: '# options' })}, W being their census weight.`
-            : t`Each voter approves up to W of ${plural(options, { one: '# option', other: '# options' })}, W being their census weight.`
+            ? t`Each voter approves at least ${least} and up to W of ${plural(options, { one: '# option', other: '# options' })}, W being their weight on the list of voters.`
+            : t`Each voter approves up to W of ${plural(options, { one: '# option', other: '# options' })}, W being their weight on the list of voters.`
           : bm.minValueSum > 0n
             ? t`Each voter approves at least ${least} of ${plural(options, { one: '# option', other: '# options' })}.`
             : t`Each voter approves any number of ${plural(options, { one: '# option', other: '# options' })}.`,
@@ -282,7 +282,7 @@ export function describeBallotMode(bm: BallotMode): BallotModeDescription {
   if (e === 1 && bm.maxValue > 1n && fields > 1) {
     let summary: string
     if (bm.maxValueSum === 0n) {
-      summary = t`Each voter distributes as many points as their census weight among ${plural(options, { one: '# option', other: '# options' })}, at most ${cap} per option.`
+      summary = t`Each voter distributes as many points as their weight on the list of voters among ${plural(options, { one: '# option', other: '# options' })}, at most ${cap} per option.`
     } else if (capValue < bm.maxValueSum) {
       summary = t`Each voter distributes up to ${most} points among ${plural(options, { one: '# option', other: '# options' })}, at most ${cap} per option.`
     } else {

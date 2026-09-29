@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { CheckMark, Term } from '~components'
 import { Disclosure } from '~components/code'
 import { Formula } from '~components/Formula'
+import { RichText } from '~components/RichText'
 import { useRuntimeConfig } from '~config/config-context'
 import { useDeploymentDetails } from '~data/deployment'
 import { useChain, useReleaseCheck } from '~data/hooks'
@@ -30,6 +31,9 @@ import { dkgStatus, PIN_PLAIN, pinState, releaseStatus, verifierStates, wiringSt
 import { RedoPanel } from './RedoPanel'
 
 const LINK = 'text-emerald hover:underline'
+const PUBLIC_INPUT = 'publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal) mod r_BN254'
+// The committee's verifiers are described under their own check.
+const isDkgVerifier = (rowId: string) => rowId.startsWith('dkg-') && rowId.slice(4) in DKG_VERIFIER_LABELS
 
 /**
  * Verify → The deployment (`/verify/deployment`): the registry's pins against
@@ -73,7 +77,7 @@ export function VerifyDeploymentPage() {
       flow={t`The deployment`}
       icon={<ShieldIcon size={24} />}
       question={t`Is this the real DAVINCI, running the published code?`}
-      description={t`The contracts decide which proofs they accept. These checks show they only accept proofs of the released DAVINCI programs, that they are wired to each other as published, and that the decryption committee checks the published circuits.`}
+      description={t`The contracts decide which proofs they accept. These checks show they only accept proofs of the released DAVINCI programs, that they are wired to each other as published, and that the key committee checks the published circuits.`}
       states={stepStates(true, decided)}
       hints={{ choose: networkName, check: releaseLabel }}
     >
@@ -144,7 +148,28 @@ export function VerifyDeploymentPage() {
                       of any other program, or made with another setup, is refused:
                     </Trans>
                   </p>
-                  <Formula block expr='publicInput = sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)' />
+                  <Formula block expr={PUBLIC_INPUT} />
+                  <HowPart title={t`Where each value is read, and what it is`}>
+                    <ul className='flex flex-col gap-3' data-testid='pin-details'>
+                      {match.checks.map((c) => {
+                        const pin = PIN_DETAILS[c.pin]
+                        return (
+                          <li key={c.pin} className='min-w-0'>
+                            <div className='flex flex-wrap items-baseline gap-x-2 gap-y-0.5'>
+                              <span className='text-silver'>{PIN_LABELS[c.pin]}</span>
+                              <Formula expr={pin.source} />
+                            </div>
+                            <p className='mt-0.5'>
+                              <RichText text={i18n._(pin.detail)} />
+                            </p>
+                            {pin.formula && pin.formula !== PUBLIC_INPUT ? (
+                              <Formula block expr={pin.formula} className='mt-1.5' />
+                            ) : null}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </HowPart>
                   <HowPart title={t`What a difference would mean`}>
                     <ul className='flex flex-col gap-1.5'>
                       {match.checks.map((c) => (
@@ -185,7 +210,7 @@ export function VerifyDeploymentPage() {
                         <p className='mt-0.5 text-[12px] leading-relaxed text-pewter'>{i18n._(PIN_PLAIN[c.pin])}</p>
                         <dl className='mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-[12px]'>
                           <dt className='text-ash'>
-                            <Trans>On chain</Trans>
+                            <Trans>On the chain</Trans>
                           </dt>
                           <dd className='min-w-0'>{c.actual ? <Hash value={c.actual} chars={10} /> : '…'}</dd>
                           <dt className='text-ash'>
@@ -236,17 +261,39 @@ export function VerifyDeploymentPage() {
                       reads from each contract which other contracts it uses, and compares.
                     </Trans>
                   </p>
-                  <ul className='flex flex-col gap-2' data-testid='wiring-checks'>
+                  <ul className='flex flex-col gap-2.5' data-testid='wiring-checks'>
                     {wiring.map((c) => (
-                      <li key={c.id} className='flex items-start gap-2'>
+                      <li key={c.id} className='flex items-start gap-2' data-testid={`wiring-${c.id}`}>
                         <CheckMark state={c.state} className='mt-0.5' />
                         <div className='min-w-0'>
                           <div className='text-[13px] text-silver'>{i18n._(c.label)}</div>
                           <div className='text-[12px] break-words text-ash'>{i18n._(c.detail)}</div>
+                          <div className='mt-1 text-[12px]'>
+                            <Formula expr={c.formula} />
+                          </div>
                         </div>
                       </li>
                     ))}
                   </ul>
+                  <HowPart title={t`What each contract does`}>
+                    <dl className='flex flex-col gap-2' data-testid='contract-details'>
+                      {rows
+                        .filter((row) => row.detail && !isDkgVerifier(row.id))
+                        .map((row) => (
+                          <div key={row.id} className='min-w-0'>
+                            <dt className='text-[13px] text-silver'>{row.name}</dt>
+                            <dd className='text-[12px] break-words'>
+                              <RichText text={i18n._(row.detail!)} />
+                            </dd>
+                          </div>
+                        ))}
+                    </dl>
+                    {hasAdapter ? (
+                      <p className='text-[12px]'>
+                        <Trans>The committee’s four verifiers are described under the key committee check.</Trans>
+                      </p>
+                    ) : null}
+                  </HowPart>
                   <p>
                     <Trans>
                       The contracts page lists the same addresses with every parameter they hold, for reference:{' '}
@@ -273,13 +320,16 @@ export function VerifyDeploymentPage() {
                     data-testid={`contract-row-${row.id}`}
                     className='flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4'
                   >
-                    <span className='flex min-w-0 items-center gap-2'>
-                      <span className='text-[13px] text-ghost'>{row.name}</span>
-                      {row.group === 'dkg' ? (
-                        <Badge size='sm' tone='neutral'>
-                          davinci-dkg
-                        </Badge>
-                      ) : null}
+                    <span className='flex min-w-0 flex-col gap-0.5'>
+                      <span className='flex min-w-0 items-center gap-2'>
+                        <span className='text-[13px] text-ghost'>{row.name}</span>
+                        {row.group === 'dkg' ? (
+                          <Badge size='sm' tone='neutral'>
+                            davinci-dkg
+                          </Badge>
+                        ) : null}
+                      </span>
+                      <span className='text-[12px] leading-relaxed text-pewter'>{i18n._(row.role)}</span>
                     </span>
                     {row.address ? (
                       <span className='flex min-w-0 items-center gap-1'>
@@ -297,7 +347,7 @@ export function VerifyDeploymentPage() {
             </CheckCard>
           </CheckGroup>
 
-          <CheckGroup title={t`The decryption committee`}>
+          <CheckGroup title={t`The key committee`}>
             <CheckCard
               id='dkg'
               status={committee}
@@ -306,7 +356,8 @@ export function VerifyDeploymentPage() {
               summary={
                 hasAdapter === false ? (
                   <Trans>
-                    This registry was deployed without a DKG committee, so every election here uses a sequencer key.
+                    This registry was deployed without a key committee, so in every election here a sequencer holds the
+                    key.
                   </Trans>
                 ) : !dkg ? (
                   details.error ? (
@@ -318,15 +369,16 @@ export function VerifyDeploymentPage() {
                   <span className='inline-flex flex-wrap items-center gap-x-2 gap-y-1'>
                     <span>
                       <Trans>
-                        Every step of the committee is checked against the published circuits. Its newest epoch, #
-                        {nonce}, has {committeeSize} members, and any {threshold} of them can decrypt.
+                        Every step the committee takes is checked against the published circuits. Its newest round,
+                        epoch #{nonce}, has {committeeSize} members, and any {threshold} of them can decrypt.
                       </Trans>
                     </span>
                     <DkgPhaseBadge phase={epoch.phase} />
                   </span>
                 ) : (
                   <Trans>
-                    Every step of the committee is checked against the published circuits. No epoch exists yet.
+                    Every step the committee takes is checked against the published circuits. It has not formed a round
+                    (an epoch) yet.
                   </Trans>
                 )
               }
@@ -335,10 +387,10 @@ export function VerifyDeploymentPage() {
                   <>
                     <p>
                       <Trans>
-                        Elections in the DKG key modes are decrypted by a <Term id='committee'>committee</Term>. Every
-                        step it takes comes with a proof, checked by one of four verifier contracts. Each verifier
-                        reports the fingerprint of the circuit key it accepts, and the explorer compares them with the
-                        published davinci-dkg circuits.
+                        In the committee key modes, an election’s results are decrypted by the{' '}
+                        <Term id='committee'>key committee</Term>. Every step it takes comes with a proof, checked by
+                        one of four verifier contracts. Each verifier reports the fingerprint of the circuit key it
+                        accepts, and the explorer compares them with the published davinci-dkg circuits.
                       </Trans>
                     </p>
                     <p className='text-[12px]'>
@@ -356,6 +408,9 @@ export function VerifyDeploymentPage() {
                             <div className='min-w-0'>
                               <div className='text-[13px] text-silver'>{DKG_VERIFIER_LABELS[v.name].name}</div>
                               <div className='text-[12px] text-ash'>{i18n._(DKG_VERIFIER_LABELS[v.name].role)}</div>
+                              <div className='text-[12px] text-ash'>
+                                <RichText text={i18n._(DKG_VERIFIER_LABELS[v.name].detail)} />
+                              </div>
                               {view?.keyHash ? (
                                 <Compared
                                   rows={[{ label: t`Key hash`, value: <Hash value={view.keyHash} chars={10} /> }]}
@@ -396,8 +451,8 @@ export function VerifyDeploymentPage() {
         testId='deployment-limits'
         proves={[
           <Trans key='programs'>
-            Every batch of votes, and every result of a sequencer-key election, is recorded only with a proof of the
-            released programs, made with the released setup and checked by the released verifier code.
+            Every batch of votes, and the results of every election whose key a sequencer holds, are recorded only with
+            a proof of the released programs, made with the released setup and checked by the released verifier code.
           </Trans>,
           <Trans key='ballots'>Only ballots proven with the released ballot circuit are accepted.</Trans>,
           <Trans key='wiring'>
@@ -419,8 +474,8 @@ export function VerifyDeploymentPage() {
             recognise may be a newer one, to check against the davinci-zkvm release notes.
           </Trans>,
           <Trans key='committee'>
-            That the committee members will not collude. In the DKG key modes a threshold of them acting together could
-            open ballots.
+            That the committee members will not collude. In the committee key modes, enough of them acting together (a
+            threshold) could open ballots.
           </Trans>,
         ]}
       >

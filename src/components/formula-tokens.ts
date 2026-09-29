@@ -44,6 +44,8 @@ const SPACED = new Set(['‖', '=', '==', '!=', '+', '−', '·', '×', '<<', '>
 const IDENT = /^[\p{L}_][\p{L}\p{N}_.']*/u
 const NUMBER = /^(0x[0-9a-fA-F]+|\d+(\.\d+)?)/
 const STRING = /^("[^"]*"|'[^']*')/
+// A signed exponent right after `^`: `2^−7.6`, `2^-k`. The sign is part of the exponent.
+const SIGNED_EXPONENT = /^[−-](\d+(\.\d+)?|[\p{L}_][\p{L}\p{N}_]*)/u
 
 /** Splits an expression into coloured tokens. `||` is concatenation and becomes ‖. */
 export function tokenizeFormula(expr: string): FormulaToken[] {
@@ -56,6 +58,14 @@ export function tokenizeFormula(expr: string): FormulaToken[] {
     if (ws) {
       out.push({ kind: 'space', text: ' ' })
       i += ws[0].length
+      continue
+    }
+    const last = out[out.length - 1]
+    const signed = last?.kind === 'op' && last.text === '^' ? SIGNED_EXPONENT.exec(rest) : null
+    if (signed) {
+      // Typeset with a real minus sign, one token, so it is never spaced like a subtraction.
+      out.push({ kind: /\d/.test(signed[1]![0]!) ? 'lit' : 'var', text: `−${signed[1]}` })
+      i += signed[0].length
       continue
     }
     const str = STRING.exec(rest)

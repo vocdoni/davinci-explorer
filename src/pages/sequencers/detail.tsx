@@ -79,7 +79,7 @@ export function SequencerPage() {
   const node = entry.nodes[0]
   const title = address ? checksum(address) : node ? uriHost(node.endpoint.upstream) : entry.key
   const nTransitions = r?.transitions ?? 0
-  const nBallots = r?.ballots ?? 0
+  const nVotes = r?.ballots ?? 0
   const nProcesses = r?.processes ?? 0
   const nResults = r?.results ?? 0
   const overwrites = r?.overwrites ?? 0
@@ -108,20 +108,20 @@ export function SequencerPage() {
             nResults > 0 ? (
               <Trans>
                 Recorded <Plural value={nTransitions} one='# batch' other='# batches' /> with{' '}
-                <Plural value={nBallots} one='# ballot' other='# ballots' /> for{' '}
-                <Plural value={nProcesses} one='# process' other='# processes' />, and published the results of{' '}
-                <Plural value={nResults} one='# process' other='# processes' />.
+                <Plural value={nVotes} one='# vote' other='# votes' /> for{' '}
+                <Plural value={nProcesses} one='# election' other='# elections' />, and published the results of{' '}
+                <Plural value={nResults} one='# election' other='# elections' />.
               </Trans>
             ) : (
               <Trans>
                 Recorded <Plural value={nTransitions} one='# batch' other='# batches' /> with{' '}
-                <Plural value={nBallots} one='# ballot' other='# ballots' /> for{' '}
-                <Plural value={nProcesses} one='# process' other='# processes' />.
+                <Plural value={nVotes} one='# vote' other='# votes' /> for{' '}
+                <Plural value={nProcesses} one='# election' other='# elections' />.
               </Trans>
             )
           ) : node?.info.data?.observer ? (
             <Trans>
-              An observer: a configured sequencer node without a key. It follows every process and answers questions
+              An observer: a configured sequencer node without a key. It follows every election and answers questions
               about it, but never records a batch.
             </Trans>
           ) : address ? (
@@ -136,15 +136,15 @@ export function SequencerPage() {
       {r ? (
         <>
           <StatRow>
-            <StatCell label={t`Transitions`} value={formatNumber(r.transitions)} mono hint={t`batches recorded`} />
+            <StatCell label={t`Batches`} value={formatNumber(r.transitions)} mono hint={t`recorded on the chain`} />
             <StatCell
-              label={t`Ballots`}
+              label={t`Votes`}
               value={formatNumber(r.ballots)}
               mono
               hint={t`${plural(overwrites, { one: 'including # changed vote', other: 'including # changed votes' })}`}
             />
-            <StatCell label={t`Processes`} value={formatNumber(r.processes)} mono hint={t`with a batch or a result`} />
-            <StatCell label={t`Blobs`} value={formatNumber(r.blobs)} mono hint={t`published with its batches`} />
+            <StatCell label={t`Processes`} value={formatNumber(r.processes)} mono hint={t`with a batch or results`} />
+            <StatCell label={t`Data blobs`} value={formatNumber(r.blobs)} mono hint={t`published with its batches`} />
           </StatRow>
           <StatRow>
             <StatCell
@@ -157,11 +157,11 @@ export function SequencerPage() {
               }
               hint={
                 feesPending > 0
-                  ? t`${plural(feesPending, { one: '# receipt', other: '# receipts' })} still to read`
+                  ? t`${plural(feesPending, { one: '# transaction receipt', other: '# transaction receipts' })} still to read`
                   : t`execution and blob gas`
               }
             />
-            <StatCell label={t`Results`} value={formatNumber(r.results)} mono hint={t`tallies published`} />
+            <StatCell label={t`Results`} value={formatNumber(r.results)} mono hint={t`published on the chain`} />
             <StatCell
               label={t`First active`}
               value={<Timestamp value={r.first.timestamp} className='text-[18px]' />}
@@ -236,7 +236,7 @@ function ActivityPanel({ days }: { days: ReturnType<typeof sequencerActivity> })
         return {
           label: formatDate(d.day, 'short'),
           values: { newVoters: d.newVoters, overwrites: d.overwrites },
-          note: `${formatDate(d.day)} · ${plural(transitions, { one: '# transition', other: '# transitions' })} · ${plural(blobs, { one: '# blob', other: '# blobs' })}`,
+          note: `${formatDate(d.day)} · ${plural(transitions, { one: '# batch', other: '# batches' })} · ${plural(blobs, { one: '# data blob', other: '# data blobs' })}`,
         }
       }),
     [days]
@@ -245,7 +245,7 @@ function ActivityPanel({ days }: { days: ReturnType<typeof sequencerActivity> })
   const total = formatNumber(days.reduce((n, d) => n + d.ballots, 0))
   return (
     <Panel
-      title={t`Ballots it recorded per day`}
+      title={t`Votes it recorded per day`}
       label={t`Last ${DAYS} days, UTC`}
       description={t`New votes and changed votes in the batches this account recorded, by the day each batch landed.`}
       actions={<span className='font-mono text-[12px] text-ash tnum'>{t`${total} in total`}</span>}
@@ -294,7 +294,7 @@ function TransitionsPanel({ rows, processes }: { rows: TransitionRow[]; processe
       },
       {
         id: 'index',
-        header: t`Transition`,
+        header: t`Batch`,
         cell: ({ row }) => (
           <Link
             to={paths.transition(row.original.processId, row.original.index)}
@@ -303,7 +303,7 @@ function TransitionsPanel({ rows, processes }: { rows: TransitionRow[]; processe
             #{row.original.index}
           </Link>
         ),
-        meta: { width: '96px', headerTooltip: t`The batch’s number within its process, from 0.` },
+        meta: { width: '96px', headerTooltip: t`The batch’s number within its election, from 0.` },
       },
       {
         id: 'time',
@@ -313,13 +313,13 @@ function TransitionsPanel({ rows, processes }: { rows: TransitionRow[]; processe
       },
       {
         id: 'ballots',
-        header: t`Ballots`,
+        header: t`Votes`,
         cell: ({ row }) => formatNumber(row.original.votes),
-        meta: { numeric: true, width: '84px', headerTooltip: t`New votes plus votes that changed an earlier one.` },
+        meta: { numeric: true, width: '84px', headerTooltip: t`New votes plus changed votes.` },
       },
       {
         id: 'blobs',
-        header: t`Blobs`,
+        header: t`Data blobs`,
         cell: ({ row }) => formatNumber(row.original.nBlobs),
         meta: { numeric: true, width: '70px' },
       },
@@ -350,7 +350,7 @@ function TransitionsPanel({ rows, processes }: { rows: TransitionRow[]; processe
       description={t`Newest first. Open one for what its proof says, the data it published and every check the registry made.`}
       actions={
         <span className='font-mono text-[12px] text-ash tnum'>
-          <Plural value={count} one='# transition' other='# transitions' />
+          <Plural value={count} one='# batch' other='# batches' />
         </span>
       }
       bodyClassName='p-0'
@@ -384,8 +384,8 @@ function ResultsPanel({ rows, processes }: { rows: SequencerResult[]; processes:
   return (
     <Panel
       title={t`Results it published`}
-      label={t`Tallies`}
-      description={t`Each is a process’s final count, proven and accepted by the registry.`}
+      label={t`Results`}
+      description={t`Each is an election’s results, proven and recorded on the chain.`}
       bodyClassName='p-0'
     >
       <ul className='divide-y divide-charcoal/60' data-testid='sequencer-results'>

@@ -22,13 +22,14 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
           </li>
           <li>
             <Trans>
-              Nodes called sequencers group the ballots into batches and record each batch on the chain with a proof
-              that it was counted correctly.
+              Nodes called sequencers group the votes into batches and record each batch on the chain with a proof that
+              it was counted correctly.
             </Trans>
           </li>
           <li>
             <Trans>
-              What each batch changed is published, so anyone can check the count without trusting the sequencers.
+              What each batch changed is published, so anyone can check what was counted without trusting the
+              sequencers.
             </Trans>
           </li>
         </ul>
@@ -37,14 +38,14 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
       <Section id='the-parts' title={t`Who does what`}>
         <P>
           <Trans>
-            DAVINCI is a voting protocol in which every change to the count is proven. An election is called a{' '}
-            <Term id='process'>process</Term>, and four parties take part in it:
+            DAVINCI is a voting protocol in which every step of the count is proven. Four parties take part in an
+            election, which the registry and this explorer call a <Term id='process'>process</Term>:
           </Trans>
         </P>
         <UL>
           <li>
             <Trans>
-              <strong className='font-medium text-silver'>The organizer</strong> creates the process on the{' '}
+              <strong className='font-medium text-silver'>The organizer</strong> creates the election on the{' '}
               <Term id='registry'>registry</Term> contract, <C>ProcessRegistry</C>, and sets its rules.
             </Trans>
           </li>
@@ -56,34 +57,35 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
           </li>
           <li>
             <Trans>
-              <strong className='font-medium text-silver'>Sequencers</strong> collect the ballots, prove them in batches
-              and record each batch on the registry (they settle it).
+              <strong className='font-medium text-silver'>Sequencers</strong> collect the votes, prove them in batches
+              and record each batch on the registry (in technical terms, they settle it).
             </Trans>
           </li>
           <li>
             <Trans>
               <strong className='font-medium text-silver'>The key holder</strong> decrypts the final total when voting
-              ends, and that step is proven too. It is one sequencer, or, in the DKG key modes, a davinci-dkg committee
-              of independent operators.
+              ends, and that step is proven too. It is one sequencer, or a <Term id='committee'>key committee</Term> of
+              independent operators (davinci-dkg).
             </Trans>
           </li>
         </UL>
         <P>
           <Trans>
-            This explorer reads what was recorded from the chain: the registry’s events, the settlement transactions and
-            the data blobs they carry, which a beacon node serves. What only a sequencer can tell (whether a vote is
-            still pending, tracker proofs, blobs the beacon has already deleted) is labelled as coming from a sequencer.
+            This explorer reads what was recorded from the chain: the registry’s events, the transactions that recorded
+            each batch and the data blobs they carry, which a beacon node serves. What only a sequencer can tell
+            (whether a vote is still pending, receipts for votes, data the beacon has already deleted) is labelled as
+            coming from a sequencer.
           </Trans>
         </P>
       </Section>
 
-      <Section id='1-a-process-is-created' n={1} title={t`A process is created`}>
+      <Section id='1-a-process-is-created' n={1} title={t`An election is created`}>
         <P>
           <Trans>
-            The organizer creates the process on the registry and fixes its rules: when voting opens and closes, how
-            many people may vote at most, what a valid ballot looks like (the <Term id='ballot-mode'>ballot mode</Term>
-            ), who may vote (the <Term id='census'>census</Term>) and who holds the key that will decrypt the results
-            (the <Term id='key-mode'>key mode</Term>). The registry gives the process a unique{' '}
+            The organizer creates the election on the registry and fixes its rules: when voting opens and closes, how
+            many people may vote at most, what a valid ballot looks like (the <Term id='ballot-mode'>ballot rules</Term>
+            ), who may vote (the <Term id='census'>list of voters</Term>) and who holds the key that will decrypt the
+            results (the <Term id='key-mode'>key mode</Term>). The registry gives the election a unique{' '}
             <Term id='process-id'>process id</Term>.
           </Trans>
         </P>
@@ -127,23 +129,23 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
           </P>
         </Details>
         <SeeIt to={paths.processes()}>
-          <Trans>Every process on this registry, with its parameters</Trans>
+          <Trans>Every election on this registry, with its rules</Trans>
         </SeeIt>
       </Section>
 
-      <Section id='2-voters-cast-ballots' n={2} title={t`Voters cast ballots`}>
+      <Section id='2-voters-cast-ballots' n={2} title={t`Voters send encrypted ballots`}>
         <P>
           <Trans>
-            A voter’s app encrypts each answer before it leaves the device, so the <Term id='ballot'>ballot</Term>{' '}
+            The voting app encrypts each answer before it leaves the device, so the <Term id='ballot'>ballot</Term>{' '}
             travels and is stored as numbers only the key holder could read. With it, the app sends a{' '}
             <Term id='ballot-proof'>ballot proof</Term>: a proof that the encrypted ballot follows the rules of the
-            process, which does not reveal what it says.
+            election, which does not reveal what it says.
           </Trans>
         </P>
         <P>
           <Trans>
-            The app signs the ballot, adds the voter’s proof of being in the census and sends everything to a sequencer.
-            It shows the voter a <Term id='vote-id'>vote id</Term>, the number to find the vote again later.
+            The app signs the ballot, adds the voter’s proof of being on the list of voters and sends everything to a
+            sequencer. It shows the voter a <Term id='vote-id'>vote id</Term>, the number to find the vote again later.
           </Trans>
         </P>
         <Details>
@@ -197,7 +199,7 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
           </P>
         </Details>
         <SeeIt to={paths.sequencers()}>
-          <Trans>Sequencers and the accounts that settled transitions</Trans>
+          <Trans>Sequencers and the accounts that recorded batches</Trans>
         </SeeIt>
       </Section>
 
@@ -206,8 +208,8 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
           <Trans>
             One program checks the whole batch, and its run is proven: the result is a small{' '}
             <Term id='proof'>proof</Term> that the chain can check quickly instead of redoing the work. The program
-            checks every ballot proof, every signature and every voter’s place in the census, stores the ballots and
-            updates the encrypted total.
+            checks every ballot proof, every signature and every voter’s place on the list of voters, stores the ballots
+            and updates the encrypted total.
           </Trans>
         </P>
         <P>
@@ -237,7 +239,7 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
         </Details>
         {active ? (
           <SeeIt to={paths.transition(active.id, active.transitions - 1)} hint={t`Every value with its meaning.`}>
-            <Trans>The decoded public values of a recent transition</Trans>
+            <Trans>The decoded public values of a recent batch</Trans>
           </SeeIt>
         ) : null}
       </Section>
@@ -245,18 +247,19 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
       <Section id='5-settlement-with-blobs' n={5} title={t`The batch is recorded, with its data`}>
         <P>
           <Trans>
-            The sequencer sends the batch and its proof to the registry in one transaction. The registry accepts it only
-            if the proof is valid, the batch starts from the latest state of the process, its voters were checked
-            against the right census and the voter limit holds. The process then moves to its new state. This is called
-            settling the batch, and a settled batch is a <Term id='state-transition'>state transition</Term>.
+            The sequencer sends the batch and its proof to the registry in one transaction. The registry records it only
+            if the proof is valid, the batch starts from the latest state of the election, its voters were checked
+            against the right list of voters and the voter limit holds. The election then moves to its new state. In
+            technical terms the batch is settled, and a recorded batch is a{' '}
+            <Term id='state-transition'>state transition</Term>.
           </Trans>
         </P>
         <P>
           <Trans>
-            The same transaction carries the batch’s data in <Term id='blob'>blobs</Term>: the new vote ids, every
+            The same transaction carries the batch’s data in <Term id='blob'>data blobs</Term>: the new vote ids, every
             ballot the batch wrote (still encrypted) and the new encrypted total. It shows when a voter’s ballot place
-            is used for the first time and, with a census built from addresses, whose place it is. It does not show
-            whether a voter who had already voted changed their vote or only had their stored ballot refreshed.
+            is used for the first time and, with a list of voters built from addresses, whose place it is. It does not
+            show whether a voter who had already voted changed their vote or only had their stored ballot refreshed.
           </Trans>
         </P>
         <Details>
@@ -278,17 +281,18 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
           </P>
         </Details>
         <SeeIt to={paths.learn('settlement')}>
-          <Trans>Every check of a settlement, in order</Trans>
+          <Trans>Every check before a batch is recorded, in order</Trans>
         </SeeIt>
       </Section>
 
       <Section id='6-anyone-can-rebuild-the-state' n={6} title={t`Anyone can rebuild the state`}>
         <P>
           <Trans>
-            Anyone may settle batches (settlement is permissionless), so several sequencers can serve one process. A
-            sequencer that loses a race, and an <Term id='observer'>observer</Term> that never settles, rebuild each
-            batch from its blobs and accept it only if replaying it gives the new fingerprint the registry recorded.
-            Anyone can do the same, without asking a sequencer, to check that what was counted is what was recorded.
+            Anyone may record batches (settlement is permissionless), so several sequencers can serve one election. A
+            sequencer that loses a race, and an <Term id='observer'>observer</Term> that never records batches, rebuild
+            each batch from its published data and accept it only if replaying it gives the new fingerprint the registry
+            recorded. Anyone can do the same, without asking a sequencer, to check that what was counted is what was
+            recorded.
           </Trans>
         </P>
       </Section>
@@ -296,22 +300,22 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
       <Section id='7-results' n={7} title={t`Results`}>
         <P>
           <Trans>
-            When voting ends, the encrypted total (the <Term id='accumulator'>accumulator</Term>) is decrypted and
-            published. The protocol decrypts only that final total, never a single ballot. The holder of the election
-            key could still decrypt any ballot or any earlier total from the blobs, which is why the key mode matters.
+            When voting ends, the <Term id='accumulator'>encrypted total</Term> is decrypted and published as the
+            results. The protocol decrypts only that final total, never a single ballot. The key holder could still
+            decrypt any ballot or any earlier total from the published data, which is why the key mode matters.
           </Trans>
         </P>
         <UL>
           <li>
             <Trans>
               With a sequencer key, the sequencer that holds the key decrypts the total and proves the decryption with a
-              second program. The registry checks that proof, and that it was made on the process’s final state.
+              second program. The registry checks that proof, and that it was made on the election’s final state.
             </Trans>
           </li>
           <li>
             <Trans>
-              With a committee key (DKG), a committee of independent operators decrypts the total together, after the
-              registry has checked it against the final state. Each of their steps carries a proof.
+              With a committee key, the key committee decrypts the total together, after the registry has checked it
+              against the final state. Each of their steps carries a proof.
             </Trans>
           </li>
         </UL>
@@ -328,7 +332,7 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
         </Details>
         {ex.withResults ? (
           <SeeIt to={paths.process(ex.withResults.id, 'results')}>
-            <Trans>The results of a finished process</Trans>
+            <Trans>The results of a finished election</Trans>
           </SeeIt>
         ) : (
           <P>

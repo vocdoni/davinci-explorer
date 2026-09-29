@@ -143,7 +143,7 @@ describe('LearnPage', () => {
     renderLearn('/learn/how-it-works')
     const nav = screen.getByRole('navigation', { name: 'Guide topics' })
     expect(within(nav).getByRole('link', { name: 'How DAVINCI works' })).toHaveTextContent('1How DAVINCI works')
-    expect(screen.getByRole('heading', { level: 2, name: '1. A process is created' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: '1. An election is created' })).toBeInTheDocument()
   })
 
   it('keeps the mechanism of each section behind "Technical details"', () => {

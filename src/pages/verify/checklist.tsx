@@ -91,7 +91,7 @@ export interface CheckCardProps {
   /** `data-testid` is `check-<id>`. */
   id: string
   status: VerifyStatus
-  /** What is checked, as a plain statement: "Your vote was settled on-chain". */
+  /** What is checked, as a plain statement: "Your vote was recorded on the chain". */
   title: ReactNode
   /** The badge text when the generic one says too little ("Not found", "Not yet"). */
   statusLabel?: string

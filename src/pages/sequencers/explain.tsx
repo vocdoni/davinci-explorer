@@ -6,7 +6,7 @@ import { paths } from '~routes/paths'
 
 const LINK = 'text-pewter underline underline-offset-2 transition-colors hover:text-emerald'
 
-/** How settlement works, for readers who want the mechanism: closed by default. */
+/** How a batch gets recorded (settlement), for readers who want the mechanism: closed by default. */
 export function SettlementDetails() {
   const { t } = useLingui()
   return (
@@ -23,10 +23,10 @@ export function SettlementDetails() {
           <NumberedList
             className='mt-3'
             items={[
-              t`It collects the encrypted ballots and checks each one the way the proof will: the ballot’s own proof, the signature, the voter’s place on the list and the inputs hash.`,
+              t`It collects the encrypted ballots and checks each one the way the proof will: the ballot’s own proof, the signature, the voter’s place on the list of voters and the inputs hash.`,
               t`It groups them into batches, re-encrypts every ballot, and re-encrypts a sample of other ballots already stored (silent refreshes), so nobody can tell who changed their vote.`,
               t`It has the batch proven as one proof (a ZisK PLONK).`,
-              t`It records the batch on the registry in one transaction, with the data anyone needs to rebuild the state attached as blobs.`,
+              t`It records the batch on the registry in one transaction, with the data anyone needs to rebuild the state attached as data blobs.`,
             ]}
           />
           <p className='mt-3 text-[13px]'>
@@ -37,7 +37,7 @@ export function SettlementDetails() {
         </div>
         <div>
           <h2 className='text-[14px] font-semibold text-ghost'>
-            <Trans>Why several can serve one process</Trans>
+            <Trans>Why several can serve one election</Trans>
           </h2>
           <div className='mt-2 flex flex-col gap-2 text-[13px] leading-relaxed text-ash'>
             <p>
@@ -50,9 +50,9 @@ export function SettlementDetails() {
             </p>
             <p>
               <Trans>
-                A node without a key, an <Term id='observer'>observer</Term>, follows every process the same way and
+                A node without a key, an <Term id='observer'>observer</Term>, follows every election the same way and
                 answers questions about it (receipts for votes included), but never records a batch. With a sequencer
-                key, only the node that handed out the key can publish that process’s results.
+                key, only the node that handed out the key can publish that election’s results.
               </Trans>
             </p>
           </div>
