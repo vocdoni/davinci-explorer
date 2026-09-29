@@ -554,6 +554,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
       initialCensusURI: null,
       initialDuration: null,
       initialMaxVoters: null,
+      initialStatus: null,
       decodeError: null,
       ...extra,
     })
@@ -615,6 +616,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
         spec.census === 'csp' ? 'https://csp.example.org/' : `https://census.example.org/${pid.slice(2, 10)}/v1.json`,
       initialDuration: duration,
       initialMaxVoters: 1_000,
+      initialStatus: 'ready',
     })
     const encryptionKey = rng.pick(pool)
     const genesisRoot = rng.hex(32)

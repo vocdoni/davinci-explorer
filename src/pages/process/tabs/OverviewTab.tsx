@@ -432,8 +432,17 @@ function DatesPanel({ view }: { view: ProcessView }) {
   const { t } = useLingui()
   const { process: p, row } = view
   const s = p.state!
-  const pauses = p.statusChanges.filter((c) => c.to === 'paused' || (c.from === 'paused' && c.to === 'ready'))
-  const created = useCreation(p)?.initialDuration ?? null
+  const creation = useCreation(p)
+  const created = creation?.initialDuration ?? null
+  // An election created Paused emits no status change: its first pause is the creation.
+  const pauses = [
+    ...(creation?.initialStatus === 'paused'
+      ? [{ block: p.createdBlock, tx: p.createdTx, timestamp: row.createdAt, to: 'paused' as const, atCreation: true }]
+      : []),
+    ...p.statusChanges
+      .filter((c) => c.to === 'paused' || (c.from === 'paused' && c.to === 'ready'))
+      .map((c) => ({ ...c, atCreation: false })),
+  ]
   // Ending voting sets the duration in the same transaction.
   const end = organizerEnd(p, created)
   const planned = end?.plannedEnd != null ? formatTimestamp(end.plannedEnd) : null
@@ -558,7 +567,7 @@ function DatesPanel({ view }: { view: ProcessView }) {
         </div>
         {pauses.length === 0 ? (
           <p className='text-[13px] text-ash'>
-            <Trans>Voting has not been paused.</Trans>
+            {row.phase === 'paused' ? <Trans>Voting is paused.</Trans> : <Trans>Voting has not been paused.</Trans>}
           </p>
         ) : (
           <ul className='flex flex-col divide-y divide-charcoal/60 text-[13px]' data-testid='pauses'>
@@ -569,7 +578,9 @@ function DatesPanel({ view }: { view: ProcessView }) {
                 <li key={`${c.block}:${i}`} className='flex flex-wrap items-center gap-x-3 gap-y-1 py-2'>
                   <Timestamp value={c.timestamp} className='text-ash' />
                   <span className='flex-1 text-silver'>
-                    {c.to === 'paused' ? (
+                    {c.to === 'paused' && c.atCreation ? (
+                      <Trans>created paused by the organizer</Trans>
+                    ) : c.to === 'paused' ? (
                       <Trans>paused by the organizer</Trans>
                     ) : length ? (
                       <Trans>resumed by the organizer, after a pause of {length}</Trans>

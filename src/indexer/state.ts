@@ -406,6 +406,7 @@ export function txDetailsFrom(tx: TxLike, receipt: ReceiptLike): TxDetails {
     initialCensusURI: null,
     initialDuration: null,
     initialMaxVoters: null,
+    initialStatus: null,
     decodeError: null,
   }
   try {
@@ -424,6 +425,7 @@ export function txDetailsFrom(tx: TxLike, receipt: ReceiptLike): TxDetails {
       details.initialCensusURI = census?.censusURI ?? null
       details.initialDuration = typeof decoded.args[2] === 'bigint' ? Number(decoded.args[2]) : null
       details.initialMaxVoters = typeof decoded.args[3] === 'bigint' ? Number(decoded.args[3]) : null
+      details.initialStatus = typeof decoded.args[0] === 'number' ? processStatusName(decoded.args[0]) : null
     }
   } catch (err) {
     details.decodeError = err instanceof Error ? err.message : String(err)

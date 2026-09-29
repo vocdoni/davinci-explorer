@@ -5400,8 +5400,16 @@ msgid "The organizer can pause voting and resume it until the end. While it is p
 msgstr "L'organitzador pot posar la votació en pausa i reprendre-la fins al final. Mentre està en pausa, el registre no anota cap lot, i l'hora de finalització no es mou."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+msgid "Voting is paused."
+msgstr "La votació està en pausa."
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "Voting has not been paused."
 msgstr "La votació no s'ha posat en pausa."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "created paused by the organizer"
+msgstr "creada en pausa per l'organitzador"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "paused by the organizer"

@@ -50,6 +50,7 @@ describe('txDetailsFrom', () => {
       initialCensusURI: 'https://census.example.org/v1.json',
       initialDuration: 2_700,
       initialMaxVoters: 12,
+      initialStatus: 'ready',
     })
   })
 })

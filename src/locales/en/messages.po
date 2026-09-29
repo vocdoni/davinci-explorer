@@ -5400,8 +5400,16 @@ msgid "The organizer can pause voting and resume it until the end. While it is p
 msgstr "The organizer can pause voting and resume it until the end. While it is paused the registry records no batch, and the end time does not move."
 
 #: src/pages/process/tabs/OverviewTab.tsx
+msgid "Voting is paused."
+msgstr "Voting is paused."
+
+#: src/pages/process/tabs/OverviewTab.tsx
 msgid "Voting has not been paused."
 msgstr "Voting has not been paused."
+
+#: src/pages/process/tabs/OverviewTab.tsx
+msgid "created paused by the organizer"
+msgstr "created paused by the organizer"
 
 #: src/pages/process/tabs/OverviewTab.tsx
 msgid "paused by the organizer"

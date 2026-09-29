@@ -265,6 +265,8 @@ export interface TxDetails {
   /** `newProcess` only: the voting duration (seconds) and voter limit it was created with. */
   initialDuration: number | null
   initialMaxVoters: number | null
+  /** `newProcess` only: the status it was created with, Ready or Paused (which emits no status change). */
+  initialStatus: ProcessStatusName | null
   /** Why the calldata could not be decoded, if it could not. */
   decodeError: string | null
 }
