@@ -203,6 +203,7 @@ export function SettledCard({
   batches,
   statuses,
   blobs,
+  over = false,
 }: {
   pid: string
   settled: Settled
@@ -211,6 +212,8 @@ export function SettledCard({
   batches: number
   statuses: VoteStatusBySequencer[]
   blobs: DecodedTransitionBlobs | undefined
+  /** Voting is over: no batch can come any more. */
+  over?: boolean
 }) {
   const { t } = useLingui()
   const origin = blobOrigin(blobs)
@@ -257,6 +260,18 @@ export function SettledCard({
         </Trans>
       )
       break
+    case 'none-recorded':
+      summary = (
+        <Trans>
+          Voting is over and no batch of votes was recorded for this election, so no vote was counted in it.
+        </Trans>
+      )
+      break
+    case 'missed':
+      summary = (
+        <Trans>A sequencer had your vote, but voting ended before a batch recorded it, so it was not counted.</Trans>
+      )
+      break
     case 'reading':
       summary = <Trans>Looking through the election’s recorded batches for your vote id, newest first…</Trans>
       break
@@ -285,7 +300,13 @@ export function SettledCard({
       )
       break
     case 'not-found':
-      summary = (
+      summary = over ? (
+        <Trans>
+          Your vote id is not in any of the{' '}
+          <Plural value={searched} one='# recorded batch' other='# recorded batches' /> of this election, and voting is
+          over. It may belong to another election, or the id may have a typo.
+        </Trans>
+      ) : (
         <Trans>
           Your vote id is not in any of the{' '}
           <Plural value={searched} one='# recorded batch' other='# recorded batches' /> of this election. It may still
@@ -301,7 +322,7 @@ export function SettledCard({
       status={settled.status}
       title={t`Your vote was recorded on the chain`}
       statusLabel={
-        settled.reason === 'not-found'
+        settled.reason === 'not-found' || settled.reason === 'none-recorded'
           ? t`Not found`
           : settled.reason === 'unreadable'
             ? t`Unavailable`
@@ -403,7 +424,8 @@ export function SettledCard({
           size='sm'
         />
       ) : null}
-      {(settled.reason === 'waiting' || settled.reason === 'refused') && statuses.length > 0 ? (
+      {(settled.reason === 'waiting' || settled.reason === 'missed' || settled.reason === 'refused') &&
+      statuses.length > 0 ? (
         <SequencerStatus statuses={statuses.filter((s) => s.status.data != null)} />
       ) : null}
       {settled.reason === 'found' && origin === 'sequencer' ? (

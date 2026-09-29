@@ -23,7 +23,16 @@ export function electionOutcome(input: {
 }
 
 export type SettledReason =
-  'found' | 'no-election' | 'no-batches' | 'reading' | 'waiting' | 'refused' | 'not-found' | 'unreadable'
+  | 'found'
+  | 'no-election'
+  | 'no-batches'
+  | 'none-recorded'
+  | 'reading'
+  | 'waiting'
+  | 'missed'
+  | 'refused'
+  | 'not-found'
+  | 'unreadable'
 
 export interface Settled {
   status: VerifyStatus
@@ -33,21 +42,28 @@ export interface Settled {
 /**
  * Is the vote id in a settled batch? A vote a sequencer still holds is
  * pending, one it refused has failed, and blobs nobody serves any more leave
- * the check undecided for good.
+ * the check undecided for good. Once voting is over (`over`) no batch can
+ * come, so a vote not found, or still held, was not counted.
  */
 export function settledOutcome(
   electionFound: boolean,
   inclusion: VoteInclusion,
   batches: number,
-  sequencerStatuses: VoteStatus[]
+  sequencerStatuses: VoteStatus[],
+  over = false
 ): Settled {
   if (!electionFound) return { status: 'na', reason: 'no-election' }
   if (inclusion.state === 'found') return { status: 'pass', reason: 'found' }
   const queued = sequencerStatuses.some((s) => s === 'pending' || s === 'aggregated' || s === 'processed')
+  const held: Settled = over ? { status: 'fail', reason: 'missed' } : { status: 'pending', reason: 'waiting' }
   if (batches === 0)
-    return queued ? { status: 'pending', reason: 'waiting' } : { status: 'pending', reason: 'no-batches' }
+    return queued
+      ? held
+      : over
+        ? { status: 'fail', reason: 'none-recorded' }
+        : { status: 'pending', reason: 'no-batches' }
   if (inclusion.state === 'idle' || inclusion.state === 'searching') return { status: 'pending', reason: 'reading' }
-  if (queued) return { status: 'pending', reason: 'waiting' }
+  if (queued) return held
   if (sequencerStatuses.includes('error')) return { status: 'fail', reason: 'refused' }
   if (inclusion.state === 'error') return { status: 'na', reason: 'unreadable' }
   return { status: 'fail', reason: 'not-found' }

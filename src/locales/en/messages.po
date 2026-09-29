@@ -8948,6 +8948,14 @@ msgid "No batch of votes has been recorded for this election yet. Your vote show
 msgstr "No batch of votes has been recorded for this election yet. Your vote shows up here once its batch is."
 
 #: src/pages/verify/vote/checks.tsx
+msgid "Voting is over and no batch of votes was recorded for this election, so no vote was counted in it."
+msgstr "Voting is over and no batch of votes was recorded for this election, so no vote was counted in it."
+
+#: src/pages/verify/vote/checks.tsx
+msgid "A sequencer had your vote, but voting ended before a batch recorded it, so it was not counted."
+msgstr "A sequencer had your vote, but voting ended before a batch recorded it, so it was not counted."
+
+#: src/pages/verify/vote/checks.tsx
 msgid "Looking through the election’s recorded batches for your vote id, newest first…"
 msgstr "Looking through the election’s recorded batches for your vote id, newest first…"
 
@@ -8962,6 +8970,10 @@ msgstr "A sequencer refused this vote, so it will not be recorded. The reason is
 #: src/pages/verify/vote/checks.tsx
 msgid "The data of this election’s batches is no longer available, so the explorer cannot look for your vote id in it. The sequencer’s receipt below does not need that data."
 msgstr "The data of this election’s batches is no longer available, so the explorer cannot look for your vote id in it. The sequencer’s receipt below does not need that data."
+
+#: src/pages/verify/vote/checks.tsx
+msgid "Your vote id is not in any of the {searched, plural, one {# recorded batch} other {# recorded batches}} of this election, and voting is over. It may belong to another election, or the id may have a typo."
+msgstr "Your vote id is not in any of the {searched, plural, one {# recorded batch} other {# recorded batches}} of this election, and voting is over. It may belong to another election, or the id may have a typo."
 
 #: src/pages/verify/vote/checks.tsx
 msgid "Your vote id is not in any of the {searched, plural, one {# recorded batch} other {# recorded batches}} of this election. It may still be waiting at a sequencer, it may belong to another election, or the id may have a typo."

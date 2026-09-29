@@ -8948,6 +8948,14 @@ msgid "No batch of votes has been recorded for this election yet. Your vote show
 msgstr "Todavía no se ha anotado ningún lote de votos para esta votación. Tu voto aparecerá aquí cuando se anote su lote."
 
 #: src/pages/verify/vote/checks.tsx
+msgid "Voting is over and no batch of votes was recorded for this election, so no vote was counted in it."
+msgstr "La votación ha terminado y no se anotó ningún lote de votos, así que no se contó ningún voto en ella."
+
+#: src/pages/verify/vote/checks.tsx
+msgid "A sequencer had your vote, but voting ended before a batch recorded it, so it was not counted."
+msgstr "Un secuenciador tenía tu voto, pero la votación terminó antes de que un lote lo anotara, así que no se contó."
+
+#: src/pages/verify/vote/checks.tsx
 msgid "Looking through the election’s recorded batches for your vote id, newest first…"
 msgstr "Buscando tu id de voto en los lotes anotados de la votación, empezando por los más recientes…"
 
@@ -8962,6 +8970,10 @@ msgstr "Un secuenciador ha rechazado este voto, así que no se anotará. El moti
 #: src/pages/verify/vote/checks.tsx
 msgid "The data of this election’s batches is no longer available, so the explorer cannot look for your vote id in it. The sequencer’s receipt below does not need that data."
 msgstr "Los datos de los lotes de esta votación ya no están disponibles, así que el explorador no puede buscar en ellos tu id de voto. El comprobante del secuenciador de abajo no necesita esos datos."
+
+#: src/pages/verify/vote/checks.tsx
+msgid "Your vote id is not in any of the {searched, plural, one {# recorded batch} other {# recorded batches}} of this election, and voting is over. It may belong to another election, or the id may have a typo."
+msgstr "Tu id de voto no está en {searched, plural, one {el # lote anotado} other {ninguno de los # lotes anotados}} de esta votación, y la votación ha terminado. Puede que pertenezca a otra votación o que el id tenga una errata."
 
 #: src/pages/verify/vote/checks.tsx
 msgid "Your vote id is not in any of the {searched, plural, one {# recorded batch} other {# recorded batches}} of this election. It may still be waiting at a sequencer, it may belong to another election, or the id may have a typo."

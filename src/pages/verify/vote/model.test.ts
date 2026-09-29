@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { VoteInclusion } from '~data/queries'
 import type { RootChain } from '~indexer/selectors'
+import type { VoteStatus } from '~protocol/sequencer-api'
 import {
   batchOutcome,
   chainFrom,
@@ -50,6 +51,16 @@ describe('settledOutcome', () => {
   it('fails when nobody has it or a sequencer refused it', () => {
     expect(settledOutcome(true, inclusion('not-found'), 3, [])).toEqual(missing)
     expect(settledOutcome(true, inclusion('not-found'), 3, ['error'])).toEqual({ status: 'fail', reason: 'refused' })
+  })
+
+  it('stops waiting once voting is over', () => {
+    const over = (state: Parameters<typeof inclusion>[0], batches: number, statuses: VoteStatus[]) =>
+      settledOutcome(true, inclusion(state), batches, statuses, true)
+    expect(over('idle', 0, [])).toEqual({ status: 'fail', reason: 'none-recorded' })
+    expect(over('idle', 0, ['pending'])).toEqual({ status: 'fail', reason: 'missed' })
+    expect(over('not-found', 3, ['aggregated'])).toEqual({ status: 'fail', reason: 'missed' })
+    expect(over('not-found', 3, [])).toEqual(missing)
+    expect(settledOutcome(true, inclusion('found', 2), 3, [], true)).toEqual(found)
   })
 
   it('cannot decide without the blobs or the election', () => {

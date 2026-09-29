@@ -6,6 +6,7 @@ import { Formula } from '~components/Formula'
 import { Term } from '~components/Term'
 import { useRuntimeConfig } from '~config/config-context'
 import { useChain, useIndexer, useProcess, useTransition, type ProcessView } from '~data/hooks'
+import { votingOver } from '~indexer/selectors'
 import { useMetadataCheck, useTrackerProof, useTransitionBlobs, useVoteInclusion, useVoteStatus } from '~data/queries'
 import { useServices } from '~data/context'
 import { Callout } from '~kit'
@@ -164,7 +165,8 @@ function VoteChecks({ pid, voteId, choose }: { pid: string; voteId: bigint; choo
     changedWhileOpen: view?.process.metadataHistory.some(changedWhileOpen) ?? false,
   })
   const reported = statuses.flatMap((s) => (s.status.data ? [s.status.data.status] : []))
-  const settled = settledOutcome(known, inclusion, view?.transitions.length ?? 0, reported)
+  const over = view != null && votingOver(view.row.phase)
+  const settled = settledOutcome(known, inclusion, view?.transitions.length ?? 0, reported, over)
   const checks = detail
     ? batchChecks(detail, {
         onchain: t`The proof and the published data were verified on the chain`,
@@ -228,6 +230,7 @@ function VoteChecks({ pid, voteId, choose }: { pid: string; voteId: bigint; choo
               batches={view?.transitions.length ?? 0}
               statuses={statuses}
               blobs={blobs.data}
+              over={over}
             />
             <BatchCard pid={pid} status={batch} checks={checks} found={found} />
             <ResultCard
