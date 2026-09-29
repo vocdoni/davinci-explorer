@@ -8050,6 +8050,14 @@ msgid "A kind of list the registry does not accept."
 msgstr "A kind of list the registry does not accept."
 
 #: src/pages/verify/election/checks.tsx
+msgid "{updates, plural, one {The organizer replaced it once.} other {The organizer replaced it # times.}}"
+msgstr "{updates, plural, one {The organizer replaced it once.} other {The organizer replaced it # times.}}"
+
+#: src/pages/verify/election/checks.tsx
+msgid "{batches, plural, one {The batch was proven against a version of the list the election had.} other {All # batches were proven against versions of the list the election had.}}"
+msgstr "{batches, plural, one {The batch was proven against a version of the list the election had.} other {All # batches were proven against versions of the list the election had.}}"
+
+#: src/pages/verify/election/checks.tsx
 msgid "{batches, plural, one {The batch was proven against it.} other {All # batches were proven against it.}}"
 msgstr "{batches, plural, one {The batch was proven against it.} other {All # batches were proven against it.}}"
 
@@ -8271,6 +8279,10 @@ msgstr "For every batch, the explorer redoes from public data what the registry 
 #: src/pages/verify/election/checks.tsx
 msgid "No batch was skipped, replayed or forked"
 msgstr "No batch was skipped, replayed or forked"
+
+#: src/pages/verify/election/checks.tsx
+msgid "No batch was recorded: the registry’s current state is still the starting one."
+msgstr "No batch was recorded: the registry’s current state is still the starting one."
 
 #: src/pages/verify/election/checks.tsx
 msgid "{n, plural, one {The state goes from its starting point, through the one batch, to the registry’s current state, each step starting where the last one ended.} other {The state goes from its starting point, through all # batches, to the registry’s current state, each step starting where the last one ended.}}"

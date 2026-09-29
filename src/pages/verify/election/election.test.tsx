@@ -84,6 +84,26 @@ describe('VerifyElectionPage', () => {
     await waitFor(() => expect(screen.getByTestId('check-metadata-history')).toHaveAttribute('data-status', 'pass'))
   })
 
+  it('says an election without batches is still at its starting state', async () => {
+    // featured.metadataBeforeStart has not opened yet.
+    renderAt(`/verify/election/${fixture.featured.metadataBeforeStart}`)
+    const chain = await screen.findByTestId('check-chain')
+    await waitFor(() => expect(chain).toHaveAttribute('data-status', 'pass'))
+    expect(chain).toHaveTextContent('No batch was recorded: the registry’s current state is still the starting one.')
+  })
+
+  it('says how often an updatable list was replaced', async () => {
+    const pid = fixture.store.processOrder.find((k) => {
+      const p = fixture.store.processes[k]!
+      return p.censusUpdates.length === 1 && p.transitions.length > 1 && p.state?.status !== 'canceled'
+    })!
+    renderAt(`/verify/election/${pid}`)
+    const census = await screen.findByTestId('check-census')
+    await waitFor(() => expect(census).toHaveAttribute('data-status', 'pass'), { timeout: 10_000 })
+    expect(census).toHaveTextContent('The organizer replaced it once.')
+    expect(census).toHaveTextContent('batches were proven against versions of the list the election had.')
+  })
+
   it('says when there is no such election', async () => {
     renderAt(`/verify/election/0x${'ab'.repeat(31)}`)
     expect(await screen.findByText('No such election')).toBeInTheDocument()

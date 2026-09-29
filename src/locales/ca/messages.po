@@ -8050,6 +8050,14 @@ msgid "A kind of list the registry does not accept."
 msgstr "Un tipus de llista que el registre no accepta."
 
 #: src/pages/verify/election/checks.tsx
+msgid "{updates, plural, one {The organizer replaced it once.} other {The organizer replaced it # times.}}"
+msgstr "{updates, plural, one {L'organitzador la va substituir una vegada.} other {L'organitzador la va substituir # vegades.}}"
+
+#: src/pages/verify/election/checks.tsx
+msgid "{batches, plural, one {The batch was proven against a version of the list the election had.} other {All # batches were proven against versions of the list the election had.}}"
+msgstr "{batches, plural, one {La prova del lot es va generar amb una versió de la llista que va tenir la votació.} other {Les proves dels # lots es van generar amb versions de la llista que va tenir la votació.}}"
+
+#: src/pages/verify/election/checks.tsx
 msgid "{batches, plural, one {The batch was proven against it.} other {All # batches were proven against it.}}"
 msgstr "{batches, plural, one {La prova del lot es va generar amb aquesta llista.} other {Les proves dels # lots es van generar amb aquesta llista.}}"
 
@@ -8271,6 +8279,10 @@ msgstr "Per a cada lot, l'explorador repeteix a partir de dades públiques el qu
 #: src/pages/verify/election/checks.tsx
 msgid "No batch was skipped, replayed or forked"
 msgstr "No s'ha omès, repetit ni bifurcat cap lot"
+
+#: src/pages/verify/election/checks.tsx
+msgid "No batch was recorded: the registry’s current state is still the starting one."
+msgstr "No es va anotar cap lot: l'estat actual del registre continua sent l'inicial."
 
 #: src/pages/verify/election/checks.tsx
 msgid "{n, plural, one {The state goes from its starting point, through the one batch, to the registry’s current state, each step starting where the last one ended.} other {The state goes from its starting point, through all # batches, to the registry’s current state, each step starting where the last one ended.}}"

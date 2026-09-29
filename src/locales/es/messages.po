@@ -8050,6 +8050,14 @@ msgid "A kind of list the registry does not accept."
 msgstr "Un tipo de lista que el registro no acepta."
 
 #: src/pages/verify/election/checks.tsx
+msgid "{updates, plural, one {The organizer replaced it once.} other {The organizer replaced it # times.}}"
+msgstr "{updates, plural, one {El organizador la sustituyó una vez.} other {El organizador la sustituyó # veces.}}"
+
+#: src/pages/verify/election/checks.tsx
+msgid "{batches, plural, one {The batch was proven against a version of the list the election had.} other {All # batches were proven against versions of the list the election had.}}"
+msgstr "{batches, plural, one {La prueba del lote se generó con una versión de la lista que tuvo la votación.} other {Las pruebas de los # lotes se generaron con versiones de la lista que tuvo la votación.}}"
+
+#: src/pages/verify/election/checks.tsx
 msgid "{batches, plural, one {The batch was proven against it.} other {All # batches were proven against it.}}"
 msgstr "{batches, plural, one {La prueba del lote se generó con ella.} other {Las pruebas de los # lotes se generaron con ella.}}"
 
@@ -8271,6 +8279,10 @@ msgstr "Para cada lote, el explorador repite a partir de datos públicos lo que 
 #: src/pages/verify/election/checks.tsx
 msgid "No batch was skipped, replayed or forked"
 msgstr "No se ha omitido, repetido ni bifurcado ningún lote"
+
+#: src/pages/verify/election/checks.tsx
+msgid "No batch was recorded: the registry’s current state is still the starting one."
+msgstr "No se anotó ningún lote: el estado actual del registro sigue siendo el inicial."
 
 #: src/pages/verify/election/checks.tsx
 msgid "{n, plural, one {The state goes from its starting point, through the one batch, to the registry’s current state, each step starting where the last one ended.} other {The state goes from its starting point, through all # batches, to the registry’s current state, each step starting where the last one ended.}}"

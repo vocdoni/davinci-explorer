@@ -80,13 +80,30 @@ export function CensusCard({
           ) : (
             <Trans>A kind of list the registry does not accept.</Trans>
           )}{' '}
+          {origin === 'merkle-dynamic' && updates > 0 ? (
+            <>
+              <Plural
+                value={updates}
+                one='The organizer replaced it once.'
+                other='The organizer replaced it # times.'
+              />{' '}
+            </>
+          ) : null}
           {batches > 0 ? (
             status === 'pass' ? (
-              <Plural
-                value={batches}
-                one='The batch was proven against it.'
-                other='All # batches were proven against it.'
-              />
+              origin === 'merkle-dynamic' && updates > 0 ? (
+                <Plural
+                  value={batches}
+                  one='The batch was proven against a version of the list the election had.'
+                  other='All # batches were proven against versions of the list the election had.'
+                />
+              ) : (
+                <Plural
+                  value={batches}
+                  one='The batch was proven against it.'
+                  other='All # batches were proven against it.'
+                />
+              )
             ) : status === 'fail' ? (
               <Trans>A batch was proven against another list of voters.</Trans>
             ) : null
@@ -615,7 +632,9 @@ export function ChainCard({ view, status, registry }: { view: ProcessView; statu
       status={status}
       title={t`No batch was skipped, replayed or forked`}
       summary={
-        status === 'pass' ? (
+        status === 'pass' && n === 0 ? (
+          <Trans>No batch was recorded: the registry’s current state is still the starting one.</Trans>
+        ) : status === 'pass' ? (
           <Plural
             value={n}
             one='The state goes from its starting point, through the one batch, to the registry’s current state, each step starting where the last one ended.'
