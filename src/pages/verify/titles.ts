@@ -8,6 +8,7 @@ import { useServices } from '~data/context'
 import { metadataCheckOf, metadataQuery, useDeploymentKey } from '~data/queries'
 import type { Hex } from '~indexer/types'
 import { metadataTitle } from '~pages/process/metadata'
+import { fetchableUri } from '~protocol/metadata'
 
 export interface ProcessTitle {
   title: string
@@ -21,22 +22,34 @@ export function useProcessTitles(
 ): Map<string, ProcessTitle> {
   const services = useServices()
   const deployment = useDeploymentKey()
+  // One query per document: processes that share a document (or have none)
+  // would otherwise ask for the same query twice.
+  const documents = useMemo(() => {
+    const byKey = new Map<string, { uri: string | null; hash: Hex | null }>()
+    for (const r of rows) byKey.set(documentKey(r), { uri: r.metadataURI, hash: r.metadataHash })
+    return [...byKey.values()]
+  }, [rows])
   // Structurally shared: the same array until a title arrives.
   const titles = useQueries({
-    queries: rows.map((r) => metadataQuery(services, deployment, r.metadataURI, r.metadataHash)),
+    queries: documents.map((d) => metadataQuery(services, deployment, d.uri, d.hash)),
     combine: (results) =>
       results.map((q, i) => {
-        const check = metadataCheckOf(rows[i]?.metadataURI, rows[i]?.metadataHash, q)
+        const check = metadataCheckOf(documents[i]?.uri, documents[i]?.hash, q)
         const title = metadataTitle(check.doc)
         return title ? { title, verified: check.status === 'matches' } : null
       }),
   })
   return useMemo(() => {
+    const byDocument = new Map(documents.map((d, i) => [documentKey({ metadataURI: d.uri, metadataHash: d.hash }), i]))
     const out = new Map<string, ProcessTitle>()
-    rows.forEach((r, i) => {
-      const title = titles[i]
+    for (const r of rows) {
+      const title = titles[byDocument.get(documentKey(r)) ?? -1]
       if (title) out.set(r.id, title)
-    })
+    }
     return out
-  }, [rows, titles])
+  }, [rows, documents, titles])
+}
+
+function documentKey(r: { metadataURI: string | null; metadataHash: Hex | null }): string {
+  return `${fetchableUri(r.metadataURI) ?? ''}|${r.metadataHash?.toLowerCase() ?? ''}`
 }
