@@ -282,11 +282,15 @@ function RefreshRequirement({ required, carried }: { required: number; carried: 
   const carriedText = formatNumber(carried)
   return (
     <p className='text-[12px] leading-relaxed text-ash'>
-      <Trans>
-        To hide who changed their vote, this batch had to re-encrypt at least{' '}
-        <Plural value={required} one='# ballot nobody changed' other='# ballots nobody changed' /> (silent refreshes),
-        and the data carries {carriedText}.
-      </Trans>{' '}
+      {required === 0 && carried === 0 ? (
+        <Trans>This batch needed no silent refresh: there was no earlier ballot it left unchanged.</Trans>
+      ) : (
+        <Trans>
+          To hide who changed their vote, this batch had to re-encrypt at least{' '}
+          <Plural value={required} one='# ballot nobody changed' other='# ballots nobody changed' /> (silent refreshes),
+          and the data carries {carriedText}.
+        </Trans>
+      )}{' '}
       <Explain>
         <span className='flex flex-col gap-1.5'>
           <Trans>

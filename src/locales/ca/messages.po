@@ -6714,6 +6714,10 @@ msgid "Raw cells"
 msgstr "Cel·les en brut"
 
 #: src/pages/transition/BlobsPanel.tsx
+msgid "This batch needed no silent refresh: there was no earlier ballot it left unchanged."
+msgstr "Aquest lot no necessitava cap renovació silenciosa: no hi havia cap papereta anterior que deixés sense canviar."
+
+#: src/pages/transition/BlobsPanel.tsx
 msgid "To hide who changed their vote, this batch had to re-encrypt at least {required, plural, one {# ballot nobody changed} other {# ballots nobody changed}} (silent refreshes), and the data carries {carriedText}."
 msgstr "Per amagar qui ha canviat el vot, aquest lot havia de rexifrar com a mínim {required, plural, one {# papereta que ningú no ha canviat} other {# paperetes que ningú no ha canviat}} (renovacions silencioses), i les dades en porten {carriedText}."
 

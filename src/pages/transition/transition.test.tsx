@@ -70,6 +70,14 @@ describe('TransitionPage', () => {
     expect(screen.getByTestId('transition-summary')).toHaveTextContent(/vote ids/)
   })
 
+  it('says the first batch needed no silent refresh', async () => {
+    renderAt(paths.transition(fixture.featured.resultsProcess, 0), <TransitionPage />, patterns.transition)
+    await screen.findByTestId('blob-content', {}, { timeout: 10_000 })
+    expect(
+      screen.getByText('This batch needed no silent refresh: there was no earlier ballot it left unchanged.')
+    ).toBeInTheDocument()
+  })
+
   it('says when there is no such transition, in one sentence', async () => {
     const pid = fixture.featured.openProcess
     renderAt(paths.transition(pid, 999), <TransitionPage />, patterns.transition)

@@ -6714,6 +6714,10 @@ msgid "Raw cells"
 msgstr "Raw cells"
 
 #: src/pages/transition/BlobsPanel.tsx
+msgid "This batch needed no silent refresh: there was no earlier ballot it left unchanged."
+msgstr "This batch needed no silent refresh: there was no earlier ballot it left unchanged."
+
+#: src/pages/transition/BlobsPanel.tsx
 msgid "To hide who changed their vote, this batch had to re-encrypt at least {required, plural, one {# ballot nobody changed} other {# ballots nobody changed}} (silent refreshes), and the data carries {carriedText}."
 msgstr "To hide who changed their vote, this batch had to re-encrypt at least {required, plural, one {# ballot nobody changed} other {# ballots nobody changed}} (silent refreshes), and the data carries {carriedText}."
 
