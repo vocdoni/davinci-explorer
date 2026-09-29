@@ -9,7 +9,6 @@ import { useIndexer, useNetworkStats, useProcesses } from '~data/hooks'
 import type { ProcessRow } from '~indexer/selectors'
 import {
   Address,
-  Badge,
   Button,
   Card,
   DataTable,
@@ -147,20 +146,6 @@ export function ProcessesPage() {
           align: 'right',
           headerTooltip: t`When voting ends: the start time plus the duration. Ending early brings it forward.`,
         },
-      },
-      {
-        id: 'results',
-        header: t`Results`,
-        accessorFn: (r) => (r.hasResults ? 1 : 0),
-        cell: ({ row }) =>
-          row.original.hasResults ? (
-            <Badge tone='done' size='sm'>
-              <Trans>yes</Trans>
-            </Badge>
-          ) : (
-            <span className='text-ash'>—</span>
-          ),
-        meta: { align: 'center', width: '90px' },
       },
     ],
     [t]
