@@ -255,6 +255,21 @@ describe('Indexer against a fake chain', () => {
     expect(delta.getBlock).toBe(1)
   })
 
+  it('keeps its defaults for options passed as undefined', () => {
+    const fake = fakeClient()
+    const ix = new Indexer({
+      client: fake.client,
+      chainId: source.chain.chainId,
+      registryAddress: source.chain.registryAddress,
+      startBlock: source.chain.startBlock,
+      pollIntervalMs: undefined,
+      confirmations: undefined,
+      kv: null,
+    })
+    expect(ix.config.pollIntervalMs).toBe(10_000)
+    expect(ix.config.confirmations).toBe(2)
+  })
+
   it('stops with a clear error when the RPC is on another chain', async () => {
     const fake = fakeClient({ chainId: 1 })
     const ix = indexer(fake.client)

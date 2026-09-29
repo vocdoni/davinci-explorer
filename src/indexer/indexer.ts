@@ -135,6 +135,9 @@ export class Indexer {
   private lastPersist = 0
 
   constructor(config: IndexerConfig) {
+    // An option passed as undefined keeps its default: spread as is, it would
+    // replace it, and an undefined poll interval polls without pause.
+    const given = Object.fromEntries(Object.entries(config).filter(([, v]) => v !== undefined)) as IndexerConfig
     this.config = {
       pollIntervalMs: 10_000,
       confirmations: 2,
@@ -142,7 +145,7 @@ export class Indexer {
       txPerTick: 40,
       blocksPerTick: 100,
       stateStaleBlocks: 1_000,
-      ...config,
+      ...given,
     }
     this.kv = config.kv === null ? null : (config.kv ?? createIdbStore())
     this.chunkSize = config.chunkSize ?? DEFAULT_CHUNK
