@@ -1,5 +1,5 @@
 import * as RadixTabs from '@radix-ui/react-tabs'
-import type { ReactNode } from 'react'
+import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import { cn } from '~lib/cn'
 
 export interface TabItem {
@@ -23,6 +23,16 @@ export interface TabsProps {
 
 /** Underlined tabs. Active tab is emerald with an emerald rule beneath it. */
 export function Tabs({ items, value, defaultValue, onValueChange, className, listClassName }: TabsProps) {
+  const list = useRef<HTMLDivElement>(null)
+  // On a narrow screen the strip scrolls sideways: bring the active tab into it, without scrolling the page.
+  useLayoutEffect(() => {
+    const strip = list.current
+    const active = strip?.querySelector<HTMLElement>('[data-state="active"]')
+    if (!strip || !active) return
+    const left = active.getBoundingClientRect().left - strip.getBoundingClientRect().left + strip.scrollLeft
+    if (left < strip.scrollLeft || left + active.offsetWidth > strip.scrollLeft + strip.clientWidth)
+      strip.scrollLeft = Math.max(0, left - 16)
+  }, [value])
   return (
     <RadixTabs.Root
       value={value}
@@ -30,7 +40,10 @@ export function Tabs({ items, value, defaultValue, onValueChange, className, lis
       onValueChange={onValueChange}
       className={cn('w-full', className)}
     >
-      <RadixTabs.List className={cn('flex gap-1 overflow-x-auto border-b border-charcoal scroll-slim', listClassName)}>
+      <RadixTabs.List
+        ref={list}
+        className={cn('flex gap-1 overflow-x-auto border-b border-charcoal scroll-slim', listClassName)}
+      >
         {items.map((item) => (
           <RadixTabs.Trigger
             key={item.value}

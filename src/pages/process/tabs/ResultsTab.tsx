@@ -210,9 +210,10 @@ function TallyPanel({ view }: { view: ProcessView }) {
           return (
             <li key={r.field} className='grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1'>
               <span className='flex min-w-0 items-center gap-2 text-[13px] text-silver'>
-                <span className='truncate'>{r.label}</span>
+                {/* A phone has no room for a long option name on one line: it wraps there. */}
+                <span className='min-w-0 break-words sm:truncate'>{r.label}</span>
                 {labels ? (
-                  <span className='font-mono text-[11px] text-ash'>
+                  <span className='shrink-0 whitespace-nowrap font-mono text-[11px] text-ash'>
                     <Trans>field {position}</Trans>
                   </span>
                 ) : null}
@@ -227,7 +228,10 @@ function TallyPanel({ view }: { view: ProcessView }) {
               </span>
               <span className='font-mono text-[13px] text-ghost tnum'>
                 {formatNumber(r.value)}
-                <span className='ml-2 inline-block w-16 text-right text-ash'>{formatPercent(r.share, 1)}</span>
+                {/* One field is the whole sum: its share says nothing. */}
+                {rows.length > 1 ? (
+                  <span className='ml-2 inline-block w-16 text-right text-ash'>{formatPercent(r.share, 1)}</span>
+                ) : null}
               </span>
               <div className='col-span-2 h-2 overflow-hidden rounded-pill bg-onyx' aria-hidden='true'>
                 <div className='h-full rounded-pill bg-emerald' style={{ width: `${r.ofMax * 100}%` }} />

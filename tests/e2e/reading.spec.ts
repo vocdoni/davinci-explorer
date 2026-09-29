@@ -53,6 +53,16 @@ test.describe('on a touch screen', () => {
     expect(pageWidth).toBeLessThanOrEqual(390)
   })
 
+  test('a process page opened on its last tab shows that tab in the strip', async ({ page }) => {
+    await demo(page, `/processes/${OPEN}/raw`)
+    const strip = page.getByRole('tablist')
+    const tab = strip.getByRole('tab', { name: 'Raw' })
+    await expect(tab).toHaveAttribute('data-state', 'active')
+    const [s, t] = [await strip.boundingBox(), await tab.boundingBox()]
+    expect(t!.x).toBeGreaterThanOrEqual(s!.x)
+    expect(t!.x + t!.width).toBeLessThanOrEqual(s!.x + s!.width + 1)
+  })
+
   test('the Verify pill lines up with the other menu items', async ({ page }) => {
     await demo(page, '/processes')
     await page.getByRole('button', { name: 'Open menu' }).click()
