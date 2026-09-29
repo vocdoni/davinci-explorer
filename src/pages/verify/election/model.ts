@@ -4,7 +4,10 @@
 
 import type { DkgApplicationView } from '~data/services'
 import type { CheckState, ProcessPhase, RootChain, TransitionDetail } from '~indexer/selectors'
+import type { MetadataVersion } from '~indexer/types'
+import { changedWhileOpen } from '~pages/process/metadata'
 import { reducedToCircom } from '~protocol/babyjubjub'
+import type { MetadataStatus } from '~protocol/metadata'
 import type { CensusOriginName, KeyModeName } from '~protocol/types'
 import { batchChecks, onchainState } from '../batch'
 import { combine, fromCheckState, type VerifyStatus } from '../status'
@@ -91,4 +94,23 @@ export function keyStatus(
   if (!mode || !key) return 'pending'
   if (mode === 'sequencer') return 'pass'
   return app ? (keyMatches(key, app) ? 'pass' : 'fail') : 'pending'
+}
+
+/** The document served is the committed one; pending while it loads, or when this browser cannot download it. */
+export function metadataCheckStatus(status: MetadataStatus): VerifyStatus {
+  if (status === 'matches') return 'pass'
+  if (status === 'differs') return 'fail'
+  return 'pending'
+}
+
+/**
+ * The organizer's changes to the description: a change once voting had
+ * opened needs attention, and waits while a change's time is not known.
+ */
+export function metadataHistoryStatus(
+  history: Array<Pick<MetadataVersion, 'afterStart' | 'atCreation'>>
+): VerifyStatus {
+  if (history.some(changedWhileOpen)) return 'attention'
+  if (history.some((v) => !v.atCreation && v.afterStart == null)) return 'pending'
+  return 'pass'
 }

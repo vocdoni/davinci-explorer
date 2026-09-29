@@ -10,6 +10,7 @@ import { dkgAppManagerAbi, dkgManagerAbi } from '~contracts/abis'
 import type { Point } from '~protocol/babyjubjub'
 import { BeaconClient, BlobFetchError, type FetchedBlob } from '~protocol/beacon'
 import type { Hex } from '~protocol/bytes'
+import { browsableUri } from '~protocol/metadata'
 import { SequencerClient } from '~protocol/sequencer-api'
 import type { ProcessEntity, RegistryInfo } from '~indexer/types'
 import type { RuntimeConfig } from '~config/runtime-config'
@@ -93,8 +94,8 @@ export interface ExplorerServices {
     registry: RegistryInfo | null,
     signal?: AbortSignal
   ): Promise<DkgApplicationView | null>
-  /** A JSON document (process metadata, census files). */
-  fetchJson(url: string, signal?: AbortSignal): Promise<unknown>
+  /** The bytes a URI serves, as they are (a process's metadata document); `ipfs://` through a public gateway. */
+  fetchBytes(url: string, signal?: AbortSignal): Promise<Uint8Array>
 }
 
 /**
@@ -241,16 +242,54 @@ export function createLiveServices(config: RuntimeConfig, client: PublicClient |
       }
     },
 
-    async fetchJson(url, signal) {
-      const res = await fetch(resolveUri(url), { signal, headers: { accept: 'application/json' } })
+    async fetchBytes(url, signal) {
+      // No Accept header: the bytes must be the ones anyone else gets from the URI.
+      const res = await fetch(resolveUri(url), { signal })
       if (!res.ok) throw new ServiceError(`${url}: HTTP ${res.status}`)
-      return res.json()
+      return readCapped(res, MAX_DOCUMENT_BYTES, url)
     },
   }
 }
 
+/**
+ * The most a metadata document may weigh. Every processes-list row downloads
+ * and hashes one, so an organizer serving something huge must not hang the
+ * page; a real document is a few kilobytes.
+ */
+export const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024
+
+/** A response body, stopping (and failing) as soon as it passes `max` bytes. */
+export async function readCapped(res: Response, max: number, url: string): Promise<Uint8Array> {
+  const tooLarge = () => new ServiceError(`${url}: more than ${max} bytes`)
+  if (Number(res.headers.get('content-length') ?? 0) > max) throw tooLarge()
+  if (!res.body) {
+    const bytes = new Uint8Array(await res.arrayBuffer())
+    if (bytes.length > max) throw tooLarge()
+    return bytes
+  }
+  const reader = res.body.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.length
+    if (size > max) {
+      await reader.cancel()
+      throw tooLarge()
+    }
+    chunks.push(value)
+  }
+  const out = new Uint8Array(size)
+  let at = 0
+  for (const c of chunks) {
+    out.set(c, at)
+    at += c.length
+  }
+  return out
+}
+
 /** ipfs:// URIs through a public gateway; everything else unchanged. */
 export function resolveUri(uri: string): string {
-  if (uri.startsWith('ipfs://')) return `https://ipfs.io/ipfs/${uri.slice('ipfs://'.length)}`
-  return uri
+  return browsableUri(uri) ?? uri
 }

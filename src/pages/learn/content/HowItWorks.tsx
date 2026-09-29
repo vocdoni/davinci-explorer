@@ -44,6 +44,21 @@ export function HowItWorks({ ex }: { ex: LearnExamples }) {
             that root, so none of these can be swapped afterwards.
           </Trans>
         </P>
+        <P>
+          <Trans>
+            The title, the question and the names of the options are not on the chain, which knows a ballot only as
+            numbers in fields. They are in the organizer’s metadata document, and <C>newProcess</C> records its address
+            together with its <Term id='metadata-hash'>metadata hash</Term>, the SHA-256 of its exact bytes. The
+            explorer downloads the document, hashes it and shows its text as the organizer’s only when the two match.
+          </Trans>
+        </P>
+        <P>
+          <Trans>
+            The organizer can publish a new version with <C>setProcessMetadata</C> until voting ends; after that the
+            document is frozen. Every version stays on the registry’s log, and one set while voting was open is flagged:
+            votes cast before it were cast under the previous version.
+          </Trans>
+        </P>
         <SeeIt to={paths.processes()}>
           <Trans>Every process on this registry, with its parameters</Trans>
         </SeeIt>

@@ -100,6 +100,12 @@ export function normalizeLog(log: RawLog): IndexedEvent | null {
       return { ...envelope, name, data: { maxVoters: num(a.maxVoters) } }
     case 'CensusUpdated':
       return { ...envelope, name, data: { censusRoot: hex(a.censusRoot), censusURI: String(a.censusURI ?? '') } }
+    case 'ProcessMetadataUpdated':
+      return {
+        ...envelope,
+        name,
+        data: { metadataURI: String(a.metadataURI ?? ''), metadataHash: hex(a.metadataHash) },
+      }
     case 'ResultsDecryptionRequested':
       return {
         ...envelope,

@@ -80,5 +80,18 @@ describe('VerifyVotePage', () => {
     expect(tracker).toHaveTextContent('Not available: no sequencer is configured')
     expect(screen.getByTestId('check-election')).toHaveAttribute('data-status', 'pass')
     await waitFor(() => expect(screen.getByTestId('check-batch')).toHaveAttribute('data-status', 'pass'))
+    // The first check also says whether the election's description is the committed one.
+    await waitFor(() => expect(screen.getByTestId('election-metadata')).toHaveAttribute('data-status', 'matches'))
+  })
+
+  it('says when the election’s description does not match its hash', async () => {
+    const pid = fixture.featured.metadataTampered
+    renderAt(paths.vote(pid, '0x8000000000000001'), { sequencers: [] })
+    const line = await screen.findByTestId('election-metadata')
+    await waitFor(() => expect(line).toHaveAttribute('data-status', 'differs'))
+    expect(line).toHaveTextContent('does not match the one the organizer committed on-chain')
+    expect(screen.getByTestId('check-election')).toHaveTextContent('unverified')
+    // The vote is not at fault, but the reader should know.
+    expect(screen.getByTestId('check-election')).toHaveAttribute('data-status', 'attention')
   })
 })

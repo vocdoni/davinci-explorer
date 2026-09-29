@@ -65,10 +65,10 @@ test.describe('verify', () => {
     await picker.getByTestId('picker-row').click()
     await expect(page).toHaveURL(new RegExp(`/verify/election/${RESULTS}`))
     await expect(page.getByTestId('chosen-election')).toContainText(RESULTS)
-    for (const id of ['census', 'key', 'rules', 'batches', 'chain', 'published', 'produced', 'tally']) {
+    for (const id of ['census', 'key', 'rules', 'metadata', 'batches', 'chain', 'published', 'produced', 'tally']) {
       await expect(page.getByTestId(`check-${id}`)).toHaveAttribute('data-status', 'pass', { timeout: 15_000 })
     }
-    await expect(page.getByTestId('election-summary')).toContainText('All 8 checks passed.')
+    await expect(page.getByTestId('election-summary')).toContainText('All 9 checks passed.')
     // Each batch row links to its transition.
     await page.getByTestId('batch-list').getByRole('link', { name: '#0' }).click()
     await expect(page.getByTestId('page-transition')).toBeVisible()

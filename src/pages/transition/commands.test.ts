@@ -4,12 +4,18 @@ import { describe, expect, it } from 'vitest'
 import { blobEvaluationPoint, blobsDigest, versionedHash } from '~protocol/blob'
 import type { Hex } from '~protocol/bytes'
 import { decodeRegistryCall, type StateTransitionCall } from '~protocol/calldata'
+import { toEventSelector, type AbiParameter } from 'viem'
+import { processRegistryAbi } from '~contracts/abis'
 import {
   GET_PROCESS,
+  METADATA_EVENT,
+  metadataHashCommand,
+  metadataHistoryCommand,
   observerCommand,
   pointEvaluationInput,
   recheckCommands,
   sha256Command,
+  shellQuote,
   TRANSITION_EVENT,
   type RecheckInput,
 } from './commands'
@@ -133,5 +139,47 @@ describe('observerCommand', () => {
     expect(cmd).toContain(
       '--network custom --registry 0xabc --start-block 0 --rpc-url $RPC --blob-source beacon:http://b'
     )
+  })
+})
+
+describe('signatures', () => {
+  const typeOf = (p: AbiParameter): string =>
+    'components' in p && p.components
+      ? `(${p.components.map(typeOf).join(',')})${p.type.slice('tuple'.length)}`
+      : p.type
+
+  it('decode getProcess with the registry’s return type', () => {
+    const fn = processRegistryAbi.find((i) => i.type === 'function' && i.name === 'getProcess')
+    if (fn?.type !== 'function') throw new Error('no getProcess')
+    expect(GET_PROCESS).toBe(`getProcess(bytes31)(${fn.outputs.map(typeOf).join(',')})`)
+  })
+
+  it('name the registry’s events', () => {
+    for (const signature of [TRANSITION_EVENT, METADATA_EVENT]) {
+      const name = signature.slice(0, signature.indexOf('('))
+      const ev = processRegistryAbi.find((i) => i.type === 'event' && i.name === name)
+      if (ev?.type !== 'event') throw new Error(`no ${name}`)
+      expect(toEventSelector(`event ${signature}`)).toBe(toEventSelector(ev))
+    }
+  })
+})
+
+describe('metadata commands', () => {
+  const pid = '0x42fc20654efd78c6887ff0bd1cc50c9ec1dab58980c5bb930000000000000001'.slice(0, 64)
+
+  it('hash what the URI serves and read the committed hash', () => {
+    const cmd = metadataHashCommand({ registry: '0xabc', processId: pid, uri: 'ipfs://bafyx' })
+    expect(cmd.split('\n')[0]).toBe("curl -fsSL 'https://ipfs.io/ipfs/bafyx' | sha256sum")
+    expect(cmd).toContain(GET_PROCESS)
+    expect(cmd).toContain(`${pid} --rpc-url $RPC`)
+    expect(metadataHistoryCommand({ registry: '0xabc', processId: pid, fromBlock: 9 })).toBe(
+      `cast logs --from-block 9 --address 0xabc \\\n  "${METADATA_EVENT}" \\\n  ${pid} --rpc-url $RPC`
+    )
+  })
+
+  it('keeps an organizer’s URI one shell word', () => {
+    expect(shellQuote("https://x.org/a'$(id).json")).toBe("'https://x.org/a'\\''$(id).json'")
+    const cmd = metadataHashCommand({ registry: '0xabc', processId: pid, uri: 'https://x.org/$(id);`id`' })
+    expect(cmd.split('\n')[0]).toBe("curl -fsSL 'https://x.org/$(id);`id`' | sha256sum")
   })
 })

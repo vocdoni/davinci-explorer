@@ -8,7 +8,8 @@ import { BN254_FR } from '~protocol/limits'
 import { BJJ_K, BJJ_K_INV, reducedToCircom } from '~protocol/babyjubjub'
 import { dkgApplicationUrl, dkgEpochUrl } from './dkg-links'
 import { toJson } from './json'
-import { browsableUri, localized, metadataChoices, metadataDescription, metadataTitle } from './metadata'
+import { browsableUri, readServedDocument } from '~protocol/metadata'
+import { localized, metadataChoices, metadataDescription, metadataTitle } from './metadata'
 import { tallyRows } from './tally'
 import { processLifecycle } from './timeline'
 
@@ -69,7 +70,7 @@ describe('metadata', () => {
   it('reads the demo documents in each language', async () => {
     const f = demoFixture()
     const process = f.store.processes[f.featured.openProcess]!
-    const doc = f.metadata.get(process.state!.metadataURI)
+    const doc = readServedDocument(f.metadata.get(process.state!.metadataURI)!).doc
     const en = metadataTitle(doc)
     expect(en).toBeTruthy()
     await activateLocale('ca')

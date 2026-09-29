@@ -77,6 +77,8 @@ export interface ProcessRow {
   numFields: number | null
   /** The organizer's metadata document, as the registry stores it. */
   metadataURI: string | null
+  /** SHA-256 of that document's bytes, as committed on-chain. */
+  metadataHash: Hex | null
   /** Distinct voters (slots written). */
   votersCount: number
   overwrittenVotesCount: number
@@ -102,6 +104,7 @@ export function processRow(store: IndexerStore, p: ProcessEntity): ProcessRow {
     censusOrigin: s?.census.origin ?? null,
     numFields: s?.ballotMode.numFields ?? null,
     metadataURI: s?.metadataURI || null,
+    metadataHash: s?.metadataHash ?? null,
     votersCount: Math.max(s?.votersCount ?? 0, last?.votersCount ?? 0),
     overwrittenVotesCount: Math.max(s?.overwrittenVotesCount ?? 0, last?.overwrittenVotesCount ?? 0),
     maxVoters: s?.maxVoters ?? null,
@@ -502,7 +505,7 @@ export function networkStats(store: IndexerStore): NetworkStats {
 // ── activity ─────────────────────────────────────────────────────────────────
 
 export type FeedKind =
-  'created' | 'transition' | 'results' | 'status' | 'decryption' | 'census' | 'duration' | 'max-voters'
+  'created' | 'transition' | 'results' | 'status' | 'decryption' | 'census' | 'metadata' | 'duration' | 'max-voters'
 
 export interface FeedEntry {
   key: string
@@ -516,7 +519,8 @@ export interface FeedEntry {
   href: string
 }
 
-function feedEntry(store: IndexerStore, ev: IndexedEvent): FeedEntry {
+/** Null for an event the feed leaves out: the metadata set by the creation, which "created" already says. */
+function feedEntry(store: IndexerStore, ev: IndexedEvent): FeedEntry | null {
   const base = {
     key: `${ev.block}:${ev.logIndex}`,
     processId: ev.processId,
@@ -563,6 +567,11 @@ function feedEntry(store: IndexerStore, ev: IndexedEvent): FeedEntry {
     }
     case 'CensusUpdated':
       return { ...base, kind: 'census', label: t`Census root replaced` }
+    case 'ProcessMetadataUpdated': {
+      const created = store.processes[processKey(ev.processId)]?.createdTx
+      if (ev.tx != null && ev.tx === created) return null
+      return { ...base, kind: 'metadata', label: t`Metadata document replaced` }
+    }
     case 'ProcessDurationChanged':
       return { ...base, kind: 'duration', label: t`Duration changed` }
     case 'ProcessMaxVotersChanged': {
@@ -576,7 +585,10 @@ function feedEntry(store: IndexerStore, ev: IndexedEvent): FeedEntry {
 export function activityFeed(store: IndexerStore, limit = 20, pid?: string): FeedEntry[] {
   const out: FeedEntry[] = []
   const events = pid ? (store.processes[processKey(pid)]?.events ?? []).map((i) => store.events[i]!) : store.events
-  for (let i = events.length - 1; i >= 0 && out.length < limit; i--) out.push(feedEntry(store, events[i]!))
+  for (let i = events.length - 1; i >= 0 && out.length < limit; i--) {
+    const entry = feedEntry(store, events[i]!)
+    if (entry) out.push(entry)
+  }
   return out
 }
 

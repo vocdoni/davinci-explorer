@@ -57,7 +57,13 @@ export function ProcessesPage() {
         id: 'id',
         header: t`Process`,
         accessorKey: 'createdBlock',
-        cell: ({ row }) => <ProcessName id={row.original.id} metadataURI={row.original.metadataURI} />,
+        cell: ({ row }) => (
+          <ProcessName
+            id={row.original.id}
+            metadataURI={row.original.metadataURI}
+            metadataHash={row.original.metadataHash}
+          />
+        ),
         meta: {
           width: '240px',
           headerTooltip: t`Process id: organizer address, registry prefix and nonce. Sorts by creation.`,

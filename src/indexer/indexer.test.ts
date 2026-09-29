@@ -31,6 +31,7 @@ function rawProcess(s: ProcessState) {
     creationBlock: BigInt(s.creationBlock),
     batchNumber: BigInt(s.batchNumber),
     metadataURI: s.metadataURI,
+    metadataHash: s.metadataHash,
     ballotMode: s.ballotMode,
     census: {
       censusOrigin: ORIGIN.indexOf(s.census.origin),

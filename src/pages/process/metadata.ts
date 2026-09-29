@@ -1,11 +1,12 @@
-// Reading a process's metadata document. The registry stores only its URI;
-// the document is whatever the organizer published. Vocdoni clients write
+// Reading a process's metadata document, once `useMetadataCheck` has
+// downloaded it and compared its hash with the registry's. Vocdoni clients write
 // `{ title, description, questions: [{ title, choices: [{ title, value }] }] }`
 // with multi-language strings (`{ default: "…", en: "…" }`); anything else is
 // shown raw. The organizer's text is content, not interface: it is shown in
 // the visitor's language when the document carries it, never translated here.
 
 import { i18n } from '@lingui/core'
+import type { MetadataVersion } from '~indexer/types'
 
 type Json = unknown
 
@@ -58,15 +59,10 @@ export function metadataChoices(doc: Json, numFields: number): string[] | null {
   return labels.every((l): l is string => l != null) ? labels : null
 }
 
-/** An http(s) link for a URI a browser can open; `ipfs://` through a public gateway. */
-export function browsableUri(uri: string): string | null {
-  const s = uri.trim()
-  if (/^https?:\/\//i.test(s)) return s
-  if (s.startsWith('ipfs://')) return `https://ipfs.io/ipfs/${s.slice('ipfs://'.length)}`
-  return null
-}
-
-/** The URI to fetch, when a browser can fetch it (http(s) or ipfs); null otherwise. */
-export function fetchableUri(uri: string | null | undefined): string | null {
-  return uri && browsableUri(uri) ? uri.trim() : null
+/**
+ * A version the organizer set once voting had opened: votes cast before it
+ * were cast under the previous one. Never the version set at creation.
+ */
+export function changedWhileOpen(v: Pick<MetadataVersion, 'afterStart' | 'atCreation'>): boolean {
+  return !v.atCreation && v.afterStart === true
 }

@@ -53,7 +53,7 @@ export function checkCopy(id: RecheckId, censusOrigin: CensusOriginName | null):
           }
         : {
             enforced: msg`Registers 20..27, read as a big-endian integer, must equal the census root stored for the process, or InvalidCensusRoot. For a CSP census the root is the signer address. An updatable census accepts only its current root, so a batch proven against a replaced root stops settling.`,
-            recheck: msg`In the same registry read the census is the fifteenth value; its second field is the root this batch had to prove against.`,
+            recheck: msg`In the same registry read the census is the sixteenth value; its second field is the root this batch had to prove against.`,
           }
     case 'occupied-before':
       return {

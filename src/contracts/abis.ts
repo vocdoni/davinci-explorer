@@ -20,6 +20,7 @@ export const REGISTRY_EVENT_NAMES = [
   'ProcessDurationChanged',
   'ProcessMaxVotersChanged',
   'CensusUpdated',
+  'ProcessMetadataUpdated',
   'ResultsDecryptionRequested',
 ] as const
 

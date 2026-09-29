@@ -4,18 +4,20 @@
 import { useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
-import { CensusOriginBadge, CheckMark, KeyModeBadge } from '~components'
+import { CensusOriginBadge, CheckMark, KeyModeBadge, Timestamp, UnverifiedMark } from '~components'
 import { Formula } from '~components/Formula'
 import type { ProcessView } from '~data/hooks'
+import type { MetadataCheck } from '~data/queries'
 import type { DkgApplicationView } from '~data/services'
 import type { CheckState } from '~indexer/selectors'
 import { Badge, Button, Hash, UriLink } from '~kit'
 import { cn } from '~lib/cn'
 import { bigIntToHex, formatNumber, formatTimestamp } from '~lib/format'
 import { describeBallotMode } from '~pages/process/ballot-mode'
-import { browsableUri } from '~pages/process/metadata'
+import { changedWhileOpen, metadataTitle } from '~pages/process/metadata'
 import type { ResultsCheck } from '~pages/process/results-checks'
-import { GET_PROCESS, TRANSITION_EVENT } from '~pages/transition/commands'
+import { GET_PROCESS, metadataHashCommand, metadataHistoryCommand, TRANSITION_EVENT } from '~pages/transition/commands'
+import { browsableUri } from '~protocol/metadata'
 import { CENSUS_ORIGIN_INFO, KEY_MODE_INFO } from '~protocol/types'
 import { paths } from '~routes/paths'
 import { CheckCard, Compared, HowPart, RedoCommand, StatusDisc } from '../checklist'
@@ -150,7 +152,7 @@ export function CensusCard({
           ) : (
             <RedoCommand
               note={
-                <Trans>The census is the fifteenth value of the registry’s record; its second field is the root.</Trans>
+                <Trans>The census is the sixteenth value of the registry’s record; its second field is the root.</Trans>
               }
               code={`cast call ${registry} \\\n  "${GET_PROCESS}" \\\n  ${pid} --rpc-url $RPC`}
             />
@@ -266,6 +268,200 @@ export function RulesCard({ view }: { view: ProcessView }) {
           <li key={i}>{r}</li>
         ))}
       </ul>
+    </CheckCard>
+  )
+}
+
+export function MetadataCard({
+  view,
+  check,
+  status,
+  registry,
+}: {
+  view: ProcessView
+  check: MetadataCheck
+  status: VerifyStatus
+  registry: string
+}) {
+  const { t } = useLingui()
+  const s = view.process.state
+  const title = t`The description is the one the organizer committed`
+  if (!s) return <CheckCard id='metadata' status='pending' title={title} summary={t`Reading the election…`} />
+  const uri = s.metadataURI
+  const detail = check.error ?? ''
+  const named = metadataTitle(check.doc)
+  return (
+    <CheckCard
+      id='metadata'
+      status={status}
+      title={title}
+      statusLabel={
+        check.status === 'unreachable'
+          ? t`Could not download`
+          : check.status === 'not-browsable'
+            ? t`Not checked here`
+            : undefined
+      }
+      summary={
+        check.status === 'matches' ? (
+          <Trans>
+            The document at its address is, byte for byte, the one whose SHA-256 the organizer committed on-chain, so
+            the title, the question and the option names are the organizer’s.
+          </Trans>
+        ) : check.status === 'differs' ? (
+          <Trans>
+            Its address serves another document than the one the organizer committed on-chain. Its title, question and
+            option names may not be what voters were shown, so do not rely on them.
+          </Trans>
+        ) : check.status === 'unreachable' ? (
+          <Trans>
+            The document could not be downloaded ({detail}), so it could not be compared. The command below checks it
+            from a terminal.
+          </Trans>
+        ) : check.status === 'not-browsable' ? (
+          <Trans>A browser cannot fetch this address; the command below checks it from a terminal.</Trans>
+        ) : (
+          <Trans>Downloading the document and hashing it…</Trans>
+        )
+      }
+      how={
+        <>
+          <p>
+            <Trans>
+              The chain knows a ballot only as numbers in fields; what each field means is in the organizer’s document.
+              When the election was created, and at every change, the registry recorded the document’s address and the
+              SHA-256 of its exact bytes. Your browser downloads the document, hashes the bytes as they came, with no
+              reformatting, and compares; the text shown on these pages is read from those same bytes.
+            </Trans>
+          </p>
+          <HowPart title={t`Values compared`}>
+            <Compared
+              rows={[
+                {
+                  label: t`Address`,
+                  value: uri ? <span className='font-mono break-all'>{uri}</span> : '—',
+                },
+                { label: t`Committed hash`, value: <Hash value={s.metadataHash} chars={10} /> },
+                {
+                  label: t`Hash of what it serves`,
+                  value: check.served ? (
+                    <span className='inline-flex items-center gap-2'>
+                      <CheckMark state={check.status === 'matches' ? 'pass' : 'fail'} />
+                      <Hash value={check.served.hash} chars={10} />
+                    </span>
+                  ) : (
+                    '…'
+                  ),
+                },
+              ]}
+            />
+          </HowPart>
+          {uri ? (
+            <RedoCommand
+              note={
+                <Trans>
+                  The first line hashes what the address serves; the second prints the registry’s record, whose
+                  fourteenth value is the committed hash. They must be equal (sha256sum leaves out the 0x).
+                </Trans>
+              }
+              code={metadataHashCommand({ registry, processId: view.process.id, uri })}
+            />
+          ) : null}
+        </>
+      }
+    >
+      <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
+        {uri ? <UriLink uri={uri} href={browsableUri(uri)} label={t`Open the document`} /> : null}
+        {named && check.status === 'differs' ? (
+          <span className='inline-flex min-w-0 items-center gap-2 text-[13px] text-ash'>
+            <span className='truncate italic'>
+              <Trans>“{named}”</Trans>
+            </span>
+            <UnverifiedMark />
+          </span>
+        ) : null}
+      </div>
+    </CheckCard>
+  )
+}
+
+export function MetadataHistoryCard({
+  view,
+  status,
+  registry,
+}: {
+  view: ProcessView
+  status: VerifyStatus
+  registry: string
+}) {
+  const { t } = useLingui()
+  const history = view.process.metadataHistory
+  const changes = history.length - 1
+  return (
+    <CheckCard
+      id='metadata-history'
+      status={status}
+      title={t`When the description changed`}
+      statusLabel={status === 'attention' ? t`Changed while open` : undefined}
+      summary={
+        status === 'attention' ? (
+          <Trans>
+            The organizer changed the description while voting was open. Votes cast before a change were cast under the
+            previous version.
+          </Trans>
+        ) : status === 'pass' ? (
+          <Plural
+            value={changes}
+            one='The organizer changed the description once, before voting opened.'
+            other='The organizer changed the description # times, all before voting opened.'
+          />
+        ) : (
+          <Trans>Reading when each change happened…</Trans>
+        )
+      }
+      how={
+        <>
+          <p>
+            <Trans>
+              Every change is a ProcessMetadataUpdated event on the registry, with the new address and hash. The
+              organizer may change the description while the election is Ready or Paused and before its end; after that
+              it is frozen. A change is flagged when its block is later than the start of voting.
+            </Trans>
+          </p>
+          <RedoCommand
+            code={metadataHistoryCommand({
+              registry,
+              processId: view.process.id,
+              fromBlock: view.process.createdBlock,
+            })}
+          />
+        </>
+      }
+    >
+      <ol className='flex flex-col gap-1.5 text-[13px] text-pewter' data-testid='metadata-versions'>
+        {history.map((v, i) => {
+          const n = i + 1
+          const flagged = changedWhileOpen(v)
+          return (
+            <li key={`${v.block}:${v.logIndex}`} className='flex flex-wrap items-center gap-x-2 gap-y-1'>
+              <span className='font-medium text-silver'>
+                {v.atCreation ? t`Version ${n}, at creation` : t`Version ${n}`}
+              </span>
+              <Timestamp value={v.timestamp} relative={false} className='text-ash' />
+              {flagged ? (
+                <Badge tone='warn' size='sm'>
+                  <Trans>changed while voting was open</Trans>
+                </Badge>
+              ) : null}
+              {i === history.length - 1 ? (
+                <Badge tone='ok' size='sm'>
+                  <Trans>current</Trans>
+                </Badge>
+              ) : null}
+            </li>
+          )
+        })}
+      </ol>
     </CheckCard>
   )
 }

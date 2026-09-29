@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decodeTransitionBlobs, versionedHash } from '~protocol/blob'
+import { readServedDocument } from '~protocol/metadata'
 import { decodeBatchPublicValues } from '~protocol/publics'
 import { verifyTracker } from '~protocol/tracker'
 import { networkStats, rootChain, transitionDetail } from '~indexer/selectors'
@@ -65,13 +66,45 @@ describe('synthetic network', () => {
     let presets = 0
     for (const pid of store.processOrder) {
       const s = store.processes[pid]!.state!
-      const doc = fixture.metadata.get(s.metadataURI) as { meta?: { electionPreset?: ElectionPreset } }
+      const doc = readServedDocument(fixture.metadata.get(s.metadataURI)!).doc as {
+        meta?: { electionPreset?: ElectionPreset }
+      }
       const preset = doc.meta?.electionPreset
       if (!preset) continue
       presets += 1
       expect(presetBallotMode(preset, s.ballotMode.numFields), pid).toEqual(s.ballotMode)
     }
     expect(presets).toBe(store.processOrder.length - 1)
+  })
+
+  it('serves the committed metadata bytes, except for one tampered document', () => {
+    const { metadataTampered, metadataBeforeStart, metadataAfterVotes } = fixture.featured
+    for (const pid of store.processOrder) {
+      const p = store.processes[pid]!
+      const s = p.state!
+      const served = readServedDocument(fixture.metadata.get(s.metadataURI)!)
+      expect(served.hash === s.metadataHash, pid).toBe(pid !== metadataTampered)
+      expect(served.doc, pid).toBeTruthy()
+      // The history ends at the version getProcess returns, and every version is served.
+      const last = p.metadataHistory[p.metadataHistory.length - 1]!
+      expect([last.uri, last.hash], pid).toEqual([s.metadataURI, s.metadataHash])
+      expect(p.metadataHistory[0]!.tx, pid).toBe(p.createdTx)
+      expect(
+        p.metadataHistory.map((v) => v.atCreation),
+        pid
+      ).toEqual(p.metadataHistory.map((_, i) => i === 0))
+      for (const v of p.metadataHistory) expect(fixture.metadata.has(v.uri), pid).toBe(true)
+    }
+    const flags = (pid: string) => store.processes[pid]!.metadataHistory.map((v) => [v.afterStart, v.afterFirstVote])
+    expect(flags(metadataBeforeStart)).toEqual([
+      [false, false],
+      [false, false],
+    ])
+    expect(flags(metadataAfterVotes)).toEqual([
+      [false, false],
+      [true, true],
+    ])
+    expect(store.processes[metadataTampered]!.metadataHistory).toHaveLength(1)
   })
 
   it('publishes tallies the ballots could add up to', () => {

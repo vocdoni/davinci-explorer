@@ -6,20 +6,27 @@ import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { Link } from 'react-router'
-import { CheckMark, ProcessPhaseBadge, TxLink } from '~components'
+import { CheckMark, ProcessPhaseBadge, TxLink, UnverifiedMark } from '~components'
 import { CodeBlock, Disclosure } from '~components/code'
 import { Formula } from '~components/Formula'
 import type { ProcessView } from '~data/hooks'
-import type { DecodedTransitionBlobs, TrackerCheck, VoteInclusion, VoteStatusBySequencer } from '~data/queries'
+import type {
+  DecodedTransitionBlobs,
+  MetadataCheck,
+  TrackerCheck,
+  VoteInclusion,
+  VoteStatusBySequencer,
+} from '~data/queries'
 import type { TransitionRow } from '~indexer/selectors'
 import { BlockCell, Hash, ProgressBar } from '~kit'
 import { formatTimestamp } from '~lib/format'
 import { formatVoteId } from '~protocol/blob'
 import { SMT_LEVELS } from '~protocol/limits'
 import { paths } from '~routes/paths'
-import { GET_PROCESS } from '~pages/transition/commands'
+import { GET_PROCESS, metadataHashCommand } from '~pages/transition/commands'
+import { changedWhileOpen } from '~pages/process/metadata'
 import type { ResultsCheck } from '~pages/process/results-checks'
-import { CheckCard, Compared, HowPart, RedoCommand } from '../checklist'
+import { CheckCard, Compared, HowPart, RedoCommand, StatusDisc } from '../checklist'
 import type { BatchCheck } from '../batch'
 import type { VerifyStatus } from '../status'
 import type { ResultReason, Settled, TrackerReason } from './model'
@@ -27,22 +34,72 @@ import { SequencerStatus } from './SequencerStatus'
 
 const LINK = 'text-emerald hover:underline'
 
+/** The election's description against its on-chain hash, in one line with its mark. */
+function MetadataLine({ view, metadata }: { view: ProcessView; metadata: MetadataCheck }) {
+  const changed = view.process.metadataHistory.some(changedWhileOpen)
+  const status: VerifyStatus =
+    metadata.status === 'matches'
+      ? changed
+        ? 'attention'
+        : 'pass'
+      : metadata.status === 'differs'
+        ? 'fail'
+        : 'pending'
+  return (
+    <p
+      className='flex items-start gap-2 text-[13px] leading-relaxed text-pewter'
+      data-testid='election-metadata'
+      data-status={metadata.status}
+    >
+      <StatusDisc status={status} size='sm' />
+      <span className='pt-px'>
+        {metadata.status === 'matches' ? (
+          changed ? (
+            <Trans>
+              Its description is the one the organizer committed on-chain, but the organizer changed it while voting was
+              open: if you voted before the change, you voted under the previous version.
+            </Trans>
+          ) : (
+            <Trans>Its description (title, question and options) is the one the organizer committed on-chain.</Trans>
+          )
+        ) : metadata.status === 'differs' ? (
+          <Trans>
+            Its description does not match the one the organizer committed on-chain, so its title and option names may
+            not be what you were shown.
+          </Trans>
+        ) : metadata.status === 'unreachable' ? (
+          <Trans>
+            Its description could not be downloaded, so it was not compared with the one committed on-chain.
+          </Trans>
+        ) : metadata.status === 'not-browsable' ? (
+          <Trans>Its description is at an address a browser cannot fetch, so it was not checked here.</Trans>
+        ) : (
+          <Trans>Checking its description against the one committed on-chain…</Trans>
+        )}
+      </span>
+    </p>
+  )
+}
+
 export function ElectionCard({
   pid,
   view,
   status,
   title,
+  metadata,
   registry,
 }: {
   pid: string
   view: ProcessView | null
   status: VerifyStatus
   title: string | null
+  metadata: MetadataCheck
   registry: string
 }) {
   const { t } = useLingui()
   const created = view?.row.createdAt != null ? formatTimestamp(view.row.createdAt) : null
   const short = `${pid.slice(0, 10)}…${pid.slice(-4)}`
+  const uri = view?.process.state?.metadataURI
   return (
     <CheckCard
       id='election'
@@ -69,6 +126,7 @@ export function ElectionCard({
                 <Trans>Election {short} is on the registry.</Trans>
               )}
             </span>
+            {title && metadata.status === 'differs' ? <UnverifiedMark /> : null}
             <ProcessPhaseBadge phase={view.row.phase} />
           </span>
         ) : status === 'pending' ? (
@@ -107,10 +165,25 @@ export function ElectionCard({
               ]}
             />
           </HowPart>
-          <RedoCommand code={`cast call ${registry} \\\n  "${GET_PROCESS}" \\\n  ${pid} --rpc-url $RPC`} />
+          {uri ? (
+            <RedoCommand
+              note={
+                <Trans>
+                  The second command prints the registry’s record of the election. The first hashes what its
+                  description’s address serves, which must equal the record’s fourteenth value (sha256sum leaves out the
+                  0x).
+                </Trans>
+              }
+              code={metadataHashCommand({ registry, processId: pid, uri })}
+            />
+          ) : (
+            <RedoCommand code={`cast call ${registry} \\\n  "${GET_PROCESS}" \\\n  ${pid} --rpc-url $RPC`} />
+          )}
         </>
       }
-    />
+    >
+      {view ? <MetadataLine view={view} metadata={metadata} /> : null}
+    </CheckCard>
   )
 }
 

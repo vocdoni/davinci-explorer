@@ -1,14 +1,14 @@
 import { plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useNavigate, useParams } from 'react-router'
-import { CensusOriginBadge, KeyModeBadge, MissingEntity, ProcessPhaseBadge } from '~components'
+import { CensusOriginBadge, KeyModeBadge, MissingEntity, ProcessPhaseBadge, UnverifiedMark } from '~components'
 import { useProcess } from '~data/hooks'
-import { useJsonDocument } from '~data/queries'
+import { useMetadataCheck } from '~data/queries'
 import { Address, Hash, SectionHeader, Stack, StatCell, StatRow, Tabs } from '~kit'
 import { formatNumber, shortHash } from '~lib/format'
 import { isProcessTab, paths, type ProcessTab } from '~routes/paths'
 import { Lifecycle } from './Lifecycle'
-import { fetchableUri, metadataTitle } from './metadata'
+import { metadataTitle } from './metadata'
 import { KeyTab } from './tabs/KeyTab'
 import { OverviewTab } from './tabs/OverviewTab'
 import { RawTab } from './tabs/RawTab'
@@ -24,11 +24,11 @@ export function ProcessPage() {
   const navigate = useNavigate()
   const view = useProcess(pid)
   const active: ProcessTab = isProcessTab(tab) ? tab : 'overview'
-  const metadata = useJsonDocument(fetchableUri(view?.process.state?.metadataURI))
+  const metadata = useMetadataCheck(view?.process.state?.metadataURI, view?.process.state?.metadataHash)
 
   if (!pid || !view) return <MissingEntity what='process' id={pid} />
   const { process, row, transitions } = view
-  const title = metadataTitle(metadata.data)
+  const title = metadataTitle(metadata.doc)
   const blobs = transitions.reduce((n, tr) => n + tr.nBlobs, 0)
   const ballots = transitions.reduce((n, tr) => n + tr.votes, 0)
   const short = shortHash(process.id, 8, 6)
@@ -39,7 +39,20 @@ export function ProcessPage() {
       <SectionHeader
         size='page'
         label={t`Process`}
-        title={title ?? t`Process ${short}`}
+        title={
+          title ? (
+            metadata.status !== 'matches' ? (
+              <span className='inline-flex flex-wrap items-center gap-x-2.5 gap-y-1'>
+                <span>{title}</span>
+                <UnverifiedMark />
+              </span>
+            ) : (
+              title
+            )
+          ) : (
+            t`Process ${short}`
+          )
+        }
         description={
           <span className='flex flex-col gap-1'>
             <span className='inline-flex min-w-0 flex-wrap items-center gap-x-2'>

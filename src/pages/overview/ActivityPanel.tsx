@@ -14,6 +14,7 @@ const KIND: Record<FeedKind, { label: MessageDescriptor; tone: BadgeTone }> = {
   status: { label: msg({ message: 'status', context: 'activity kind' }), tone: 'neutral' },
   decryption: { label: msg({ message: 'decryption', context: 'activity kind' }), tone: 'warn' },
   census: { label: msg({ message: 'census', context: 'activity kind' }), tone: 'neutral' },
+  metadata: { label: msg({ message: 'metadata', context: 'activity kind' }), tone: 'neutral' },
   duration: { label: msg({ message: 'duration', context: 'activity kind' }), tone: 'neutral' },
   'max-voters': { label: msg({ message: 'limit', context: 'activity kind' }), tone: 'neutral' },
 }

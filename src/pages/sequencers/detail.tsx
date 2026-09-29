@@ -287,6 +287,7 @@ function TransitionsPanel({ rows, processes }: { rows: TransitionRow[]; processe
           <ProcessName
             id={row.original.processId}
             metadataURI={processes.get(row.original.processId.toLowerCase())?.metadataURI ?? null}
+            metadataHash={processes.get(row.original.processId.toLowerCase())?.metadataHash ?? null}
           />
         ),
         meta: { width: '200px' },
@@ -391,7 +392,11 @@ function ResultsPanel({ rows, processes }: { rows: SequencerResult[]; processes:
         {rows.map((r) => (
           <li key={r.processId} className='flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-2.5 text-[13px]'>
             <span className='min-w-0 basis-full sm:flex-1 sm:basis-auto'>
-              <ProcessName id={r.processId} metadataURI={processes.get(r.processId)?.metadataURI ?? null} />
+              <ProcessName
+                id={r.processId}
+                metadataURI={processes.get(r.processId)?.metadataURI ?? null}
+                metadataHash={processes.get(r.processId)?.metadataHash ?? null}
+              />
             </span>
             <Link
               to={paths.process(r.processId, 'results')}

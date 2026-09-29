@@ -1,19 +1,25 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, useParams } from 'react-router'
-import { KeyModeBadge, ProcessPhaseBadge } from '~components'
+import { KeyModeBadge, ProcessPhaseBadge, UnverifiedMark } from '~components'
 import { CodeBlock, Disclosure } from '~components/code'
 import { useRuntimeConfig } from '~config/config-context'
 import { useDataSource } from '~data/context'
 import { useChain, useIndexer, useProcess, useStore, type ProcessView } from '~data/hooks'
-import { useJsonDocument } from '~data/queries'
+import { useMetadataCheck } from '~data/queries'
 import { transitionDetail, type TransitionDetail } from '~indexer/selectors'
 import { Callout, Card, SkeletonText } from '~kit'
 import { formatNumber } from '~lib/format'
 import { publicRpc } from '~pages/contracts/model'
-import { fetchableUri, metadataTitle } from '~pages/process/metadata'
+import { metadataTitle } from '~pages/process/metadata'
 import { useDkgResultsChecks, useSequencerResultsChecks, type ResultsCheck } from '~pages/process/results-checks'
-import { GET_PROCESS, observerCommand, TRANSITION_EVENT } from '~pages/transition/commands'
+import {
+  GET_PROCESS,
+  metadataHashCommand,
+  metadataHistoryCommand,
+  observerCommand,
+  TRANSITION_EVENT,
+} from '~pages/transition/commands'
 import { isProcessId, normalizeProcessId } from '~protocol/process-id'
 import type { KeyModeName } from '~protocol/types'
 import { paths } from '~routes/paths'
@@ -27,6 +33,8 @@ import {
   CensusCard,
   ChainCard,
   KeyCard,
+  MetadataCard,
+  MetadataHistoryCard,
   ProducedCard,
   PublishedCard,
   RulesCard,
@@ -38,6 +46,8 @@ import {
   censusStatus,
   chainStatus,
   keyStatus,
+  metadataCheckStatus,
+  metadataHistoryStatus,
   publishedStatus,
   resultChecksStatus,
 } from './model'
@@ -136,7 +146,7 @@ function ElectionFrame({
   )
 }
 
-function Chosen({ view, title }: { view: ProcessView | null; title: string | null }) {
+function Chosen({ view, title, unverified }: { view: ProcessView | null; title: string | null; unverified: boolean }) {
   const { t } = useLingui()
   if (!view) return <SkeletonText lines={2} />
   const pid = view.process.id
@@ -147,7 +157,10 @@ function Chosen({ view, title }: { view: ProcessView | null; title: string | nul
       data-testid='chosen-election'
     >
       <div className='min-w-0'>
-        <div className='truncate text-[16px] font-semibold text-ghost'>{title ?? t`Untitled election`}</div>
+        <div className='flex min-w-0 items-center gap-2'>
+          <span className='truncate text-[16px] font-semibold text-ghost'>{title ?? t`Untitled election`}</span>
+          {title && unverified ? <UnverifiedMark /> : null}
+        </div>
         <div className='mt-1 flex flex-wrap items-center gap-2 text-[12px] text-ash'>
           <Link to={paths.process(pid)} className='font-mono break-all hover:text-emerald'>
             {pid}
@@ -175,8 +188,8 @@ function ElectionChecks({ pid }: { pid: string }) {
   const chain = useChain()
   const { status: indexer } = useIndexer()
   const view = useProcess(pid)
-  const metadata = useJsonDocument(fetchableUri(view?.process.state?.metadataURI))
-  const title = metadataTitle(metadata.data)
+  const metadata = useMetadataCheck(view?.process.state?.metadataURI, view?.process.state?.metadataHash)
+  const title = metadataTitle(metadata.doc)
   const sequencerResults = useSequencerResultsChecks(view)
   const dkgResults = useDkgResultsChecks(view)
 
@@ -230,6 +243,9 @@ function ElectionChecks({ pid }: { pid: string }) {
   const census = censusStatus(s?.census.origin ?? null, details)
   const key = keyStatus(keyMode, s?.encryptionKey ?? null, dkgResults.app)
   const rules: VerifyStatus = loaded ? 'pass' : 'pending'
+  const described = loaded ? metadataCheckStatus(metadata.status) : 'pending'
+  const history = view.process.metadataHistory
+  const changed = history.length > 1 ? metadataHistoryStatus(history) : null
   const batches = batchesStatus(verdicts, phase)
   const rootChain = chainStatus(view.rootChain, loaded)
   const published = publishedStatus(view.process.results != null, phase)
@@ -245,27 +261,43 @@ function ElectionChecks({ pid }: { pid: string }) {
     tallyChecks.map((c) => c.state),
     published
   )
-  const all = [census, key, rules, batches, rootChain, published, produced, tally]
+  const all = [
+    census,
+    key,
+    rules,
+    described,
+    ...(changed ? [changed] : []),
+    batches,
+    rootChain,
+    published,
+    produced,
+    tally,
+  ]
   const decided = !all.includes('pending')
   const count = formatNumber(verdicts.length)
 
   return (
     <ElectionFrame
       states={stepStates(true, decided)}
-      hints={{ choose: title ?? `${pid.slice(0, 10)}…`, check: t`${count} batches` }}
+      hints={{
+        choose: title && metadata.status !== 'differs' ? title : `${pid.slice(0, 10)}…`,
+        check: t`${count} batches`,
+      }}
       keyMode={keyMode}
-      choose={<Chosen view={view} title={title} />}
+      choose={<Chosen view={view} title={title} unverified={metadata.status === 'differs'} />}
       checks={
         <div className='flex flex-col gap-8'>
           <ChecklistSummary statuses={all} testId='election-summary' />
           <CheckGroup
             title={t`Setup`}
-            description={t`Fixed when the election was created: who may vote, who can open the ballots, and the rules for a ballot.`}
+            description={t`Set when the election was created: who may vote, who can open the ballots, the rules for a ballot and the description of what is voted on.`}
             testId='group-setup'
           >
             <CensusCard view={view} status={census} batches={verdicts.length} registry={chain.registryAddress} />
             <KeyCard view={view} app={dkgResults.app} status={key} />
             <RulesCard view={view} />
+            <MetadataCard view={view} check={metadata} status={described} registry={chain.registryAddress} />
+            {changed ? <MetadataHistoryCard view={view} status={changed} registry={chain.registryAddress} /> : null}
           </CheckGroup>
           <CheckGroup
             title={t`Every batch`}
@@ -340,7 +372,26 @@ function ElectionRedo({ view }: { view: ProcessView }) {
           label={t`Copy the commands`}
         />
       </RedoStep>
-      <RedoStep n={3} title={t`Replay the whole election`}>
+      {view.process.state?.metadataURI ? (
+        <RedoStep n={3} title={t`Check the description`}>
+          <Prose>
+            <p>
+              <Trans>
+                Hash the document the election’s address serves and compare it with the fourteenth value of the
+                registry’s record; then list every version the organizer set, with its block.
+              </Trans>
+            </p>
+          </Prose>
+          <CodeBlock
+            code={[
+              metadataHashCommand({ registry, processId: pid, uri: view.process.state.metadataURI }),
+              metadataHistoryCommand({ registry, processId: pid, fromBlock: view.process.createdBlock }),
+            ].join('\n')}
+            label={t`Copy the commands`}
+          />
+        </RedoStep>
+      ) : null}
+      <RedoStep n={view.process.state?.metadataURI ? 4 : 3} title={t`Replay the whole election`}>
         <Prose>
           <p>
             <Trans>
@@ -360,7 +411,7 @@ function ElectionRedo({ view }: { view: ProcessView }) {
           label={t`Copy the observer command`}
         />
       </RedoStep>
-      <RedoStep n={4} title={t`Check each batch on its own`}>
+      <RedoStep n={view.process.state?.metadataURI ? 5 : 4} title={t`Check each batch on its own`}>
         <Prose>
           <p>
             <Trans>
@@ -399,6 +450,11 @@ function ElectionProves({ keyMode }: { keyMode: KeyModeName | null }) {
         <Trans key='result'>
           Once published, the result is the decryption of the encrypted total in the final state, nothing else.
         </Trans>,
+        <Trans key='metadata'>
+          The title, the question and the option names are the document the organizer committed on-chain, when its check
+          above passes. The organizer can change it only in the open, until voting ends, and a change made while voting
+          was open is shown above: votes cast before it were cast under the previous version.
+        </Trans>,
       ]}
       doesNot={[
         <Trans key='censor'>
@@ -419,9 +475,9 @@ function ElectionProves({ keyMode }: { keyMode: KeyModeName | null }) {
           That the census is fair. Who is on the list is the organizer’s decision; the checks only show the list was
           used as published.
         </Trans>,
-        <Trans key='metadata'>
-          That the title, the question and the option names are what voters saw. They come from the organizer’s
-          document, which the chain does not check.
+        <Trans key='metadata-app'>
+          That a voter’s app showed the committed description. The chain binds the document, not what an app puts on the
+          screen.
         </Trans>,
       ]}
     >
@@ -462,6 +518,13 @@ function OrganizerControls() {
             <Trans>
               <code>setProcessCensus</code>: only for an updatable Merkle census (origin 2), before the end. Batches
               proven against the old root stop settling.
+            </Trans>
+          </li>
+          <li>
+            <Trans>
+              <code>setProcessMetadata</code>: a new document address and its SHA-256, while Ready or Paused and before
+              the end; then the description is frozen. Every version stays on the log, and a change made while voting
+              was open is flagged to everyone who checks the election.
             </Trans>
           </li>
         </ul>

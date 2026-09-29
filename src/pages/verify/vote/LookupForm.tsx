@@ -1,13 +1,13 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useNavigate } from 'react-router'
-import { ProcessPhaseBadge } from '~components'
+import { ProcessPhaseBadge, UnverifiedMark } from '~components'
 import { useProcesses, useStore } from '~data/hooks'
 import { useTransitionBlobs } from '~data/queries'
 import { Button, Card, Input } from '~kit'
 import { formatVoteId } from '~protocol/blob'
 import { paths } from '~routes/paths'
-import { useProcessTitles } from '../titles'
+import { useProcessTitles, type ProcessTitle } from '../titles'
 import { validateLookup } from './lookup'
 
 /**
@@ -29,6 +29,12 @@ export function LookupForm({ initialPid, initialVote }: { initialPid: string; in
   const titles = useProcessTitles(known)
   const chosen = query.pid ? rows.find((r) => r.id === query.pid) : undefined
   const chosenTitle = chosen ? titles.get(chosen.id) : undefined
+  // A native list cannot carry the mark, so an unverified title says so in words.
+  const optionLabel = (named: ProcessTitle | undefined) => {
+    if (!named) return undefined
+    const title = named.title
+    return named.verified ? title : t`${title} (unverified)`
+  }
 
   // The newest settled transition, for the example.
   const latest = useMemo(() => {
@@ -72,7 +78,7 @@ export function LookupForm({ initialPid, initialVote }: { initialPid: string; in
             />
             <datalist id={listId}>
               {known.map((p) => (
-                <option key={p.id} value={p.id} label={titles.get(p.id)} />
+                <option key={p.id} value={p.id} label={optionLabel(titles.get(p.id))} />
               ))}
             </datalist>
             {chosen ? (
@@ -80,7 +86,8 @@ export function LookupForm({ initialPid, initialVote }: { initialPid: string; in
                 className='mt-2 flex min-w-0 flex-wrap items-center gap-2 text-[13px] text-silver'
                 data-testid='lookup-election'
               >
-                <span className='truncate'>{chosenTitle ?? t`An election without a title`}</span>
+                <span className='truncate'>{chosenTitle?.title ?? t`An election without a title`}</span>
+                {chosenTitle && !chosenTitle.verified ? <UnverifiedMark /> : null}
                 <ProcessPhaseBadge phase={chosen.phase} />
               </p>
             ) : null}

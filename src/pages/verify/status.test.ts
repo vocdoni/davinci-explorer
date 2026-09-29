@@ -8,6 +8,9 @@ describe('combine', () => {
     expect(combine(['pass', 'na'])).toBe('pass')
     expect(combine(['na', 'na'])).toBe('na')
     expect(combine([])).toBe('na')
+    expect(combine(['pass', 'attention', 'na'])).toBe('attention')
+    expect(combine(['attention', 'pending'])).toBe('pending')
+    expect(combine(['attention', 'fail'])).toBe('fail')
   })
 
   it('reads an unknown recomputed check as pending', () => {
@@ -15,7 +18,13 @@ describe('combine', () => {
   })
 
   it('counts', () => {
-    expect(countStatuses(['pass', 'pass', 'na', 'fail'])).toEqual({ pass: 2, fail: 1, pending: 0, na: 1 })
+    expect(countStatuses(['pass', 'pass', 'na', 'fail', 'attention'])).toEqual({
+      pass: 2,
+      fail: 1,
+      attention: 1,
+      pending: 0,
+      na: 1,
+    })
   })
 })
 

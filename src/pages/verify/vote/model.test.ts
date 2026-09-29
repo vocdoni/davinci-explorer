@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { VoteInclusion } from '~data/queries'
 import type { RootChain } from '~indexer/selectors'
-import { batchOutcome, chainFrom, resultOutcome, settledOutcome, trackerOutcome, type Settled } from './model'
+import {
+  batchOutcome,
+  chainFrom,
+  electionOutcome,
+  resultOutcome,
+  settledOutcome,
+  trackerOutcome,
+  type Settled,
+} from './model'
 
 const inclusion = (state: VoteInclusion['state'], transitionIndex: number | null = null): VoteInclusion => ({
   state,
@@ -14,6 +22,18 @@ const inclusion = (state: VoteInclusion['state'], transitionIndex: number | null
 const found: Settled = { status: 'pass', reason: 'found' }
 const waiting: Settled = { status: 'pending', reason: 'waiting' }
 const missing: Settled = { status: 'fail', reason: 'not-found' }
+
+describe('electionOutcome', () => {
+  it('needs attention when the description is not the committed one or changed while voting was open', () => {
+    const base = { found: true, indexing: false, metadata: 'matches' as const, changedWhileOpen: false }
+    expect(electionOutcome(base)).toBe('pass')
+    expect(electionOutcome({ ...base, metadata: 'loading' })).toBe('pass')
+    expect(electionOutcome({ ...base, metadata: 'differs' })).toBe('attention')
+    expect(electionOutcome({ ...base, changedWhileOpen: true })).toBe('attention')
+    expect(electionOutcome({ ...base, found: false, indexing: true })).toBe('pending')
+    expect(electionOutcome({ ...base, found: false })).toBe('fail')
+  })
+})
 
 describe('settledOutcome', () => {
   it('passes when a batch lists the vote id', () => {

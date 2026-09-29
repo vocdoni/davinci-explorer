@@ -8,6 +8,8 @@ import { resolve } from 'node:path'
 import { parseRuntimeConfig } from '~config/runtime-config'
 import { createChainClient } from '~data/client'
 import { Indexer } from './indexer'
+import { readServedDocument, fetchableUri } from '~protocol/metadata'
+import { resolveUri } from '~data/services'
 import { releaseCheck, rootChain, transitionDetail } from './selectors'
 
 const live = process.env.EXPLORER_LIVE === '1'
@@ -36,8 +38,25 @@ describe.runIf(live)('live deployment', () => {
     console.log('release', releaseCheck(store).release?.label ?? 'none')
     expect(store.processOrder.length).toBeGreaterThan(0)
     for (const pid of store.processOrder) {
-      expect(store.processes[pid]!.state, pid).not.toBeNull()
+      const p = store.processes[pid]!
+      expect(p.state, pid).not.toBeNull()
       expect(rootChain(store, pid).gaps, pid).toBe(0)
+      // The metadata log ends at the version getProcess returns.
+      const last = p.metadataHistory[p.metadataHistory.length - 1]
+      expect([last?.uri, last?.hash], pid).toEqual([p.state!.metadataURI, p.state!.metadataHash])
+      // The documents are the organizers' and may move, so their check is reported, not asserted.
+      const url = fetchableUri(p.state!.metadataURI)
+      let verdict = 'not fetchable'
+      if (url) {
+        try {
+          const res = await fetch(resolveUri(url))
+          const served = readServedDocument(new Uint8Array(await res.arrayBuffer()))
+          verdict = !res.ok ? `HTTP ${res.status}` : served.hash === p.state!.metadataHash ? 'matches' : 'differs'
+        } catch (err) {
+          verdict = `unreachable: ${err instanceof Error ? err.message : String(err)}`
+        }
+      }
+      console.log(pid, `metadata v${p.metadataHistory.length}`, verdict)
     }
     for (const key of store.transitionOrder) {
       const t = store.transitions[key]!
@@ -47,5 +66,5 @@ describe.runIf(live)('live deployment', () => {
       expect(failed, key).toEqual([])
       if (unknown.length) console.log(key, 'unknown:', unknown.join(', '))
     }
-  }, 180_000)
+  }, 300_000)
 })

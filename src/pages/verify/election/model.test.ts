@@ -9,6 +9,8 @@ import {
   censusStatus,
   chainStatus,
   keyStatus,
+  metadataCheckStatus,
+  metadataHistoryStatus,
   publishedStatus,
   resultChecksStatus,
 } from './model'
@@ -79,5 +81,31 @@ describe('keyStatus', () => {
     expect(keyStatus('dkg-automatic', key, null)).toBe('pending')
     expect(keyStatus('dkg-automatic', key, { applicationKey: { x: 1n, y: 7n } })).toBe('fail')
     expect(keyStatus(null, null, null)).toBe('pending')
+  })
+})
+
+describe('metadata', () => {
+  it('passes the committed document and fails another', () => {
+    expect(metadataCheckStatus('matches')).toBe('pass')
+    expect(metadataCheckStatus('differs')).toBe('fail')
+    for (const s of ['loading', 'unreachable', 'not-browsable'] as const) expect(metadataCheckStatus(s)).toBe('pending')
+  })
+
+  it('flags a change made while voting was open', () => {
+    const at = (...flags: Array<boolean | null>) => flags.map((afterStart, i) => ({ afterStart, atCreation: i === 0 }))
+    expect(metadataHistoryStatus(at(false, false))).toBe('pass')
+    // The version set at creation never counts.
+    expect(metadataHistoryStatus([{ afterStart: true, atCreation: true }])).toBe('pass')
+    expect(metadataHistoryStatus(at(false, null))).toBe('pending')
+    expect(metadataHistoryStatus(at(false, null, true))).toBe('attention')
+    // A change seen without its creation event is judged like any other.
+    expect(metadataHistoryStatus([{ afterStart: true, atCreation: false }])).toBe('attention')
+  })
+
+  it('reads the demo histories', () => {
+    const history = (pid: string) => store.processes[processKey(pid)]!.metadataHistory
+    expect(metadataHistoryStatus(history(fixture.featured.metadataBeforeStart))).toBe('pass')
+    expect(metadataHistoryStatus(history(fixture.featured.metadataAfterVotes))).toBe('attention')
+    expect(history(fixture.featured.openProcess)).toHaveLength(1)
   })
 })

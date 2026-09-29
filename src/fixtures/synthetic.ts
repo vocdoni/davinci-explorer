@@ -12,12 +12,17 @@
 //   from the zkVM and from the DKG committee, and a DKG-locked process whose
 //   tally waits for the organizer's reveal.
 //
+// Every process commits to its metadata document by hash, and the fixture
+// serves the exact bytes it hashed; two processes change their document
+// (one before voting opens, one after votes settled) and one URI now serves
+// another document than the committed one.
+//
 // State roots after each transition are the roots of a sparse Merkle tree
 // over the process's vote ids (see `smt.ts`), so the demo sequencers' tracker
 // proofs verify. The blob bytes are generated on demand from the recorded
 // transition data with the real cell encoder.
 
-import type { Address, Hex } from 'viem'
+import { keccak256, sha256, stringToHex, type Address, type Hex } from 'viem'
 import { KNOWN_RELEASES } from '~protocol/releases'
 import { B8, addPoints, type Point } from '~protocol/babyjubjub'
 import { blobCount, blobsDigest, blobsFromCells, transitionCells, versionedHash, type Ciphertext } from '~protocol/blob'
@@ -171,7 +176,8 @@ export interface Fixture {
   store: IndexerStore
   transitionData: Map<string, DemoTransitionData>
   dkg: Map<Hex, DemoDkgApplication>
-  metadata: Map<string, unknown>
+  /** What each metadata URI serves, byte for byte. */
+  metadata: Map<string, Uint8Array>
   sequencers: DemoSequencer[]
   /** Handy entities for docs, tests and the Playwright suite. */
   featured: {
@@ -181,6 +187,12 @@ export interface Fixture {
     multiBlob: { processId: Hex; index: number }
     settledVote: { processId: Hex; voteId: bigint }
     pendingVote: { processId: Hex; voteId: bigint }
+    /** A document replaced before voting opened. */
+    metadataBeforeStart: Hex
+    /** A document replaced after votes had settled. */
+    metadataAfterVotes: Hex
+    /** A URI that serves another document than the committed one. */
+    metadataTampered: Hex
   }
 }
 
@@ -207,6 +219,10 @@ interface Spec {
   /** One transition big enough to need several blobs. */
   bigTransition?: boolean
   organizer: number
+  /** A second metadata version: some days after creation (before voting opens), or right after a transition. */
+  metadataUpdate?: { daysAfterCreation: number } | { afterTransition: number }
+  /** The metadata URI serves another document than the one whose hash is on-chain. */
+  metadataTampered?: boolean
 }
 
 const SPECS: Spec[] = [
@@ -237,6 +253,7 @@ const SPECS: Spec[] = [
     overwriteShare: 0.15,
     end: 'results',
     organizer: 1,
+    metadataTampered: true,
   },
   {
     title: 'Statute reform',
@@ -281,6 +298,7 @@ const SPECS: Spec[] = [
     overwriteShare: 0.1,
     end: 'open',
     organizer: 1,
+    metadataUpdate: { afterTransition: 2 },
   },
   {
     title: 'Union ballot',
@@ -310,6 +328,7 @@ const SPECS: Spec[] = [
     overwriteShare: 0,
     end: 'upcoming',
     organizer: 0,
+    metadataUpdate: { daysAfterCreation: 0.5 },
   },
   {
     title: 'Logo contest',
@@ -373,31 +392,61 @@ const TITLES: Record<string, { es: string; ca: string }> = {
   'Tooling survey': { es: 'Encuesta sobre herramientas', ca: 'Enquesta sobre eines' },
 }
 
+type Localized = { default: string; es: string; ca: string }
+
+/** A sentence a later metadata version adds to the description. */
+const REVISED: Localized = {
+  default: 'Revised: the options now follow the order of the assembly’s agenda.',
+  es: 'Revisado: las opciones siguen ahora el orden del día de la asamblea.',
+  ca: 'Revisat: les opcions segueixen ara l’ordre del dia de l’assemblea.',
+}
+
 /**
  * A process's metadata document, in English (the default), Spanish and
  * Catalan. A preset goes under `meta.electionPreset`, where the SDK keeps it.
+ * `revised` adds a sentence to the description; `swapped` exchanges the
+ * names of the first two options, as a host that edited the file would.
  */
-function metadataDocument(title: string, numFields: number, ballot: DemoBallot) {
+function metadataDocument(
+  title: string,
+  numFields: number,
+  ballot: DemoBallot,
+  { revised = false, swapped = false }: { revised?: boolean; swapped?: boolean } = {}
+) {
   const tr = TITLES[title] ?? { es: title, ca: title }
+  const note = (lang: keyof Localized) => (revised ? ` ${REVISED[lang]}` : '')
+  const position = (i: number) => (swapped && i < 2 ? 1 - i : i) + 1
   return {
     ...(ballot.type === 'budget' ? {} : { meta: { electionPreset: ballot } }),
     title: { default: title, es: tr.es, ca: tr.ca },
     description: {
-      default: `${title}: a synthetic process of the demo network.`,
-      es: `${tr.es}: un proceso sintético de la red de demostración.`,
-      ca: `${tr.ca}: un procés sintètic de la xarxa de demostració.`,
+      default: `${title}: a synthetic process of the demo network.${note('default')}`,
+      es: `${tr.es}: un proceso sintético de la red de demostración.${note('es')}`,
+      ca: `${tr.ca}: un procés sintètic de la xarxa de demostració.${note('ca')}`,
     },
     questions: [
       {
         title: { default: title, es: tr.es, ca: tr.ca },
         choices: Array.from({ length: numFields }, (_, i) => ({
-          title: { default: `Option ${i + 1}`, es: `Opción ${i + 1}`, ca: `Opció ${i + 1}` },
+          title: {
+            default: `Option ${position(i)}`,
+            es: `Opción ${position(i)}`,
+            ca: `Opció ${position(i)}`,
+          },
           value: i,
         })),
       },
     ],
   }
 }
+
+/** The bytes a demo metadata URI serves: pretty-printed JSON and a final newline, as a file on disk would be. */
+function serveJson(doc: unknown): Uint8Array {
+  return new TextEncoder().encode(`${JSON.stringify(doc, null, 2)}\n`)
+}
+
+/** A stable hash for a transaction the fixture makes up without drawing from the random stream. */
+const madeUpTx = (label: string) => keccak256(stringToHex(label))
 
 const ORGANIZERS: Address[] = [
   '0x42fc20654efd78c6887ff0bd1cc50c9ec1dab589',
@@ -464,7 +513,8 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
   const genesis = new Map<Hex, Hex>()
   const transitionData = new Map<string, DemoTransitionData>()
   const dkg = new Map<Hex, DemoDkgApplication>()
-  const metadata = new Map<string, unknown>()
+  const metadata = new Map<string, Uint8Array>()
+  const metadataFeatured: Partial<Record<'before' | 'after' | 'tampered', Hex>> = {}
   const nonces = new Map<Address, bigint>()
   const pendingVotes: DemoSequencerVote[] = []
   let logIndex = 0
@@ -524,6 +574,36 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
     ]
     const createdTx = rng.hex(32)
     emit({ name: 'ProcessCreated', block: createdBlock, tx: createdTx, processId: pid, data: { creator: organizer } })
+
+    // Metadata: the committed document, and what its URI serves.
+    let metadataURI = `https://metadata.example.org/${pid}.json`
+    const committed = serveJson(metadataDocument(spec.title, nf, spec.ballot))
+    let metadataHash = sha256(committed)
+    metadata.set(
+      metadataURI,
+      spec.metadataTampered ? serveJson(metadataDocument(spec.title, nf, spec.ballot, { swapped: true })) : committed
+    )
+    if (spec.metadataTampered) metadataFeatured.tampered = pid
+    emit({
+      name: 'ProcessMetadataUpdated',
+      block: createdBlock,
+      tx: createdTx,
+      processId: pid,
+      data: { metadataURI, metadataHash },
+    })
+    const updateMetadata = (block: number) => {
+      metadataURI = `https://metadata.example.org/${pid}-v2.json`
+      const bytes = serveJson(metadataDocument(spec.title, nf, spec.ballot, { revised: true }))
+      metadataHash = sha256(bytes)
+      metadata.set(metadataURI, bytes)
+      emit({
+        name: 'ProcessMetadataUpdated',
+        block,
+        tx: madeUpTx(`${pid}:metadata:2`),
+        processId: pid,
+        data: { metadataURI, metadataHash },
+      })
+    }
     addTx(createdTx, organizer, createdBlock, {
       functionName: 'newProcess',
       gasUsed: 480_000n,
@@ -552,6 +632,12 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
         ciphertexts: [],
       }
       dkg.set(pid, dkgInfo)
+    }
+
+    const update = spec.metadataUpdate
+    if (update && 'daysAfterCreation' in update) {
+      updateMetadata(createdBlock + Math.floor(update.daysAfterCreation * blocksPerDay))
+      metadataFeatured.before = pid
     }
 
     // Transitions spread over the part of the window that has passed.
@@ -682,6 +768,11 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
         ys,
         kzgProofs: Array.from({ length: nBlobs }, () => rng.hex(48)),
       })
+      if (update && 'afterTransition' in update && update.afterTransition === i) {
+        lastBlock = block + 40
+        updateMetadata(lastBlock)
+        metadataFeatured.after = pid
+      }
       if (nBlobs > 1 && !multiBlob) multiBlob = { processId: pid, index: i }
       if (!settledVote && spec.end === 'open') settledVote = { processId: pid, voteId: voteIds[0]! }
     }
@@ -864,9 +955,6 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
       })
     }
 
-    const metadataURI = `https://metadata.example.org/${pid}.json`
-    metadata.set(metadataURI, metadataDocument(spec.title, nf, spec.ballot))
-
     states.set(pid, {
       status,
       organizer,
@@ -881,6 +969,7 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
       creationBlock: createdBlock,
       batchNumber: nTransitions,
       metadataURI,
+      metadataHash,
       ballotMode,
       census: {
         origin: spec.census,
@@ -974,6 +1063,9 @@ export function buildFixture(options: FixtureOptions = {}): Fixture {
       multiBlob: multiBlob ?? { processId: openProcess, index: 0 },
       settledVote: settledVote ?? { processId: openProcess, voteId: VOTE_ID_MIN },
       pendingVote: pendingVotes[0] ?? { processId: openProcess, voteId: VOTE_ID_MIN },
+      metadataBeforeStart: metadataFeatured.before!,
+      metadataAfterVotes: metadataFeatured.after!,
+      metadataTampered: metadataFeatured.tampered!,
     },
   }
 }

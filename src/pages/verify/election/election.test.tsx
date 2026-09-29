@@ -4,13 +4,15 @@ import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router'
 import { demoFixture } from '~fixtures/demo'
 import { metadataTitle } from '~pages/process/metadata'
+import { readServedDocument } from '~protocol/metadata'
 import { patterns } from '~routes/paths'
 import { renderWithProviders } from '../../../test-utils'
 import { VerifyElectionPage } from '.'
 
 const fixture = demoFixture()
 const openTitle = metadataTitle(
-  fixture.metadata.get(fixture.store.processes[fixture.featured.openProcess]!.state!.metadataURI)
+  readServedDocument(fixture.metadata.get(fixture.store.processes[fixture.featured.openProcess]!.state!.metadataURI)!)
+    .doc
 )!
 
 function renderAt(route: string) {
@@ -58,6 +60,28 @@ describe('VerifyElectionPage', () => {
     await waitFor(() => expect(screen.getByTestId('check-batches')).toHaveAttribute('data-status', 'pass'))
     // Open, so the result is still to come.
     expect(screen.getByTestId('check-published')).toHaveAttribute('data-status', 'pending')
+  })
+
+  it('checks the description against its hash, and flags a change made while voting was open', async () => {
+    const { unmount } = renderAt(`/verify/election/${fixture.featured.openProcess}`)
+    await waitFor(() => expect(screen.getByTestId('check-metadata')).toHaveAttribute('data-status', 'pass'))
+    expect(screen.queryByTestId('check-metadata-history')).toBeNull()
+    unmount()
+
+    const tampered = renderAt(`/verify/election/${fixture.featured.metadataTampered}`)
+    await waitFor(() => expect(screen.getByTestId('check-metadata')).toHaveAttribute('data-status', 'fail'))
+    expect(screen.getByTestId('chosen-election')).toHaveTextContent('unverified')
+    tampered.unmount()
+
+    const after = renderAt(`/verify/election/${fixture.featured.metadataAfterVotes}`)
+    await waitFor(() => expect(screen.getByTestId('check-metadata')).toHaveAttribute('data-status', 'pass'))
+    const history = screen.getByTestId('check-metadata-history')
+    expect(history).toHaveAttribute('data-status', 'attention')
+    expect(history).toHaveTextContent('changed while voting was open')
+    after.unmount()
+
+    renderAt(`/verify/election/${fixture.featured.metadataBeforeStart}`)
+    await waitFor(() => expect(screen.getByTestId('check-metadata-history')).toHaveAttribute('data-status', 'pass'))
   })
 
   it('says when there is no such election', async () => {

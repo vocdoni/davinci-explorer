@@ -117,6 +117,7 @@ export function ensureProcess(store: IndexerStore, id: string, block: number): P
       durationChanges: [],
       maxVotersChanges: [],
       censusUpdates: [],
+      metadataHistory: [],
       results: null,
       decryptionRequest: null,
       events: [],
@@ -231,6 +232,26 @@ function applyOne(store: IndexerStore, ev: IndexedEvent, index: number): void {
       if (s) s.census = { ...s.census, root: ev.data.censusRoot, uri: ev.data.censusURI }
       break
     }
+    case 'ProcessMetadataUpdated': {
+      const { metadataURI: uri, metadataHash: hash } = ev.data
+      p.metadataHistory.push({
+        ...at,
+        logIndex: ev.logIndex,
+        uri,
+        hash,
+        atCreation: ev.tx != null && ev.tx === p.createdTx,
+        afterStart: null,
+        // Events apply in chain order, so the transitions before this one are all in.
+        afterFirstVote: p.transitions.length > 0,
+      })
+      markMetadataTimes(p)
+      const s = newerThanState(p, ev.block)
+      if (s) {
+        s.metadataURI = uri
+        s.metadataHash = hash
+      }
+      break
+    }
     case 'ResultsDecryptionRequested': {
       p.decryptionRequest = { ...at, ...ev.data }
       const s = newerThanState(p, ev.block)
@@ -247,6 +268,22 @@ function applyOne(store: IndexerStore, ev: IndexedEvent, index: number): void {
   }
 }
 
+/**
+ * Whether each metadata version came once voting was open: its block time at
+ * or past the start time (fixed at creation; the registry settles votes from
+ * that second on), or after a settled vote. Null while the block time or the
+ * start time is not known. The version set at creation comes before any
+ * vote by construction, even when the start time is the creation block's.
+ */
+function markMetadataTimes(p: ProcessEntity): void {
+  const start = p.state?.startTime ?? null
+  for (const v of p.metadataHistory) {
+    if (v.atCreation) v.afterStart = false
+    else if (v.afterFirstVote) v.afterStart = true
+    else if (v.timestamp != null && start != null) v.afterStart = v.timestamp >= start
+  }
+}
+
 /** A `getProcess` read at `block`. Older reads than the one held are ignored. */
 export function applyProcessState(store: IndexerStore, id: string, state: ProcessState, block: number): void {
   const p = ensureProcess(store, id, block)
@@ -256,6 +293,7 @@ export function applyProcessState(store: IndexerStore, id: string, state: Proces
   if (state.organizer !== '0x0000000000000000000000000000000000000000') {
     p.organizer = state.organizer.toLowerCase() as Address
   }
+  markMetadataTimes(p)
 }
 
 export function applyGenesisRoot(store: IndexerStore, id: string, root: Hex): void {
@@ -295,11 +333,12 @@ export function applyBlockTimes(store: IndexerStore, times: Record<number, numbe
   for (const key of store.processOrder) {
     const p = store.processes[key]!
     if (p.createdAt == null && times[p.createdBlock] != null) p.createdAt = times[p.createdBlock]!
-    for (const list of [p.statusChanges, p.durationChanges, p.maxVotersChanges, p.censusUpdates]) {
+    for (const list of [p.statusChanges, p.durationChanges, p.maxVotersChanges, p.censusUpdates, p.metadataHistory]) {
       for (const c of list as Array<{ block: number; timestamp: number | null }>) {
         if (c.timestamp == null && times[c.block] != null) c.timestamp = times[c.block]!
       }
     }
+    markMetadataTimes(p)
     if (p.results && p.results.timestamp == null && times[p.results.block] != null) {
       p.results.timestamp = times[p.results.block]!
     }

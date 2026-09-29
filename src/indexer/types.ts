@@ -17,7 +17,7 @@ import type { CensusOriginName, KeyModeName, ProcessStatusName } from '~protocol
 export type { Address, Hex, RegistryEventName }
 
 /** Bumped whenever the shape below changes; a mismatch drops the cache. */
-export const STORE_VERSION = 2
+export const STORE_VERSION = 3
 
 /** `bytes31` process id, lowercase. */
 export type ProcessId = Hex
@@ -40,6 +40,7 @@ export interface EventDataMap {
   ProcessDurationChanged: { duration: number }
   ProcessMaxVotersChanged: { maxVoters: number }
   CensusUpdated: { censusRoot: Hex; censusURI: string }
+  ProcessMetadataUpdated: { metadataURI: string; metadataHash: Hex }
   ResultsDecryptionRequested: { epochId: Hex; aid: Hex; firstIndex: number; count: number }
 }
 
@@ -119,6 +120,8 @@ export interface ProcessState {
   /** Transitions settled so far. */
   batchNumber: number
   metadataURI: string
+  /** SHA-256 of the exact bytes served at `metadataURI`, as the organizer committed it. */
+  metadataHash: Hex
   ballotMode: BallotMode
   census: CensusInfo
   keyMode: KeyModeName
@@ -139,6 +142,29 @@ export interface ValueChange<T> {
   tx: Hex | null
   timestamp: number | null
   value: T
+}
+
+/**
+ * One `ProcessMetadataUpdated`: the document set at creation, or a later
+ * `setProcessMetadata`. The last one is what `getProcess` returns.
+ */
+export interface MetadataVersion {
+  block: number
+  tx: Hex | null
+  logIndex: number
+  timestamp: number | null
+  uri: string
+  /** SHA-256 of the exact bytes served at `uri` (no JSON canonicalisation). */
+  hash: Hex
+  /** Emitted by `newProcess`, in the creation transaction. */
+  atCreation: boolean
+  /**
+   * Set once the voting window was open (block time at or past `startTime`);
+   * null while either is unknown. Never for the version set at creation.
+   */
+  afterStart: boolean | null
+  /** Set after the process's first transition settled. */
+  afterFirstVote: boolean
 }
 
 export interface ResultsEntity {
@@ -177,6 +203,8 @@ export interface ProcessEntity {
   durationChanges: ValueChange<number>[]
   maxVotersChanges: ValueChange<number>[]
   censusUpdates: ValueChange<{ root: Hex; uri: string }>[]
+  /** Every metadata document the process had, oldest first; the last is the current one. */
+  metadataHistory: MetadataVersion[]
   results: ResultsEntity | null
   decryptionRequest: DecryptionRequestEntity | null
   /** Indices into `IndexerStore.events`. */

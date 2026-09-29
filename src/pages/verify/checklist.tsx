@@ -6,7 +6,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { msg, plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { CodeBlock, Disclosure } from '~components/code'
-import { Badge, CheckIcon, CloseIcon, type BadgeTone } from '~kit'
+import { Badge, CheckIcon, CloseIcon, WarningIcon, type BadgeTone } from '~kit'
 import { cn } from '~lib/cn'
 import { ClockIcon, DashIcon } from './icons'
 import { countStatuses, type VerifyStatus } from './status'
@@ -29,6 +29,13 @@ const STATUS: Record<
     rail: 'before:bg-red',
     bar: 'bg-red',
   },
+  attention: {
+    label: msg`Attention`,
+    tone: 'warn',
+    disc: 'border-amber/35 bg-amber/12 text-amber',
+    rail: 'before:bg-amber',
+    bar: 'bg-amber',
+  },
   pending: {
     label: msg`Pending`,
     tone: 'info',
@@ -45,7 +52,7 @@ const STATUS: Record<
   },
 }
 
-/** The round status mark of a check: ✓, ✗, a clock or a dash, with its name for screen readers. */
+/** The round status mark of a check: ✓, ✗, a warning sign, a clock or a dash, with its name for screen readers. */
 export function StatusDisc({ status, size = 'md' }: { status: VerifyStatus; size?: 'sm' | 'md' }) {
   const { i18n } = useLingui()
   const s = STATUS[status]
@@ -64,6 +71,8 @@ export function StatusDisc({ status, size = 'md' }: { status: VerifyStatus; size
         <CheckIcon size={icon} />
       ) : status === 'fail' ? (
         <CloseIcon size={icon} />
+      ) : status === 'attention' ? (
+        <WarningIcon size={icon} />
       ) : status === 'pending' ? (
         <ClockIcon size={icon} />
       ) : (
@@ -198,10 +207,12 @@ export function ChecklistSummary({ statuses, testId }: { statuses: VerifyStatus[
   const c = countStatuses(statuses)
   const total = statuses.length
   const applicable = total - c.na
-  const decided = c.pass + c.fail
-  const overall: VerifyStatus = c.fail > 0 ? 'fail' : c.pending > 0 ? 'pending' : c.pass > 0 ? 'pass' : 'na'
+  const decided = c.pass + c.fail + c.attention
+  const overall: VerifyStatus =
+    c.fail > 0 ? 'fail' : c.pending > 0 ? 'pending' : c.attention > 0 ? 'attention' : c.pass > 0 ? 'pass' : 'na'
   const pass = c.pass
   const fail = c.fail
+  const attention = c.attention
   const pending = c.pending
   const na = c.na
   const text =
@@ -209,11 +220,13 @@ export function ChecklistSummary({ statuses, testId }: { statuses: VerifyStatus[
       ? t`${plural(fail, { one: '# check failed', other: '# checks failed' })}, of ${applicable} that apply.`
       : overall === 'pending'
         ? t`${decided} of ${applicable} checks decided so far; the others are still being read or wait for something to happen.`
-        : overall === 'pass'
-          ? pass === applicable && na === 0
-            ? t`${plural(pass, { one: 'The check passed.', other: 'All # checks passed.' })}`
-            : t`${plural(pass, { one: 'The check that applies passed.', other: 'All # checks that apply passed.' })}`
-          : t`None of these checks applies yet.`
+        : overall === 'attention'
+          ? t`${plural(attention, { one: 'Nothing failed, but # check needs your attention.', other: 'Nothing failed, but # checks need your attention.' })}`
+          : overall === 'pass'
+            ? pass === applicable && na === 0
+              ? t`${plural(pass, { one: 'The check passed.', other: 'All # checks passed.' })}`
+              : t`${plural(pass, { one: 'The check that applies passed.', other: 'All # checks that apply passed.' })}`
+            : t`None of these checks applies yet.`
   return (
     <div
       data-testid={testId}
@@ -226,14 +239,20 @@ export function ChecklistSummary({ statuses, testId }: { statuses: VerifyStatus[
       </div>
       <div className='flex shrink-0 flex-col gap-1.5 sm:w-64'>
         <div className='flex h-1.5 overflow-hidden rounded-pill bg-onyx' aria-hidden='true'>
-          {(['pass', 'fail', 'pending', 'na'] as const).map((s) =>
+          {(['pass', 'attention', 'fail', 'pending', 'na'] as const).map((s) =>
             c[s] > 0 ? <span key={s} className={STATUS[s].bar} style={{ width: `${(c[s] / total) * 100}%` }} /> : null
           )}
         </div>
         <p className='text-[11px] text-ash'>
-          <Trans>
-            {pass} passed · {fail} failed · {pending} pending · {na} not applicable
-          </Trans>
+          {attention > 0 ? (
+            <Trans>
+              {pass} passed · {attention} to note · {fail} failed · {pending} pending · {na} not applicable
+            </Trans>
+          ) : (
+            <Trans>
+              {pass} passed · {fail} failed · {pending} pending · {na} not applicable
+            </Trans>
+          )}
         </p>
       </div>
     </div>

@@ -4,15 +4,14 @@ import { msg, plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { CensusOriginBadge, CheckMark, Explain, Timestamp, TxLink } from '~components'
 import { useChain, type ProcessView } from '~data/hooks'
-import { useJsonDocument } from '~data/queries'
-import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar, SkeletonText, UriLink } from '~kit'
+import { Address, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar, SkeletonText, UriLink } from '~kit'
 import { formatDuration, formatNumber, formatTimestamp } from '~lib/format'
 import { NUM_FIELDS } from '~protocol/limits'
+import { browsableUri } from '~protocol/metadata'
 import { parseProcessId } from '~protocol/process-id'
 import { CENSUS_ORIGIN_INFO, type CensusOriginName } from '~protocol/types'
 import { describeBallotMode } from '../ballot-mode'
-import { toJson } from '../json'
-import { browsableUri, fetchableUri, metadataChoices, metadataDescription, metadataTitle } from '../metadata'
+import { MetadataPanel } from '../MetadataPanel'
 
 /** Result cap of `newProcess`: maxValue ≤ 10^12 / maxVoters. */
 const MAX_POSSIBLE_RESULT = 1_000_000_000_000n
@@ -66,7 +65,7 @@ export function OverviewTab({ view }: { view: ProcessView }) {
         <ProcessIdPanel view={view} />
       </div>
       <div className='min-w-0 lg:col-span-2'>
-        <MetadataPanel uri={s.metadataURI} numFields={s.ballotMode.numFields} />
+        <MetadataPanel view={view} />
       </div>
     </div>
   )
@@ -456,71 +455,6 @@ function ProcessIdPanel({ view }: { view: ProcessView }) {
           },
         ]}
       />
-    </Panel>
-  )
-}
-
-function MetadataPanel({ uri, numFields }: { uri: string; numFields: number }) {
-  const { t } = useLingui()
-  const doc = useJsonDocument(fetchableUri(uri))
-  const title = metadataTitle(doc.data)
-  const description = metadataDescription(doc.data)
-  const choices = metadataChoices(doc.data, numFields)
-  // The failure as it came (an HTTP status, a parse error), inside a translated sentence.
-  const detail = doc.error instanceof Error ? doc.error.message : String(doc.error)
-  return (
-    <Panel
-      title={t`Metadata`}
-      label={t`Published by the organizer`}
-      description={t`The registry stores only this URI. The document (title, questions, options) is not verified on-chain; read it as the organizer’s description.`}
-    >
-      <KeyValue items={[{ label: t`Metadata URI`, value: <Uri uri={uri} label={t`Open the document`} /> }]} />
-      <div className='mt-3' data-testid='process-metadata'>
-        {!uri ? (
-          <p className='text-[13px] text-ash'>
-            <Trans>This process has no metadata document.</Trans>
-          </p>
-        ) : !fetchableUri(uri) ? (
-          <p className='text-[13px] text-ash'>
-            <Trans>
-              A browser cannot fetch this URI (only http, https and ipfs are read), so the explorer does not show it.
-            </Trans>
-          </p>
-        ) : doc.isLoading ? (
-          <SkeletonText lines={3} />
-        ) : doc.error ? (
-          <Callout tone='warn' title={t`Could not read the metadata`}>
-            <Trans>{detail}. It may be offline, block cross-origin requests, or not be JSON.</Trans>
-          </Callout>
-        ) : doc.data !== undefined ? (
-          <div className='flex flex-col gap-3'>
-            {title ? <div className='text-[15px] font-semibold text-ghost'>{title}</div> : null}
-            {description ? <p className='text-[13px] leading-relaxed text-ash'>{description}</p> : null}
-            {choices ? (
-              <div className='flex flex-wrap gap-2'>
-                {choices.map((choice, i) => {
-                  const position = i + 1
-                  return (
-                    <Badge key={i}>
-                      <Trans>
-                        field {position}: {choice}
-                      </Trans>
-                    </Badge>
-                  )
-                })}
-              </div>
-            ) : null}
-            <details className='rounded-sm border border-charcoal'>
-              <summary className='cursor-pointer px-3 py-2 text-[13px] text-pewter hover:text-ghost'>
-                <Trans>The document as JSON</Trans>
-              </summary>
-              <pre className='max-h-80 overflow-auto border-t border-charcoal p-3 text-[11px] leading-relaxed text-silver scroll-slim'>
-                {toJson(doc.data)}
-              </pre>
-            </details>
-          </div>
-        ) : null}
-      </div>
     </Panel>
   )
 }

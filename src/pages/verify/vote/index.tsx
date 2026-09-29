@@ -5,12 +5,12 @@ import { CodeBlock, Disclosure } from '~components/code'
 import { Formula } from '~components/Formula'
 import { useRuntimeConfig } from '~config/config-context'
 import { useChain, useIndexer, useProcess, useTransition, type ProcessView } from '~data/hooks'
-import { useJsonDocument, useTrackerProof, useTransitionBlobs, useVoteInclusion, useVoteStatus } from '~data/queries'
+import { useMetadataCheck, useTrackerProof, useTransitionBlobs, useVoteInclusion, useVoteStatus } from '~data/queries'
 import { useServices } from '~data/context'
 import { Callout } from '~kit'
 import { formatNumber } from '~lib/format'
 import { publicRpc } from '~pages/contracts/model'
-import { fetchableUri, metadataTitle } from '~pages/process/metadata'
+import { changedWhileOpen, metadataTitle } from '~pages/process/metadata'
 import { useDkgResultsChecks, useSequencerResultsChecks } from '~pages/process/results-checks'
 import { observerCommand } from '~pages/transition/commands'
 import { formatVoteId } from '~protocol/blob'
@@ -20,12 +20,12 @@ import { batchChecks } from '../batch'
 import { ChecklistSummary } from '../checklist'
 import { FlowFrame, FlowSection, Prose, ProvesPanel } from '../frame'
 import { BallotIcon } from '../icons'
-import { stepStates, type StepId, type StepState, type VerifyStatus } from '../status'
+import { stepStates, type StepId, type StepState } from '../status'
 import { WHO_CAN_DECRYPT } from '../words'
 import { BatchCard, ElectionCard, ResultCard, SettledCard, TrackerCard } from './checks'
 import { LookupForm } from './LookupForm'
 import { validateLookup } from './lookup'
-import { batchOutcome, chainFrom, resultOutcome, settledOutcome, trackerOutcome } from './model'
+import { batchOutcome, chainFrom, electionOutcome, resultOutcome, settledOutcome, trackerOutcome } from './model'
 
 /**
  * Verify → My vote (`/verify/vote?pid=&voteId=`): was this vote counted?
@@ -152,11 +152,16 @@ function VoteChecks({ pid, voteId, choose }: { pid: string; voteId: bigint; choo
   const blobs = useTransitionBlobs(pid, found?.index, { enabled: found != null })
   const sequencerResults = useSequencerResultsChecks(view)
   const dkgResults = useDkgResultsChecks(view)
-  const metadata = useJsonDocument(fetchableUri(view?.process.state?.metadataURI))
-  const title = metadataTitle(metadata.data)
+  const metadata = useMetadataCheck(view?.process.state?.metadataURI, view?.process.state?.metadataHash)
+  const title = metadataTitle(metadata.doc)
 
   const indexing = indexer.phase === 'idle' || indexer.phase === 'loading' || indexer.scanning
-  const election: VerifyStatus = known ? 'pass' : indexing ? 'pending' : 'fail'
+  const election = electionOutcome({
+    found: known,
+    indexing,
+    metadata: metadata.status,
+    changedWhileOpen: view?.process.metadataHistory.some(changedWhileOpen) ?? false,
+  })
   const reported = statuses.flatMap((s) => (s.status.data ? [s.status.data.status] : []))
   const settled = settledOutcome(known, inclusion, view?.transitions.length ?? 0, reported)
   const checks = detail
@@ -206,7 +211,14 @@ function VoteChecks({ pid, voteId, choose }: { pid: string; voteId: bigint; choo
         <div className='flex flex-col gap-4'>
           <ChecklistSummary statuses={all} testId='vote-summary' />
           <ul className='flex flex-col gap-3' data-testid='vote-checks'>
-            <ElectionCard pid={pid} view={view} status={election} title={title} registry={chain.registryAddress} />
+            <ElectionCard
+              pid={pid}
+              view={view}
+              status={election}
+              title={title}
+              metadata={metadata}
+              registry={chain.registryAddress}
+            />
             <SettledCard
               pid={pid}
               settled={settled}

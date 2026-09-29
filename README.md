@@ -158,7 +158,9 @@ branch name; a release tag `vX.Y.Z` publishes `:vX.Y.Z` and moves
 runs the whole app off `src/fixtures/synthetic.ts`: ten processes covering
 every status, key mode and census origin, 84 transitions (one of them
 spread over four blobs), results from the zkVM and from a DKG committee,
-a DKG-locked process waiting for its organizer's reveal, two fake sequencers
+a DKG-locked process waiting for its organizer's reveal, metadata documents
+bound to their on-chain hashes (one replaced before voting opened, one while
+it was open, one whose URI now serves another document), two fake sequencers
 and generated blobs. It makes no network request and needs no
 `config.json`. The unit tests and the Playwright suite use it.
 

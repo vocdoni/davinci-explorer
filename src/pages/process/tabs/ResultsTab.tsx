@@ -3,15 +3,15 @@ import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
-import { CheckMark, Explain, Timestamp, TxLink } from '~components'
+import { CheckMark, Explain, Timestamp, TxLink, UnverifiedMark } from '~components'
 import type { ProcessView } from '~data/hooks'
-import { useJsonDocument } from '~data/queries'
+import { useMetadataCheck } from '~data/queries'
 import type { CheckState } from '~indexer/selectors'
 import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, SkeletonText } from '~kit'
 import { formatNumber, formatPercent } from '~lib/format'
 import type { KeyModeName } from '~protocol/types'
 import { describeBallotMode } from '../ballot-mode'
-import { fetchableUri, metadataChoices } from '../metadata'
+import { changedWhileOpen, metadataChoices } from '../metadata'
 import { useDkgResultsChecks, useSequencerResultsChecks } from '../results-checks'
 import { tallyRows } from '../tally'
 import { paths } from '~routes/paths'
@@ -95,8 +95,12 @@ function TallyPanel({ view }: { view: ProcessView }) {
   const { t } = useLingui()
   const s = view.process.state!
   const results = view.process.results!
-  const metadata = useJsonDocument(fetchableUri(s.metadataURI))
-  const labels = metadataChoices(metadata.data, s.ballotMode.numFields)
+  const metadata = useMetadataCheck(s.metadataURI, s.metadataHash)
+  // Option names only from the committed document; another document's names are shown beside, as unverified.
+  const named = metadataChoices(metadata.doc, s.ballotMode.numFields)
+  const labels = metadata.status === 'matches' ? named : null
+  const unverified = metadata.status === 'differs' ? named : null
+  const changed = view.process.metadataHistory.some(changedWhileOpen)
   const rows = tallyRows(results.values, labels)
   const voters = view.row.votersCount
   const sum = formatNumber(results.values.reduce((a, v) => a + v, 0n))
@@ -123,13 +127,22 @@ function TallyPanel({ view }: { view: ProcessView }) {
       <ul className='flex flex-col gap-3' data-testid='tally'>
         {rows.map((r) => {
           const position = r.field + 1
+          const name = unverified?.[r.field]
           return (
             <li key={r.field} className='grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1'>
-              <span className='truncate text-[13px] text-silver'>
-                {r.label}
+              <span className='flex min-w-0 items-center gap-2 text-[13px] text-silver'>
+                <span className='truncate'>{r.label}</span>
                 {labels ? (
-                  <span className='ml-2 font-mono text-[11px] text-ash'>
+                  <span className='font-mono text-[11px] text-ash'>
                     <Trans>field {position}</Trans>
+                  </span>
+                ) : null}
+                {unverified ? (
+                  <span className='flex min-w-0 items-center gap-1 text-[12px] text-ash' data-testid='unverified-label'>
+                    <span className='truncate italic'>
+                      <Trans>“{name}”</Trans>
+                    </span>
+                    <UnverifiedMark compact />
                   </span>
                 ) : null}
               </span>
@@ -151,10 +164,30 @@ function TallyPanel({ view }: { view: ProcessView }) {
         {labels ? (
           <>
             {' '}
-            <Trans>Option names come from the organizer’s metadata, which the chain does not check.</Trans>
+            <Trans>Option names come from the organizer’s metadata document, whose hash is committed on-chain.</Trans>
+          </>
+        ) : unverified ? (
+          <>
+            {' '}
+            <Trans>
+              The names in quotes come from a document that does not match the hash committed on-chain, so each total is
+              shown by its field number instead.
+            </Trans>
           </>
         ) : null}
       </p>
+      {changed ? (
+        <p className='mt-2 text-xs leading-relaxed text-amber' data-testid='tally-metadata-changed'>
+          <Trans>
+            The organizer changed the description while voting was open, so votes cast before the change were cast under
+            the previous version and its option names. Every version is in the metadata history on the{' '}
+            <Link to={paths.process(view.process.id)} className='underline underline-offset-2 hover:text-emerald'>
+              Overview
+            </Link>{' '}
+            tab.
+          </Trans>
+        </p>
+      ) : null}
     </Panel>
   )
 }

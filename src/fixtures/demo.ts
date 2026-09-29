@@ -244,8 +244,9 @@ export function createDemoServices(fixture: Fixture = demoFixture()): ExplorerSe
       }
       return view
     },
-    async fetchJson(url) {
-      if (fixture.metadata.has(url)) return fixture.metadata.get(url)
+    async fetchBytes(url) {
+      const bytes = fixture.metadata.get(url)
+      if (bytes) return bytes.slice()
       throw new ServiceError(`${url}: not part of the demo network`)
     },
   }

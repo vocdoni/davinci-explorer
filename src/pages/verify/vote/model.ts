@@ -3,8 +3,24 @@
 
 import type { VoteInclusion } from '~data/queries'
 import type { CheckState, RootChain } from '~indexer/selectors'
+import type { MetadataStatus } from '~protocol/metadata'
 import type { VoteStatus } from '~protocol/sequencer-api'
 import { combine, fromCheckState, type VerifyStatus } from '../status'
+
+/**
+ * The election exists; it needs attention when its description is not the
+ * committed one, or was changed while voting was open. Still looking while
+ * the indexer reads, then not found.
+ */
+export function electionOutcome(input: {
+  found: boolean
+  indexing: boolean
+  metadata: MetadataStatus
+  changedWhileOpen: boolean
+}): VerifyStatus {
+  if (!input.found) return input.indexing ? 'pending' : 'fail'
+  return input.metadata === 'differs' || input.changedWhileOpen ? 'attention' : 'pass'
+}
 
 export type SettledReason =
   'found' | 'no-election' | 'no-batches' | 'reading' | 'waiting' | 'refused' | 'not-found' | 'unreadable'

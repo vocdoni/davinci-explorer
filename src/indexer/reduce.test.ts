@@ -92,6 +92,7 @@ function state(overrides: Partial<ProcessState> = {}): ProcessState {
     creationBlock: 100,
     batchNumber: 0,
     metadataURI: '',
+    metadataHash: root(0),
     ballotMode: {
       uniqueValues: false,
       numFields: 2,
@@ -216,6 +217,68 @@ describe('applyEvents', () => {
     const store = createEmptyStore({ chainId: 100, registryAddress: REGISTRY, startBlock: 50 })
     applyEvents(store, [transitioned(110, 0, 1, 2, 1, 0)])
     expect(store.processes[PID]!.organizer).toBe('0x42fc20654efd78c6887ff0bd1cc50c9ec1dab589')
+  })
+})
+
+describe('metadata history', () => {
+  const metadata = (block: number, logIndex: number, n: number, timestamp: number | null): IndexedEvent => ({
+    name: 'ProcessMetadataUpdated',
+    block,
+    tx: tx(block),
+    logIndex,
+    timestamp,
+    processId: PID,
+    data: { metadataURI: `https://meta.example/v${n}.json`, metadataHash: root(0x100 + n) },
+  })
+
+  it('keeps every version, flags the ones after the start and after the first vote', () => {
+    const store = createEmptyStore({ chainId: 100, registryAddress: REGISTRY, startBlock: 50 })
+    const [created, ...rest] = baseEvents()
+    // Created at 1 000 with the first version; v2 before voting opens, v3 once it has, v4 after a settled vote.
+    applyEvents(store, [created!, metadata(100, 1, 1, 1_000), metadata(104, 0, 2, 1_010), metadata(106, 0, 3, null)])
+    const p = store.processes[PID]!
+    expect(p.metadataHistory.map((v) => v.atCreation)).toEqual([true, false, false])
+    expect(p.metadataHistory.map((v) => v.afterStart)).toEqual([false, null, null])
+    applyProcessState(store, PID, state({ startTime: 1_020, metadataURI: 'https://meta.example/v3.json' }), 107)
+    expect(p.metadataHistory.map((v) => v.afterStart)).toEqual([false, false, null])
+    // At the start second the registry already settles votes.
+    applyBlockTimes(store, { 106: 1_020 })
+    expect(p.metadataHistory[2]).toMatchObject({ timestamp: 1_020, afterStart: true, afterFirstVote: false })
+
+    applyEvents(store, [...rest, metadata(125, 0, 4, 1_300)])
+    const v4 = p.metadataHistory[3]!
+    expect(v4).toMatchObject({ uri: 'https://meta.example/v4.json', hash: root(0x104), afterFirstVote: true })
+    expect(v4.afterStart).toBe(true)
+    // The event updates a state read before it.
+    expect(p.state!.metadataURI).toBe('https://meta.example/v4.json')
+    expect(p.state!.metadataHash).toBe(root(0x104))
+  })
+
+  it('never flags the version set at creation, even when voting opens in that block', () => {
+    const store = createEmptyStore({ chainId: 100, registryAddress: REGISTRY, startBlock: 50 })
+    applyEvents(store, [baseEvents()[0]!, metadata(100, 1, 1, 1_000)])
+    applyProcessState(store, PID, state({ startTime: 1_000 }), 101)
+    expect(store.processes[PID]!.metadataHistory[0]).toMatchObject({ atCreation: true, afterStart: false })
+  })
+
+  it('judges a version seen without its creation like any change', () => {
+    const store = createEmptyStore({ chainId: 100, registryAddress: REGISTRY, startBlock: 50 })
+    applyEvents(store, [metadata(130, 0, 2, 2_000)])
+    applyProcessState(store, PID, state({ startTime: 1_500 }), 131)
+    expect(store.processes[PID]!.metadataHistory[0]).toMatchObject({ atCreation: false, afterStart: true })
+  })
+
+  it('reads the event from a decoded log', () => {
+    const ev = normalizeLog({
+      eventName: 'ProcessMetadataUpdated',
+      args: { processId: PID, metadataURI: 'ipfs://bafy', metadataHash: `0x${'AB'.repeat(32)}` },
+      blockNumber: 10n,
+      logIndex: 2,
+    })
+    expect(ev?.name === 'ProcessMetadataUpdated' && ev.data).toEqual({
+      metadataURI: 'ipfs://bafy',
+      metadataHash: `0x${'ab'.repeat(32)}`,
+    })
   })
 })
 

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
-import { KeyModeBadge, ProcessPhaseBadge } from '~components'
+import { KeyModeBadge, ProcessPhaseBadge, UnverifiedMark } from '~components'
 import { useIndexer, useProcesses } from '~data/hooks'
 import { Button, Card, EmptyState, Input, SearchIcon, SkeletonText } from '~kit'
 import { formatDate, formatNumber } from '~lib/format'
@@ -25,7 +25,9 @@ export function ProcessPicker() {
   const matches = useMemo(
     () =>
       q
-        ? rows.filter((r) => r.id.includes(q) || r.organizer.includes(q) || titles.get(r.id)?.toLowerCase().includes(q))
+        ? rows.filter(
+            (r) => r.id.includes(q) || r.organizer.includes(q) || titles.get(r.id)?.title.toLowerCase().includes(q)
+          )
         : rows,
     [rows, titles, q]
   )
@@ -69,7 +71,7 @@ export function ProcessPicker() {
       ) : (
         <ul className='divide-y divide-charcoal'>
           {shown.map((r) => {
-            const title = titles.get(r.id)
+            const named = titles.get(r.id)
             const created = r.createdAt != null ? formatDate(r.createdAt) : null
             const ballots = r.votersCount + r.overwrittenVotesCount
             return (
@@ -80,8 +82,11 @@ export function ProcessPicker() {
                   className='group flex items-center gap-4 px-4 py-3 transition-colors hover:bg-onyx sm:px-5'
                 >
                   <span className='min-w-0 flex-1'>
-                    <span className='block truncate text-[14px] font-medium text-ghost group-hover:text-emerald'>
-                      {title ?? t`Untitled election`}
+                    <span className='flex min-w-0 items-center gap-2'>
+                      <span className='truncate text-[14px] font-medium text-ghost group-hover:text-emerald'>
+                        {named?.title ?? t`Untitled election`}
+                      </span>
+                      {named && !named.verified ? <UnverifiedMark focusable={false} /> : null}
                     </span>
                     <span className='mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-ash'>
                       <span className='font-mono'>

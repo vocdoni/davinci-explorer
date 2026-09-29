@@ -169,6 +169,15 @@ export const GLOSSARY: GlossaryEntry[] = [
     text: msg`A 48-byte commitment to a blob’s polynomial. The versioned hash is derived from it, and the point-evaluation precompile checks an opening of the blob against it.`,
   },
   {
+    id: 'metadata-hash',
+    term: msg`Metadata hash`,
+    text: msg({
+      message:
+        'The SHA-256 of the exact bytes of a process’s metadata document, the file with its title, question and option names. The registry stores it as `metadataHash` beside the document’s address, so anyone can download the document and compare: one changed byte, even a space, gives another hash. The organizer can publish a new version until the end; each one is a `ProcessMetadataUpdated` event.',
+    }),
+    see: { label: msg`How a process is created`, to: `${paths.learn('how-it-works')}#1-a-process-is-created` },
+  },
+  {
     id: 'observer',
     term: msg`Observer`,
     text: msg`A sequencer node without a key: it follows every process, replays every transition from its blobs and serves reads and tracker proofs, but never settles.`,
@@ -182,7 +191,7 @@ export const GLOSSARY: GlossaryEntry[] = [
   {
     id: 'organizer',
     term: msg`Organizer`,
-    text: msg`The account that created a process. Only it can change the process’s status, extend its duration, change its voter limit or, for an updatable census, replace the census.`,
+    text: msg`The account that created a process. Only it can change the process’s status, extend its duration, change its voter limit, publish a new version of its metadata document before the end or, for an updatable census, replace the census.`,
   },
   {
     id: 'organizer-secret',

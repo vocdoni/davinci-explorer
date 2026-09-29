@@ -55,8 +55,11 @@ Build every link with `paths` from `~routes/paths` (`paths.process(pid, 'results
 The Verify flows share one frame (`pages/verify/frame.tsx`: the stepper
 1 Choose · 2 Check · 3 Redo it yourself, numbered sections, "What this
 proves, and what it doesn't") and one checklist (`checklist.tsx`): a card per
-check with a `VerifyStatus` (`pass`, `fail`, `pending`, `na`), one plain
-sentence, and "How this is checked" with the values compared and the command.
+check with a `VerifyStatus` (`pass`, `fail`, `attention`, `pending`, `na`),
+one plain sentence, and "How this is checked" with the values compared and
+the command. `attention` is amber: nothing failed, but the reader should know
+something (the organizer changed the description while voting was open);
+keep `fail` for real failures.
 Each flow computes its outcomes in a pure, tested `model.ts` from the
 selectors (`transitionDetail(...).checks` through `batchChecks`, `rootChain`)
 and the results checks the process's results tab shows
@@ -96,8 +99,9 @@ branch on demo mode; read `useRuntimeConfig().demo` only to explain things
 (the shell already shows a demo banner).
 
 **Services** (`src/data/services.ts`) are the reads that do not belong in the
-store: blob bytes, sequencer APIs, DKG application state, metadata
-documents. Pages reach them through the hooks in `~data/queries`.
+store: blob bytes, sequencer APIs, DKG application state, the bytes of
+metadata documents (`fetchBytes`). Pages reach them through the hooks in
+`~data/queries`.
 
 ## Store entities
 
@@ -106,10 +110,20 @@ are numbers; field elements, tallies and wei are `bigint`; hex is lowercase.
 
 | Entity | Key | Holds |
 |---|---|---|
-| `ProcessEntity` | pid (bytes31) | organizer, creation block/tx/time, `state` (the normalised `getProcess`: status, key mode, ballot mode, census, key, times, counters, root, result, DKG info) and the block it was read at, `genesisRoot`, transition keys, status / duration / max-voters / census changes, `results` (`ProcessResultsSet`), `decryptionRequest` (`ResultsDecryptionRequested`), event indices |
+| `ProcessEntity` | pid (bytes31) | organizer, creation block/tx/time, `state` (the normalised `getProcess`: status, key mode, ballot mode, census, key, times, counters, root, result, `metadataURI` and `metadataHash`, DKG info) and the block it was read at, `genesisRoot`, transition keys, status / duration / max-voters / census changes, `metadataHistory` (below), `results` (`ProcessResultsSet`), `decryptionRequest` (`ResultsDecryptionRequested`), event indices |
 | `TransitionEntity` | `pid:index` | 0-based index (the sequencer API's), block, tx, time, sender, roots before and after, process totals after, `newVoters` and `overwrites` of this batch, `nBlobs` |
 | `TxDetails` | tx hash | from, status, gas, blob gas, `fee` (gas·price + blob gas·blob price), `blobVersionedHashes` (null when the RPC omits it), calldata size, the decoded `publicValues`, `proofBytes`, `commitments`, `ys`, `kzgProofs`; `initialCensusRoot` for `newProcess` |
 | `ChainMeta` | | chain id, network name, registry, start block, head block and time, block time, `registry` (immutables: program vks, `rootCVadcopFinal`, `ballotVKHash`, `ziskVerifier` and its runtime code hash, `dkgAdapter` → DKG manager and app manager, `chainID`, `pidPrefix`, `processCount`) |
+
+`metadataHistory` is every `ProcessMetadataUpdated`, oldest first: the
+document set at creation, then each `setProcessMetadata`. A `MetadataVersion`
+holds the URI, the hash, block, tx, time, `atCreation` (emitted in the
+creation transaction), `afterStart` (its block time is at or past the start
+time, when the registry starts settling votes; null while either is unknown;
+never for the creation version) and `afterFirstVote` (a transition had
+settled before it). The last one is what `getProcess` returns.
+`changedWhileOpen(version)` (`pages/process/metadata.ts`) is the flag the
+pages show in amber.
 
 A process's on-chain status stays `ready` after its end time until someone
 ends it or posts results. `processPhase` (below) combines status and clock:
@@ -147,9 +161,37 @@ On-demand hooks (`~data/queries`, TanStack Query; `data`, `isLoading`,
 | `useTrackerProof(pid, voteId)` | the first tracker proof a sequencer serves, checked in the browser: `valid` (the path from the requested vote id's leaf reaches its root; an answer naming another vote id or process is invalid and sets `otherVote`) and `rootOnChain` (that root is one the registry held for the process); `null` when no sequencer knows the vote |
 | `useSequencers()` | per configured sequencer: its `/info` and process list, polled |
 | `useDkgApplication(pid)` | DKG-mode processes: epoch, aid, pool index and key, organizer key and whether its secret was revealed, the application key, and each submitted ciphertext's combine state |
-| `useJsonDocument(url)` | a JSON document, e.g. `state.metadataURI` (`ipfs://` goes through a public gateway) |
+| `useMetadataCheck(uri, hash)` | a process's metadata document checked against its on-chain hash (below): `{ status, uri, committed, served, error, doc }` |
 | `useDeploymentDetails()` (`~data/deployment`) | the reads the indexer doesn't make: the verifier's root, the DKG manager's immutables, verifiers and cadence, the newest epoch, the adapter and app-manager links, DKG registry counts |
 | `useSequencerProcessViews(...)` (`~data/sequencer-processes`) | each configured sequencer's `GET /processes/{pid}`, one page at a time |
+
+## The metadata check
+
+The chain knows a ballot only as numbers in fields; the title, the question
+and what each field stands for are in the organizer's metadata document. The
+registry stores the document's URI and `metadataHash`, the SHA-256 of the
+exact bytes served there (no JSON canonicalisation). `useMetadataCheck`
+downloads the raw bytes (http(s), or `ipfs://` through the same public
+gateway as the links), hashes them in the browser (`readServedDocument` in
+`~protocol/metadata`) and parses the JSON from those same bytes, so the text a
+page shows is the text that was checked. The committed hash is part of the
+query key: a new version at the same URI is downloaded again.
+
+| `status` | Meaning |
+|---|---|
+| `matches` | the bytes hash to the current `metadataHash` |
+| `differs` | they hash to something else; `doc` is still what was served |
+| `unreachable` | the download failed (`error`: an HTTP status, a network or CORS error) |
+| `not-browsable` | not an http(s) or ipfs URI, so a browser cannot fetch it |
+| `loading` | the process is not read yet, or the download is running |
+
+Only `matches` makes the document's text the organizer's. With `differs` the
+process header, `ProcessName` (the processes list and the sequencer pages),
+the pickers and the Verify flows show the title with `UnverifiedMark`, and the
+results tab names each total by its field, with the document's names beside
+it as unverified. `metadataHashCommand` and `metadataHistoryCommand`
+(`pages/transition/commands.ts`) are the terminal version: `curl` into
+`sha256sum` against `getProcess`, and the `ProcessMetadataUpdated` log.
 
 ## Selectors and decoders
 
@@ -187,6 +229,9 @@ Pure functions, unit-tested; use them directly when a hook does not fit.
   votes, overwrites and silent refreshes are all "slot updates": the blob
   cannot tell them apart, on purpose.
 - `~protocol/calldata`: `decodeRegistryCall` / `decodeStateTransitionCall`.
+- `~protocol/metadata`: `readServedDocument` (hash and parse the same bytes),
+  `metadataStatus`, `sameHash`, `browsableUri` / `fetchableUri` (which URIs a
+  browser can open and fetch).
 - `~protocol/tracker`: `verifyTracker` (port of the sequencer client's).
 - `~protocol/babyjubjub`: point arithmetic, packing, and the DKG key forms
   (`reducedToCircom`, `circomToReduced`: the registry stores a DKG key in
@@ -237,7 +282,8 @@ it in both themes after a design change.
 `CensusOriginBadge` (each with its explanation on hover), `ProcessIdLink`,
 `TxLink` (in-app `/tx/:hash` plus the block explorer), `Timestamp` (UTC, and
 "5 min ago" against the chain head), `NativeAmount` (wei in xDAI/ETH),
-`CheckMark` (pass / fail / unknown), `Formula` (a formula in the mono font,
+`CheckMark` (pass / fail / unknown), `UnverifiedMark` (the red mark beside
+organizer text from a document that does not match its hash), `Formula` (a formula in the mono font,
 its parts coloured, `||` as ‖), `Explain` (the "what is this" info
 glyph), `MissingEntity` (skeleton until the first poll, then "not found"),
 `CodeBlock` (a command with a copy button) and `HashLink`. Link to a section
@@ -279,7 +325,12 @@ formatters, memoised rows) follows it. The patterns, with examples, are in
 key, on-chain census), `resultsProcess` (zkVM results), `awaitingReveal`
 (DKG-locked, tally submitted, secret not revealed), `multiBlob` (a
 transition over four blobs), `settledVote` (a vote id with a tracker proof
-that verifies) and `pendingVote`. Roots after each transition are the roots
+that verifies), `pendingVote`, and three metadata cases:
+`metadataBeforeStart` (a second version set before voting opened),
+`metadataAfterVotes` (one set after votes had settled, flagged) and
+`metadataTampered` (the URI serves another document than the committed one).
+`fixture.metadata` holds the bytes each URI serves, and every other process's
+hash is the SHA-256 of those bytes. Roots after each transition are the roots
 of a vote-id tree (`smt.ts`), so tracker proofs verify with the real
 verifier; publics, digests and versioned hashes are consistent, so every
 settlement check passes; KZG commitments are random bytes. Demo sequencer 0

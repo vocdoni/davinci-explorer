@@ -6,3 +6,4 @@ export { CheckMark, Explain, NativeAmount, ProcessIdLink, Timestamp, TxLink } fr
 export { MissingEntity } from './states'
 export { CodeBlock } from './CodeBlock'
 export { HashLink } from './HashLink'
+export { UnverifiedMark } from './Unverified'

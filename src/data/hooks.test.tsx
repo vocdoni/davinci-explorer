@@ -5,12 +5,13 @@ import type { ReactNode } from 'react'
 import { ConfigContext } from '~config/config-context'
 import { DEMO_CONFIG } from '~config/runtime-config'
 import { demoFixture } from '~fixtures/demo'
+import { metadataTitle } from '~pages/process/metadata'
 import { DataProvider } from './DataProvider'
 import { createExplorerData } from './create'
 import { useNetworkStats, useProcess, useProcesses, useTransition } from './hooks'
 import {
   useDkgApplication,
-  useJsonDocument,
+  useMetadataCheck,
   useSequencers,
   useTrackerProof,
   useTransitionBlobs,
@@ -93,18 +94,41 @@ describe('on-demand hooks', () => {
     await waitFor(() => expect(result.current[1]!.status.isError).toBe(true))
   })
 
-  it('read sequencers, the DKG application and metadata', async () => {
+  it('read sequencers and the DKG application', async () => {
     const pid = fixture.featured.awaitingReveal
-    const uri = fixture.store.processes[pid]!.state!.metadataURI
-    const { result } = renderHook(
-      () => ({ seq: useSequencers(), dkg: useDkgApplication(pid), meta: useJsonDocument(uri) }),
-      { wrapper: wrapper() }
-    )
+    const { result } = renderHook(() => ({ seq: useSequencers(), dkg: useDkgApplication(pid) }), {
+      wrapper: wrapper(),
+    })
     await waitFor(() => expect(result.current.dkg.isSuccess).toBe(true))
     expect(result.current.dkg.data).toMatchObject({ revealed: false })
     expect(result.current.dkg.data!.ciphertexts.every((c) => !c.completed)).toBe(true)
     await waitFor(() => expect(result.current.seq.every((s) => s.info.isSuccess)).toBe(true))
     expect(result.current.seq[1]!.info.data?.observer).toBe(true)
-    await waitFor(() => expect(result.current.meta.isSuccess).toBe(true))
+  })
+
+  it('check a metadata document against its on-chain hash', async () => {
+    const state = (pid: string) => fixture.store.processes[pid]!.state!
+    const open = state(fixture.featured.openProcess)
+    const tampered = state(fixture.featured.metadataTampered)
+    const { result } = renderHook(
+      () => ({
+        ok: useMetadataCheck(open.metadataURI, open.metadataHash),
+        bad: useMetadataCheck(tampered.metadataURI, tampered.metadataHash),
+        gone: useMetadataCheck('https://metadata.example.org/missing.json', open.metadataHash),
+        ftp: useMetadataCheck('ftp://metadata.example.org/a.json', open.metadataHash),
+        unread: useMetadataCheck(open.metadataURI, null),
+      }),
+      { wrapper: wrapper() }
+    )
+    await waitFor(() => expect(result.current.ok.status).toBe('matches'))
+    expect(result.current.ok.served?.hash).toBe(open.metadataHash)
+    expect(metadataTitle(result.current.ok.doc)).toBe('Community fund round')
+    await waitFor(() => expect(result.current.bad.status).toBe('differs'))
+    // What differs is still shown, from the bytes that were hashed, and only as unverified.
+    expect(metadataTitle(result.current.bad.doc)).toBe('Budget allocation')
+    await waitFor(() => expect(result.current.gone.status).toBe('unreachable'), { timeout: 4_000 })
+    expect(result.current.gone.error).toMatch(/not part of the demo network/)
+    expect(result.current.ftp.status).toBe('not-browsable')
+    expect(result.current.unread.status).toBe('loading')
   })
 })

@@ -18,6 +18,7 @@ import type { Address, Hex, ProcessState, RegistryInfo, TxDetails } from './type
 export const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11' as Address
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+const ZERO_HASH = `0x${'0'.repeat(64)}`
 
 type CallSpec = {
   address: Address
@@ -64,6 +65,7 @@ export function normalizeProcess(raw: Record<string, unknown>): ProcessState {
     creationBlock: num(raw.creationBlock),
     batchNumber: num(raw.batchNumber),
     metadataURI: String(raw.metadataURI ?? ''),
+    metadataHash: lower<Hex>(raw.metadataHash ?? ZERO_HASH),
     ballotMode: {
       uniqueValues: Boolean(bm.uniqueValues),
       numFields: num(bm.numFields),

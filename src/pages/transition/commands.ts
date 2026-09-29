@@ -4,6 +4,7 @@
 
 import type { TransitionCheck } from '~indexer/selectors'
 import type { Hex } from '~protocol/bytes'
+import { browsableUri } from '~protocol/metadata'
 import type { CensusOriginName } from '~protocol/types'
 
 export const SUBMIT_SIGNATURE = 'submitStateTransition(bytes31,bytes,bytes,bytes[],bytes32[],bytes[])'
@@ -15,8 +16,11 @@ export const TRANSITION_EVENT =
 /** `getProcess` with its return type, so `cast` decodes the struct. */
 export const GET_PROCESS =
   'getProcess(bytes31)((uint8,address,(uint256,uint256),bytes32,uint256[],uint256,uint256,uint256,uint256,' +
-  'uint256,uint256,uint256,string,(bool,uint8,uint8,uint8,uint256,uint256,uint256,uint256),' +
+  'uint256,uint256,uint256,string,bytes32,(bool,uint8,uint8,uint8,uint256,uint256,uint256,uint256),' +
   '(uint8,bytes32,address,string,bool),uint8,bytes12,uint16,uint8,uint16,bool,bytes32))'
+
+export const METADATA_EVENT =
+  'ProcessMetadataUpdated(bytes31 indexed processId, string metadataURI, bytes32 metadataHash)'
 
 export const VERIFY_SIGNATURE = 'verifySnarkProof(bytes32,bytes32,bytes,bytes)'
 
@@ -52,6 +56,35 @@ const strip = (h: string) => (h.startsWith('0x') ? h.slice(2) : h)
 /** `sha256sum` over the bytes of a hex string. */
 export function sha256Command(hex: string): string {
   return `printf '%s' ${strip(hex)} | xxd -r -p | sha256sum`
+}
+
+/** A string as one shell word, whatever it holds: a metadata URI is the organizer's text. */
+export function shellQuote(s: string): string {
+  return `'${s.replace(/'/g, `'\\''`)}'`
+}
+
+/**
+ * Hashes the bytes a metadata URI serves (`ipfs://` through the same gateway
+ * as the explorer; `-L` follows redirects, as a browser does, and `-f` turns
+ * an HTTP error into an error rather than the hash of an error page) and
+ * reads the registry's record, whose fourteenth value is `metadataHash`.
+ */
+export function metadataHashCommand(input: { registry: string; processId: string; uri: string }): string {
+  return [
+    `curl -fsSL ${shellQuote(browsableUri(input.uri) ?? input.uri)} | sha256sum`,
+    `cast call ${input.registry} \\`,
+    `  "${GET_PROCESS}" \\`,
+    `  ${input.processId} --rpc-url $RPC`,
+  ].join('\n')
+}
+
+/** Every metadata version of a process, from the registry's log. */
+export function metadataHistoryCommand(input: { registry: string; processId: string; fromBlock: number }): string {
+  return [
+    `cast logs --from-block ${input.fromBlock} --address ${input.registry} \\`,
+    `  "${METADATA_EVENT}" \\`,
+    `  ${input.processId} --rpc-url $RPC`,
+  ].join('\n')
 }
 
 /** The 192-byte point-evaluation input: versioned hash, z, y, commitment, proof. */

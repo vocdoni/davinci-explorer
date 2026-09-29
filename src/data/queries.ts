@@ -10,6 +10,13 @@ import { onchainRoots } from '~indexer/selectors'
 import { processKey, transitionKey, txKey, type IndexerStore } from '~indexer/types'
 import { decodeTransitionBlobs, type TransitionData } from '~protocol/blob'
 import type { Hex } from '~protocol/bytes'
+import {
+  fetchableUri,
+  metadataStatus,
+  readServedDocument,
+  type MetadataStatus,
+  type ServedDocument,
+} from '~protocol/metadata'
 import type { SequencerInfo, VoteStatusResponse } from '~protocol/sequencer-api'
 import { verifyTracker, type TrackerProof } from '~protocol/tracker'
 import { useServices } from './context'
@@ -22,7 +29,7 @@ export interface DecodedTransitionBlobs extends TransitionBlobs {
   decodeError: string | null
 }
 
-function useDeploymentKey(): string {
+export function useDeploymentKey(): string {
   const config = useRuntimeConfig()
   return `${config.demo ? 'demo' : config.chainId}:${config.registryAddress.toLowerCase()}`
 }
@@ -351,14 +358,75 @@ export function useDkgApplication(pid: string | undefined): UseQueryResult<DkgAp
   })
 }
 
-/** A JSON document such as a process's metadata URI. */
-export function useJsonDocument(url: string | null | undefined): UseQueryResult<unknown> {
-  const services = useServices()
-  return useQuery({
-    queryKey: ['json-document', url],
-    enabled: !!url,
-    queryFn: ({ signal }) => services.fetchJson(url!, signal),
+export interface MetadataCheck {
+  status: MetadataStatus
+  /** The current version's URI, as the registry stores it; null until the process is read. */
+  uri: string | null
+  /** Its on-chain SHA-256; null until the process is read. */
+  committed: Hex | null
+  /** What the URI served, once downloaded: its hash, size and the JSON parsed from the same bytes. */
+  served: ServedDocument | null
+  /** Why the download failed (an HTTP status, a network or cross-origin error). */
+  error: string | null
+  /**
+   * The document to show, parsed from the bytes that were hashed. Only
+   * `matches` makes it the organizer's committed document.
+   */
+  doc: unknown
+}
+
+/**
+ * The query behind `useMetadataCheck`, shared with the pickers' titles. The
+ * committed hash is part of the key: a new version at the same URI is
+ * downloaded again.
+ */
+export function metadataQuery(
+  services: ExplorerServices,
+  deployment: string,
+  uri: string | null | undefined,
+  committed: string | null | undefined
+) {
+  const url = fetchableUri(uri)
+  return {
+    queryKey: ['metadata', deployment, url, committed?.toLowerCase() ?? null] as const,
+    enabled: url != null && committed != null,
+    queryFn: async ({ signal }: { signal: AbortSignal }) => readServedDocument(await services.fetchBytes(url!, signal)),
     staleTime: 10 * 60_000,
     retry: 1,
-  })
+  }
+}
+
+/** Folds a metadata query into the check the pages show. */
+export function metadataCheckOf(
+  uri: string | null | undefined,
+  committed: Hex | null | undefined,
+  query: Pick<UseQueryResult<ServedDocument>, 'data' | 'error'>
+): MetadataCheck {
+  const served = query.data ?? null
+  return {
+    status: metadataStatus({
+      fetchable: fetchableUri(uri) != null,
+      committed: committed ?? null,
+      served,
+      failed: query.error != null,
+    }),
+    uri: uri ?? null,
+    committed: committed ?? null,
+    served,
+    error: query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null,
+    doc: served?.doc,
+  }
+}
+
+/**
+ * A process's metadata document checked against its on-chain hash: the
+ * bytes the URI serves are downloaded (http(s), or ipfs through a public
+ * gateway), hashed with SHA-256 in the browser and compared with
+ * `metadataHash`, and the JSON is parsed from the same bytes.
+ */
+export function useMetadataCheck(uri: string | null | undefined, committed: Hex | null | undefined): MetadataCheck {
+  const services = useServices()
+  const deployment = useDeploymentKey()
+  const query = useQuery(metadataQuery(services, deployment, uri, committed))
+  return metadataCheckOf(uri, committed, query)
 }
