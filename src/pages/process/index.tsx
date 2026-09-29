@@ -91,15 +91,15 @@ export function ProcessPage() {
           label={t`Overwrites`}
           value={formatNumber(row.overwrittenVotesCount)}
           mono
-          hint={t`votes that replaced an earlier one`}
+          hint={t`later votes by the same voter`}
         />
         <StatCell
           label={t`Transitions`}
           value={formatNumber(transitions.length)}
           mono
-          hint={t`${plural(ballots, { one: '# ballot settled', other: '# ballots settled' })}`}
+          hint={t`${plural(ballots, { one: '# vote recorded', other: '# votes recorded' })}`}
         />
-        <StatCell label={t`Blobs`} value={formatNumber(blobs)} mono hint={t`EIP-4844 data blobs published`} />
+        <StatCell label={t`Blobs`} value={formatNumber(blobs)} mono hint={t`data blobs published`} />
       </StatRow>
 
       <Tabs

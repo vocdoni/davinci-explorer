@@ -44,47 +44,47 @@ const info = (label: MessageDescriptor, description: MessageDescriptor): EnumInf
   withText({}, { label, description })
 
 export const PROCESS_STATUS_INFO: Record<ProcessStatusName, EnumInfo> = {
-  ready: info(msg`Ready`, msg`Open: sequencers accept votes and settle batches until the end time.`),
+  ready: info(msg`Ready`, msg`Open for voting: votes are collected and recorded on chain until the end time.`),
   paused: info(
     msg`Paused`,
-    msg`Paused by the organizer. Votes may queue at a sequencer but no batch settles until it resumes.`
+    msg`The organizer paused voting. Votes may wait at a sequencer, but none are recorded until voting resumes.`
   ),
-  ended: info(msg`Ended`, msg`Closed to votes. The final state root is fixed; the results are pending.`),
-  canceled: info(msg`Canceled`, msg`Canceled by the organizer. No results will be published.`),
-  results: info(msg`Results`, msg`The tally is on-chain, proven against the final state root.`),
+  ended: info(msg`Ended`, msg`Voting is closed and the recorded votes are final. The results are not published yet.`),
+  canceled: info(msg`Canceled`, msg`The organizer canceled the process. No results will be published.`),
+  results: info(msg`Results`, msg`The results are on chain, with proof that they count exactly the recorded votes.`),
 }
 
 export const CENSUS_ORIGIN_INFO: Record<CensusOriginName, EnumInfo> = {
-  unknown: info(msg`Unknown`, msg`Not a census origin the registry accepts.`),
+  unknown: info(msg`Unknown`, msg`Not a kind of voter list the registry accepts.`),
   'merkle-static': info(
     msg`Merkle tree, fixed`,
-    msg`A lean-IMT census root published at creation and never changed. Voters prove membership against it.`
+    msg`A list of voters fixed when the process was created. Each voter proves they are on it (a lean-IMT Merkle tree).`
   ),
   'merkle-dynamic': info(
     msg`Merkle tree, updatable`,
-    msg`A lean-IMT census root the organizer can replace while the process is open (CensusUpdated).`
+    msg`A list of voters the organizer can replace while the process is open (a lean-IMT Merkle tree; each change is a CensusUpdated event).`
   ),
   'onchain-dynamic': info(
     msg`On-chain census contract`,
-    msg`The census lives in a contract; every batch must use a root the contract held since the process was created.`
+    msg`The list of voters is kept by a contract. Every batch must use a version of the list the contract held since the process was created.`
   ),
   csp: info(
     msg`Credential service provider`,
-    msg`Voters present a signature from the CSP signer whose address is the census root.`
+    msg`A credential service signs each voter’s credential, and voters show that signature to vote. The service’s signing address stands for the list.`
   ),
 }
 
 export const KEY_MODE_INFO: Record<KeyModeName, EnumInfo> = {
   sequencer: info(
     msg`Sequencer key`,
-    msg`One sequencer node holds the election key: it could open the ballots and alone publishes the tally, with a zkVM results proof.`
+    msg`One sequencer node holds the key. It could read the ballots, and only it can publish the results, with a proof that they are right.`
   ),
   'dkg-automatic': info(
     msg`DKG, automatic`,
-    msg`A davinci-dkg committee key. No sequencer and no organizer holds the secret; each committee member holds one share, and a threshold of them decrypts the final tally once asked.`
+    msg`A committee holds the key in shares, so nobody can read the ballots alone. Once voting ends, enough members together decrypt the final count, and only that.`
   ),
   'dkg-locked': info(
     msg`DKG, organizer-locked`,
-    msg`A davinci-dkg committee key combined with an organizer key. The tally is decrypted only after the organizer reveals its secret.`
+    msg`A committee key plus a secret the organizer keeps. The committee can decrypt the final count only after the organizer reveals that secret.`
   ),
 }

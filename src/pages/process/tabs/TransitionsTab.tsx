@@ -3,7 +3,7 @@ import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { SortingState } from '@tanstack/react-table'
 import { Link } from 'react-router'
-import { CheckMark, Explain, NativeAmount, Timestamp, TxLink } from '~components'
+import { CheckMark, Explain, NativeAmount, Term, Timestamp, TxLink } from '~components'
 import { useDataSource } from '~data/context'
 import type { ProcessView } from '~data/hooks'
 import type { TransitionRow } from '~indexer/selectors'
@@ -61,9 +61,11 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
         id: 'sender',
         header: t`Sender`,
         accessorKey: 'sender',
-        cell: ({ row }) => <Address value={row.original.sender} explorer={false} />,
+        cell: ({ row }) => (
+          <Address value={row.original.sender} to={paths.sequencer(row.original.sender)} explorer={false} />
+        ),
         meta: {
-          headerTooltip: t`The sequencer that sent the settlement. Settlement is permissionless; the proof authenticates it.`,
+          headerTooltip: t`The sequencer that sent the batch. Anyone may send one: the registry trusts the proof, not the sender.`,
         },
       },
       {
@@ -75,7 +77,7 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
           numeric: true,
           width: '100px',
           headerWrap: true,
-          headerTooltip: t`Ballot slots written for the first time.`,
+          headerTooltip: t`People voting for the first time in this process (ballot slots written for the first time).`,
         },
       },
       {
@@ -155,7 +157,14 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
       <Panel
         title={t`State-root chain`}
         label={t`Root continuity`}
-        description={t`Every transition must start from the root the previous one ended at, the first from the genesis root the registry computed at creation. The registry enforces it on-chain; here it is recomputed from the events.`}
+        description={
+          <Trans>
+            Each batch must continue exactly where the previous one ended, so no batch can be skipped, replayed or
+            forked. Each step is shown by the <Term id='state-root'>state root</Term>, the fingerprint of the process’s
+            state, starting from the one the registry computed at creation. The registry enforces this on chain; the
+            explorer checks it again from the events.
+          </Trans>
+        }
       >
         <p data-testid='transition-summary' className='mb-4 flex flex-wrap items-center gap-2 text-[13px] text-silver'>
           <CheckMark
@@ -182,7 +191,7 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
         <CardHeader
           title={t`Transitions`}
           label={t`Settled batches`}
-          description={t`Each row is one batch a sequencer proved and settled with submitStateTransition. Open one to see its decoded public values, its blobs and every check the contract ran.`}
+          description={t`Each row is one batch of votes a sequencer proved and recorded on chain (submitStateTransition). Open one to see what its proof says, its published data and every check the registry ran.`}
           actions={
             transitions.length > 0 ? (
               <span className='flex flex-wrap gap-x-4 gap-y-1 font-mono text-[12px] text-ash tnum'>
@@ -214,7 +223,7 @@ export function TransitionsTab({ view }: { view: ProcessView }) {
           empty={
             <EmptyState
               title={t`No transitions yet`}
-              description={t`When a sequencer settles the first batch of votes, it appears here with its block, blobs and fee.`}
+              description={t`When a sequencer records the first batch of votes, it appears here with its block, blobs and fee.`}
             />
           }
         />
@@ -237,8 +246,8 @@ function RootChainList({ view }: { view: ProcessView }) {
           <Trans>Genesis</Trans>
           <Explain className='ml-1'>
             <Trans>
-              The root of the process’s state tree before any vote: the registry derives it from the process id, ballot
-              mode, encryption key, census origin and ballot VK hash.
+              The fingerprint of the process’s state before any vote. The registry computes it at creation from the
+              process id, the ballot rules, the encryption key, the kind of census and the ballot proof key.
             </Trans>
           </Explain>
         </span>
@@ -280,7 +289,7 @@ function RootChainList({ view }: { view: ProcessView }) {
         <span className='w-24 shrink-0 text-pewter'>
           <Trans>Registry now</Trans>
           <Explain className='ml-1'>
-            <Trans>latestStateRoot in getProcess: the root the next transition must start from.</Trans>
+            <Trans>The state root the registry holds now (latestStateRoot): the next batch must start from it.</Trans>
           </Explain>
         </span>
         <CheckMark state={rootChain.headMatches == null ? 'unknown' : rootChain.headMatches ? 'pass' : 'fail'} />

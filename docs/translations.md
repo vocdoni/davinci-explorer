@@ -96,7 +96,7 @@ Text made in a selector while a page renders (`src/indexer/selectors.ts`):
 
 ```ts
 const count = ev.data.count
-label: t`Tally sent to the DKG committee (${plural(count, { one: '# ciphertext', other: '# ciphertexts' })})`
+label: t`Encrypted count sent to the DKG committee to decrypt (${plural(count, { one: '# field', other: '# fields' })})`
 ```
 
 ### The shared protocol tables

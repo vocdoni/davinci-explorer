@@ -3,6 +3,8 @@
 // helpers remain for callers that need to interpolate between two literal
 // colours (a CSS variable cannot be interpolated in JavaScript).
 
+import type { BadgeTone } from '../Badge'
+
 export const CHART_COLORS = {
   emerald: 'var(--color-series-1)',
   teal: 'var(--color-series-2)',
@@ -15,7 +17,24 @@ export const CHART_COLORS = {
   text: 'var(--color-ghost)',
   amber: 'var(--color-amber)',
   red: 'var(--color-red)',
+  /** The status hues of `Badge`, for a chart whose slices are the same states as a row of badges. */
+  blue: 'var(--color-blue)',
+  green: 'var(--color-green)',
+  neutral: 'var(--color-pewter)',
 } as const
+
+/** The colour of a `Badge` tone, for chart marks that stand for the same states as a row of tags. */
+export const TONE_COLORS: Readonly<Record<BadgeTone, string>> = {
+  ok: CHART_COLORS.emerald,
+  accent: CHART_COLORS.emerald,
+  done: CHART_COLORS.green,
+  info: CHART_COLORS.blue,
+  warn: CHART_COLORS.amber,
+  danger: CHART_COLORS.red,
+  neutral: CHART_COLORS.neutral,
+  slate: 'var(--color-slate)',
+  violet: 'var(--color-violet)',
+}
 
 /** Series order: emerald first, then the companions, then the greys. */
 export const SERIES_COLORS: string[] = [

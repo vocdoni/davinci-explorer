@@ -1,9 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import type { MessageDescriptor } from '@lingui/core'
-import { msg, plural } from '@lingui/core/macro'
+import { plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { SortingState } from '@tanstack/react-table'
-import { CheckMark, Explain, KeyModeBadge } from '~components'
+import { CheckMark, Explain, Formula, KeyModeBadge, Term } from '~components'
+import { Disclosure } from '~components/code'
 import { useRuntimeConfig } from '~config/config-context'
 import { useChain, type ProcessView } from '~data/hooks'
 import { useDkgApplication } from '~data/queries'
@@ -26,22 +26,121 @@ import type { KeyModeName } from '~protocol/types'
 import { reducedToCircom } from '~protocol/babyjubjub'
 import { dkgApplicationUrl, dkgEpochUrl } from '../dkg-links'
 
-const TRUST: Record<KeyModeName, { who: MessageDescriptor; when: MessageDescriptor; risk: MessageDescriptor }> = {
-  sequencer: {
-    who: msg`The organizer supplied this key at creation, normally one it got from a sequencer node (POST /processes/keys). That node derives the secret from its master secret and the process id and never stores it; whoever holds the secret is the only party that can decrypt.`,
-    when: msg`After the end, the key holder decrypts the final accumulator (the encrypted sum of all ballots), proves the tally with the zkVM results program and publishes it with setProcessResults.`,
-    risk: msg`The key holder could open every ballot published in the blobs, and nobody else can publish the results. This mode trusts one party with ballot secrecy.`,
-  },
-  'dkg-automatic': {
-    who: msg`The key is one pool key of a davinci-dkg committee epoch. No sequencer and no organizer holds the secret; each committee member holds one share.`,
-    when: msg`After the end, anyone can send the final accumulator to the committee (requestResultsDecryption); sequencers do it on their first heartbeat after the end. A threshold of members post partial decryptions, each with a Groth16 proof, and a combine yields each field’s total. The committee never reconstructs the secret: it decrypts only the final accumulator.`,
-    risk: msg`A threshold of the epoch’s committee colluding could decrypt every ballot. If more than n − t members leave before the end, the results are lost.`,
-  },
-  'dkg-locked': {
-    who: msg`The key is a committee pool key plus an organizer key. The organizer received its secret at creation; the registry never stores it.`,
-    when: msg`The committee cannot post partial decryptions until the organizer reveals its secret (revealProcessKey). The organizer decides when the tally appears, not which one.`,
-    risk: msg`Losing the organizer secret loses the results. Revealing it during voting drops the process to the automatic trust model.`,
-  },
+/** Who holds the key, how the results come out, what a reader trusts: plain first, the mechanism apart. */
+function Trust({ mode }: { mode: KeyModeName }) {
+  const rows: Record<KeyModeName, { who: ReactNode; when: ReactNode; risk: ReactNode; detail: ReactNode }> = {
+    sequencer: {
+      who: (
+        <Trans>
+          One sequencer node holds the secret that opens the ballots. The organizer got this key from that node when it
+          created the process.
+        </Trans>
+      ),
+      when: (
+        <Trans>
+          After voting ends, the key holder decrypts the <Term id='accumulator'>encrypted total</Term>, proves that the
+          result is right and publishes it.
+        </Trans>
+      ),
+      risk: (
+        <Trans>
+          The key holder could read every ballot published in the blobs, and nobody else can publish the results. This
+          mode trusts one party with ballot secrecy.
+        </Trans>
+      ),
+      detail: (
+        <Trans>
+          The organizer supplied the key at creation, normally one it got from a sequencer node (
+          <code>POST /processes/keys</code>). That node derives the secret from its master secret and the process id and
+          never stores it. After the end, the key holder decrypts the final accumulator (the encrypted sum of all
+          ballots), proves the tally with the zkVM results program and publishes it with <code>setProcessResults</code>.
+        </Trans>
+      ),
+    },
+    'dkg-automatic': {
+      who: (
+        <Trans>
+          A <Term id='committee'>committee</Term> holds the key in shares. No sequencer and no organizer knows the
+          secret, and no member knows it alone.
+        </Trans>
+      ),
+      when: (
+        <Trans>
+          After voting ends, the encrypted total goes to the committee and enough members together decrypt it. They
+          decrypt only that final total, never a single ballot.
+        </Trans>
+      ),
+      risk: (
+        <Trans>
+          Enough members of the committee colluding (a <Term id='threshold'>threshold</Term> of them) could read every
+          ballot. If more than <Formula expr='n − t' /> members leave before the end, the results are lost.
+        </Trans>
+      ),
+      detail: (
+        <Trans>
+          The key is one pool key of a davinci-dkg committee epoch; each committee member holds one share of its secret.
+          After the end, anyone can send the final accumulator to the committee (<code>requestResultsDecryption</code>);
+          sequencers do it on their first heartbeat after the end. A threshold of members post partial decryptions, each
+          with a Groth16 proof, and a combine yields each field’s total. The committee never reconstructs the secret.
+        </Trans>
+      ),
+    },
+    'dkg-locked': {
+      who: (
+        <Trans>
+          A committee key plus a secret the organizer keeps (the <Term id='organizer-secret'>organizer secret</Term>).
+          Neither can decrypt without the other.
+        </Trans>
+      ),
+      when: (
+        <Trans>
+          The committee can decrypt the final total only after the organizer reveals the secret. The organizer decides
+          when the results appear, not what they are.
+        </Trans>
+      ),
+      risk: (
+        <Trans>
+          If the organizer loses the secret, the results are lost. Revealing it while voting is open leaves the process
+          with the trust of the automatic mode.
+        </Trans>
+      ),
+      detail: (
+        <Trans>
+          The key is a committee pool key plus an organizer key. The organizer received its secret at creation; the
+          registry never stores it. The committee cannot post partial decryptions until the organizer reveals the secret
+          (<code>revealProcessKey</code>).
+        </Trans>
+      ),
+    },
+  }
+  const row = rows[mode]
+  return (
+    <div className='flex flex-col gap-3'>
+      <dl className='flex flex-col gap-3 text-[13px] leading-relaxed'>
+        <div>
+          <dt className='label-caps text-[11px] text-pewter'>
+            <Trans>Who holds the key</Trans>
+          </dt>
+          <dd className='mt-1 text-silver'>{row.who}</dd>
+        </div>
+        <div>
+          <dt className='label-caps text-[11px] text-pewter'>
+            <Trans>How the results are decrypted</Trans>
+          </dt>
+          <dd className='mt-1 text-silver'>{row.when}</dd>
+        </div>
+        <div>
+          <dt className='label-caps text-[11px] text-pewter'>
+            <Trans>What you trust</Trans>
+          </dt>
+          <dd className='mt-1 text-silver'>{row.risk}</dd>
+        </div>
+      </dl>
+      <Disclosure summary={<Trans>Technical details</Trans>} variant='plain' testId='key-mode-details'>
+        <p className='text-[13px] leading-relaxed text-ash'>{row.detail}</p>
+      </Disclosure>
+    </div>
+  )
 }
 
 function Label({ children, help }: { children: ReactNode; help: ReactNode }) {
@@ -83,7 +182,7 @@ function PointValue({ x, y }: { x: bigint; y: bigint }) {
 }
 
 export function KeyTab({ view }: { view: ProcessView }) {
-  const { i18n, t } = useLingui()
+  const { t } = useLingui()
   const s = view.process.state
   if (!s) {
     return (
@@ -92,46 +191,32 @@ export function KeyTab({ view }: { view: ProcessView }) {
       </div>
     )
   }
-  const trust = TRUST[s.keyMode]
   return (
     <div data-testid='tab-key' className='flex flex-col gap-6'>
       <div className='grid items-start gap-6 lg:grid-cols-2'>
         <Panel title={t`Key mode`} label={t`Who can decrypt, and when`} actions={<KeyModeBadge mode={s.keyMode} />}>
-          <dl className='flex flex-col gap-3 text-[13px] leading-relaxed'>
-            <div>
-              <dt className='label-caps text-[11px] text-pewter'>
-                <Trans>Who holds the key</Trans>
-              </dt>
-              <dd className='mt-1 text-silver'>{i18n._(trust.who)}</dd>
-            </div>
-            <div>
-              <dt className='label-caps text-[11px] text-pewter'>
-                <Trans>How the tally is decrypted</Trans>
-              </dt>
-              <dd className='mt-1 text-silver'>{i18n._(trust.when)}</dd>
-            </div>
-            <div>
-              <dt className='label-caps text-[11px] text-pewter'>
-                <Trans>What you trust</Trans>
-              </dt>
-              <dd className='mt-1 text-silver'>{i18n._(trust.risk)}</dd>
-            </div>
-          </dl>
+          <Trust mode={s.keyMode} />
         </Panel>
         <Panel
           title={t`Encryption key`}
           label={t`BabyJubJub point`}
-          description={t`Voters encrypt each ballot field to this key with ElGamal. The genesis state root pins it as leaf 0x03, so it cannot change after creation, and every batch re-encrypts the ballots under it.`}
+          description={t`Voters encrypt their ballots to this key (ElGamal on the BabyJubJub curve). It is fixed in the process’s starting state, as leaf 0x03, so it cannot change after creation, and every batch re-encrypts the stored ballots under it.`}
         >
           <KeyValue
             items={[
               {
-                label: <Label help={t`Twisted Edwards x coordinate, circomlib form.`}>x</Label>,
+                label: (
+                  <Label
+                    help={t`The key is a point on a curve; this is its x coordinate (twisted Edwards, circomlib form).`}
+                  >
+                    x
+                  </Label>
+                ),
                 value: <Hash value={bigIntToHex(s.encryptionKey.x)} chars={10} />,
                 hint: <span className='font-mono break-all'>{s.encryptionKey.x.toString()}</span>,
               },
               {
-                label: <Label help={t`Twisted Edwards y coordinate.`}>y</Label>,
+                label: <Label help={t`The point’s y coordinate.`}>y</Label>,
                 value: <Hash value={bigIntToHex(s.encryptionKey.y)} chars={10} />,
                 hint: <span className='font-mono break-all'>{s.encryptionKey.y.toString()}</span>,
               },
@@ -180,7 +265,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
         cell: ({ row }) => (
           <span className='inline-flex items-center gap-2'>
             <CheckMark state={row.original.completed ? 'pass' : 'unknown'} />
-            {row.original.completed ? t`decrypted` : t`waiting for partials`}
+            {row.original.completed ? t`decrypted` : t`waiting for partial decryptions`}
           </span>
         ),
       },
@@ -199,7 +284,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
     <Panel
       title={t`DKG application`}
       label={t`davinci-dkg committee`}
-      description={t`The registry’s DKG adapter registered one application for this process on the committee’s epoch. The committee answers only ciphertexts the adapter submits for it.`}
+      description={t`The committee decrypts only for processes registered with it. The registry registered this one (a DKG application) on the committee round that holds its key, and the committee answers only what the registry sends for it.`}
       actions={
         appUrl ? (
           <ExternalLink href={appUrl}>
@@ -219,7 +304,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
               items={[
                 {
                   label: (
-                    <Label help={t`The DKG run whose committee holds this key.`}>
+                    <Label help={t`The committee round that created this key (a DKG epoch).`}>
                       <Trans>Epoch</Trans>
                     </Label>
                   ),
@@ -237,7 +322,13 @@ function DkgPanel({ view }: { view: ProcessView }) {
                 {
                   label: (
                     <Label
-                      help={t`Application id: keccak256(chainid ‖ registry ‖ process id) reduced into the BabyJubJub base field, never zero. Anyone can recompute it.`}
+                      help={
+                        <Trans>
+                          The number that ties this process to the committee (application id). Anyone can recompute it:{' '}
+                          <Formula expr='keccak256(chainId ‖ registry ‖ processId) mod Q' />, with Q the BabyJubJub base
+                          field, and never zero.
+                        </Trans>
+                      }
                     >
                       aid
                     </Label>
@@ -247,7 +338,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
                 {
                   label: (
                     <Label
-                      help={t`Each epoch deals 16 independent pool keys; every application claims one, so decryptions are scoped to it.`}
+                      help={t`Each committee round creates 16 separate keys (pool keys). Every process takes one, so a decryption for it cannot touch another.`}
                     >
                       <Trans>Pool index</Trans>
                     </Label>
@@ -284,7 +375,14 @@ function DkgPanel({ view }: { view: ProcessView }) {
                 items={[
                   {
                     label: (
-                      <Label help={t`The committee’s key P_j, in the DKG’s reduced twisted Edwards form.`}>
+                      <Label
+                        help={
+                          <Trans>
+                            The committee’s key for this process, <Formula expr='P_j' />, in the DKG’s reduced twisted
+                            Edwards form.
+                          </Trans>
+                        }
+                      >
                         <Trans>Pool key</Trans>
                       </Label>
                     ),
@@ -292,7 +390,14 @@ function DkgPanel({ view }: { view: ProcessView }) {
                   },
                   {
                     label: (
-                      <Label help={t`PK_org. In automatic mode it is the identity (0, 1): there is no organizer key.`}>
+                      <Label
+                        help={
+                          <Trans>
+                            The organizer’s public key, <Formula expr='PK_org' />. In the automatic mode it is the
+                            identity point (0, 1): there is no organizer key.
+                          </Trans>
+                        }
+                      >
                         <Trans>Organizer key</Trans>
                       </Label>
                     ),
@@ -307,7 +412,13 @@ function DkgPanel({ view }: { view: ProcessView }) {
                   {
                     label: (
                       <Label
-                        help={t`P_j, plus PK_org when locked, in the reduced form. The registry stores it converted to circomlib form (same y, x scaled by a fixed constant); the check redoes that conversion.`}
+                        help={
+                          <Trans>
+                            The key the ballots are encrypted to: <Formula expr='P_j + PK_org' /> when locked, just{' '}
+                            <Formula expr='P_j' /> otherwise, in the reduced form. The registry stores it in circomlib
+                            form (same y, x scaled by a fixed constant); the check redoes that conversion.
+                          </Trans>
+                        }
                       >
                         <Trans>Application key</Trans>
                       </Label>
@@ -319,13 +430,18 @@ function DkgPanel({ view }: { view: ProcessView }) {
                       </span>
                     ),
                     hint: keyMatches
-                      ? t`converted, it is the process encryption key`
-                      : t`converted, it is not the process encryption key`,
+                      ? t`once converted, it is the process’s encryption key`
+                      : t`once converted, it is not the process’s encryption key`,
                   },
                   {
                     label: (
                       <Label
-                        help={t`Locked applications stay closed until the organizer reveals its secret; the DKG checks sk·G = PK_org.`}
+                        help={
+                          <Trans>
+                            In the locked mode the committee cannot decrypt until the organizer reveals this secret. The
+                            DKG checks it is the right one: <Formula expr='sk · G = PK_org' />.
+                          </Trans>
+                        }
                       >
                         <Trans>Organizer secret</Trans>
                       </Label>
@@ -358,21 +474,22 @@ function DkgPanel({ view }: { view: ProcessView }) {
 
           <div>
             <div className='label-caps mb-2 inline-flex items-center gap-1 text-[11px] text-pewter'>
-              <Trans>Submitted ciphertexts</Trans>
+              <Trans>Sent to the committee</Trans>
               <Explain>
                 <Trans>
-                  requestResultsDecryption submits one ciphertext per ballot field of the final accumulator. Every
-                  ballot and refresh adds a ciphertext to every field, so an option nobody picked still holds a real
-                  one; only a process that never tallied a ballot has identity fields, which are recorded as 0 without
-                  the committee.
+                  The encrypted total goes to the committee as one encrypted value per ballot field
+                  (requestResultsDecryption). Every ballot and refresh adds to every field, so even an option nobody
+                  picked holds a real encrypted value. Only a process that never counted a ballot has empty (identity)
+                  fields, which are recorded as 0 without the committee.
                 </Trans>
               </Explain>
             </div>
             {!info.resultsRequested ? (
               <p className='text-[13px] text-ash'>
                 <Trans>
-                  Nothing yet. After the process ends, anyone can send the final accumulator (sequencers do on their
-                  first heartbeat after the end), and its ciphertexts appear here with their decryption state.
+                  Nothing yet. After voting ends, anyone can send the encrypted total to the committee (sequencers do it
+                  on their first heartbeat after the end). Its values then appear here with how far their decryption
+                  got.
                 </Trans>
               </p>
             ) : app ? (
@@ -395,7 +512,7 @@ function DkgPanel({ view }: { view: ProcessView }) {
                     onSortingChange={setSorting}
                     empty={
                       <p className='p-4 text-[13px] text-ash'>
-                        <Trans>Every field was the identity, as no ballot was tallied: nothing was submitted.</Trans>
+                        <Trans>Every field was empty (the identity), as no ballot was counted: nothing was sent.</Trans>
                       </p>
                     }
                   />
@@ -433,15 +550,20 @@ function SubmittedSummary({
   const first = formatNumber(firstIndex)
   const skipped = skippedFields(zeroSkipped)
   if (skipped.length === 0)
-    return <>{t`${plural(count, { one: '# ciphertext', other: '# ciphertexts' })} from index ${first}.`}</>
+    return (
+      <>{t`${plural(count, { one: '# encrypted value', other: '# encrypted values' })}, from DKG index ${first}.`}</>
+    )
   const identity = skipped.length
   const fields = formatList(skipped.map((f) => formatNumber(f)))
   return (
     <>
-      {t`${plural(count, { one: '# ciphertext', other: '# ciphertexts' })} from index ${first}; ${plural(identity, {
-        one: `field ${fields} was the identity, as no ballot was tallied, and was recorded as 0`,
-        other: `fields ${fields} were the identity, as no ballot was tallied, and were recorded as 0`,
-      })}.`}
+      {t`${plural(count, { one: '# encrypted value', other: '# encrypted values' })}, from DKG index ${first}; ${plural(
+        identity,
+        {
+          one: `field ${fields} was empty (the identity), as no ballot was counted, and was recorded as 0`,
+          other: `fields ${fields} were empty (the identity), as no ballot was counted, and were recorded as 0`,
+        }
+      )}.`}
     </>
   )
 }

@@ -106,6 +106,20 @@ export const InfoIcon = (p: IconProps) => (
   </Icon>
 )
 
+export const CheckCircleIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx='8' cy='8' r='6' />
+    <path d='m5.4 8.2 1.8 1.8 3.4-3.6' />
+  </Icon>
+)
+
+export const ErrorIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx='8' cy='8' r='6' />
+    <path d='m5.9 5.9 4.2 4.2M10.1 5.9l-4.2 4.2' />
+  </Icon>
+)
+
 export const WarningIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d='M8 2.6 14.2 13H1.8z' />

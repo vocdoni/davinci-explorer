@@ -166,44 +166,95 @@ export interface FailBit {
   bit: number
   /** The guest's name for the bit; never translated. */
   name: string
-  /** What failed, in the active language. */
+  /** What failed, in the active language: plain words first, the mechanism in brackets. */
   readonly description: string
+  /** The rule as an expression, for `Formula`; never translated. */
+  formula?: string
 }
 
-const failBit = (bit: number, name: string, description: MessageDescriptor): FailBit =>
-  withText({ bit, name }, { description })
+const failBit = (bit: number, name: string, description: MessageDescriptor, formula?: string): FailBit =>
+  withText(formula ? { bit, name, formula } : { bit, name }, { description })
 
 /** Batch guest fail bits (CIRCUIT.md §11; names as go-sdk `FailString`). */
 export const BATCH_FAIL_BITS: FailBit[] = [
-  failBit(1, 'groth16_curve', msg`A ballot proof or VK point is off the curve or the identity`),
-  failBit(2, 'pairing', msg`The batched Groth16 pairing check failed`),
-  failBit(3, 'ecdsa', msg`A vote signature is missing or does not recover to the voter`),
-  failBit(10, 'smt_voteid', msg`The vote-id insertion chain is invalid`),
-  failBit(11, 'smt_ballot', msg`The ballot insertion or update chain is invalid`),
-  failBit(12, 'smt_results', msg`The results transition is invalid or not an update of key 0x04`),
-  failBit(13, 'smt_process', msg`A process config read proof is invalid or missing`),
-  failBit(14, 'consistency', msg`Vote-id namespace, upper limbs or proof binding mismatch`),
-  failBit(15, 'ballot_ns', msg`Ballot slot namespace, slot binding or a duplicate slot in the batch`),
-  failBit(16, 'census', msg`A census proof is invalid or the census roots differ`),
-  failBit(17, 'reencryption', msg`Election key invalid, re-encryption mismatch or padded slot not identity`),
-  failBit(18, 'kzg', msg`Blob count is zero or not ceil(T / 4096) for the T cells of the data`),
-  failBit(19, 'missing_block', msg`A required input block is absent or empty`),
-  failBit(20, 'result_accum', msg`The results accumulator does not match the ballots`),
-  failBit(21, 'leaf_hash', msg`A ballot leaf hash or ballot count mismatch`),
-  failBit(22, 'binding', msg`Cross-block binding mismatch`),
-  failBit(23, 'csp', msg`A CSP census entry is malformed, duplicated or does not recover`),
-  failBit(24, 'refresh', msg`The silent-refresh chain breaks a rule`),
-  failBit(31, 'parse_error', msg`The prover input could not be parsed`),
+  failBit(1, 'groth16_curve', msg`A ballot proof or its key has an invalid point (off the curve, or the identity)`),
+  failBit(2, 'pairing', msg`The ballot proofs did not verify (the batched Groth16 pairing check failed)`),
+  failBit(3, 'ecdsa', msg`A vote’s signature is missing or was not made by the voter`),
+  failBit(
+    10,
+    'smt_voteid',
+    msg`The vote ids were not added to the state correctly (the vote-id insertion chain is invalid)`
+  ),
+  failBit(
+    11,
+    'smt_ballot',
+    msg`The ballots were not stored correctly (the ballot insertion or update chain is invalid)`
+  ),
+  failBit(
+    12,
+    'smt_results',
+    msg`The encrypted total was not updated correctly (the results transition is invalid or not an update of key 0x04)`
+  ),
+  failBit(13, 'smt_process', msg`The process settings were not proven (a config read proof is invalid or missing)`),
+  failBit(
+    14,
+    'consistency',
+    msg`A vote id is out of range or not tied to its ballot proof (namespace, upper limbs or proof binding)`
+  ),
+  failBit(
+    15,
+    'ballot_ns',
+    msg`A ballot is in the wrong slot, or two ballots of the batch share one (slot namespace, binding or duplicate)`
+  ),
+  failBit(
+    16,
+    'census',
+    msg`A voter is not proven to be on the list of voters, or the batch used two different lists (census proof or root)`
+  ),
+  failBit(
+    17,
+    'reencryption',
+    msg`The ballots were not re-encrypted correctly (invalid election key, re-encryption mismatch, or an unused field that is not the identity)`
+  ),
+  failBit(
+    18,
+    'kzg',
+    msg`The batch’s data is split over the wrong number of blobs: none, or not one per 4096 cells of data (T cells)`,
+    'nBlobs = ceil(T / 4096)'
+  ),
+  failBit(19, 'missing_block', msg`Part of the prover’s input is missing or empty`),
+  failBit(20, 'result_accum', msg`The encrypted total does not match the ballots (results accumulator)`),
+  failBit(21, 'leaf_hash', msg`A stored ballot or the ballot count does not match (leaf hash or count mismatch)`),
+  failBit(22, 'binding', msg`Two parts of the prover’s input disagree about the same value (cross-block binding)`),
+  failBit(
+    23,
+    'csp',
+    msg`A credential from the credential service is malformed, used twice or not signed by the service`
+  ),
+  failBit(
+    24,
+    'refresh',
+    msg`The silent refreshes break a rule: too few, out of order, outside the ballot slots or on a slot the batch also wrote`
+  ),
+  failBit(31, 'parse_error', msg`The prover’s input could not be read`),
 ]
 
 /** Results guest fail bits (circuit-results/RESULTS.md). */
 export const RESULTS_FAIL_BITS: FailBit[] = [
-  failBit(0, 'parse', msg`The input frame could not be parsed`),
-  failBit(1, 'key', msg`The encryption key is invalid`),
-  failBit(2, 'incl_key', msg`The key leaf 0x03 is not under the state root`),
-  failBit(3, 'incl_results', msg`The accumulator leaf 0x04 is not under the state root`),
-  failBit(4, 'cp', msg`A Chaum–Pedersen decryption proof failed`),
-  failBit(5, 'range', msg`A coordinate or scalar is out of range`),
+  failBit(0, 'parse', msg`The input could not be read`),
+  failBit(1, 'key', msg`The election key is not a valid key`),
+  failBit(
+    2,
+    'incl_key',
+    msg`The election key is not the one in the final state (leaf 0x03 is not under the state root)`
+  ),
+  failBit(
+    3,
+    'incl_results',
+    msg`The encrypted total is not the one in the final state (leaf 0x04 is not under the state root)`
+  ),
+  failBit(4, 'cp', msg`A decryption proof failed (Chaum–Pedersen)`),
+  failBit(5, 'range', msg`A number in the input is outside its allowed range (a coordinate or a scalar)`),
 ]
 
 function names(mask: number, table: FailBit[]): string[] {
@@ -231,8 +282,10 @@ export interface RegisterInfo {
   key: keyof BatchPublics | null
   /** The register's name in CIRCUIT.md; never translated. */
   name: string
-  /** What it holds, in the active language. */
+  /** What it holds, in the active language: plain words first. */
   readonly description: string
+  /** How it is computed, as an expression for `Formula`; never translated. */
+  formula?: string
   /** Who reads it: the settlement contract, the chained-mode fold guest, or nobody (diagnostic). */
   readBy: Array<'contract' | 'fold' | 'diagnostic'>
 }
@@ -244,19 +297,19 @@ const register = (r: Omit<RegisterInfo, 'description'>, description: MessageDesc
 export const BATCH_REGISTERS: RegisterInfo[] = [
   register(
     { index: 0, span: 1, key: 'ok', name: 'overall_ok', readBy: ['contract', 'fold'] },
-    msg`1 when every check in the guest passed. The registry refuses anything else.`
+    msg`1 when every check passed. The registry accepts nothing else.`
   ),
   register(
     { index: 1, span: 1, key: 'failMask', name: 'fail_mask', readBy: ['contract', 'fold'] },
-    msg`One bit per failed check; zero on a valid batch.`
+    msg`Which checks failed, one bit each. Zero on a valid batch.`
   ),
   register(
     { index: 2, span: 8, key: 'rootBefore', name: 'RootHashBefore', readBy: ['contract', 'fold'] },
-    msg`State root the batch starts from. Must equal the process root on-chain (root continuity).`
+    msg`The fingerprint of the state before the batch. It must be the state root the registry holds for the process (root continuity).`
   ),
   register(
     { index: 10, span: 8, key: 'rootAfter', name: 'RootHashAfter', readBy: ['contract', 'fold'] },
-    msg`State root after the batch; becomes the new process root.`
+    msg`The fingerprint of the state after the batch. It becomes the process’s new state root.`
   ),
   register(
     { index: 18, span: 1, key: 'voters', name: 'VotersCount', readBy: ['contract', 'fold'] },
@@ -268,39 +321,46 @@ export const BATCH_REGISTERS: RegisterInfo[] = [
   ),
   register(
     { index: 20, span: 8, key: 'censusRoot', name: 'CensusRoot', readBy: ['contract', 'fold'] },
-    msg`Census root every ballot proved membership against (CSP: the signer address). Checked against the process census.`
+    msg`The fingerprint of the list of voters every vote was checked against (for a credential service, its signing address). The registry checks it is the process’s list.`
   ),
   register(
-    { index: 28, span: 8, key: 'blobsDigest', name: 'BlobsDigest', readBy: ['contract'] },
-    msg`sha256 over the (commitment, evaluation) pair of every blob; binds the published data to the proof.`
+    {
+      index: 28,
+      span: 8,
+      key: 'blobsDigest',
+      name: 'BlobsDigest',
+      readBy: ['contract'],
+      formula: 'sha256(commitment₀ ‖ y₀ ‖ commitment₁ ‖ y₁ ‖ …)',
+    },
+    msg`One fingerprint over every blob of the batch: each blob’s commitment and its value at a fixed point. It ties the published data to the proof.`
   ),
   register(
     { index: 36, span: 1, key: 'nBlobs', name: 'NBlobs', readBy: ['contract'] },
-    msg`Number of EIP-4844 blobs carrying the transition data.`
+    msg`How many data blobs (EIP-4844) carry the batch’s data.`
   ),
   register({ index: 37, span: 3, key: null, name: 'reserved', readBy: ['diagnostic'] }, msg`Always zero.`),
   register(
     { index: 40, span: 1, key: 'batchOk', name: 'batch_ok', readBy: ['diagnostic'] },
-    msg`The batched Groth16 check of the ballot proofs passed.`
+    msg`1 when every ballot proof verified (one batched Groth16 check).`
   ),
   register(
     { index: 41, span: 1, key: 'ecdsaOk', name: 'ecdsa_ok', readBy: ['diagnostic'] },
-    msg`Every vote signature verified.`
+    msg`1 when every vote signature verified.`
   ),
   register(
     { index: 42, span: 1, key: 'occupiedBefore', name: 'OccupiedBefore', readBy: ['contract', 'fold'] },
-    msg`Distinct ballot slots written before the batch. Must equal votersCount on-chain; it sizes the silent refreshes.`
+    msg`How many voters had voted before this batch. It must equal the registry’s votersCount, and it sets how many silent refreshes the batch needs.`
   ),
   register(
     { index: 43, span: 1, key: 'nproofs', name: 'nproofs', readBy: ['diagnostic'] },
-    msg`Ballot proofs in the batch (equals the votes when ok).`
+    msg`How many ballot proofs the batch checked: the number of votes, when every check passed.`
   ),
   register(
     { index: 44, span: 1, key: 'nPublic', name: 'n_public', readBy: ['diagnostic'] },
-    msg`Public inputs per ballot proof.`
+    msg`How many public inputs each ballot proof has.`
   ),
   register(
-    { index: 45, span: 1, key: 'logN', name: 'log_n', readBy: ['diagnostic'] },
-    msg`floor(log2(nproofs)), echoed unchecked.`
+    { index: 45, span: 1, key: 'logN', name: 'log_n', readBy: ['diagnostic'], formula: 'floor(log2(nproofs))' },
+    msg`A size figure derived from the number of proofs, reported but not checked.`
   ),
 ]

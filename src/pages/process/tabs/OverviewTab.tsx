@@ -1,27 +1,39 @@
 import type { ReactNode } from 'react'
 import type { MessageDescriptor } from '@lingui/core'
 import { msg, plural } from '@lingui/core/macro'
-import { Trans, useLingui } from '@lingui/react/macro'
-import { CensusOriginBadge, CheckMark, Explain, Timestamp, TxLink } from '~components'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { CensusOriginBadge, CheckMark, Explain, Formula, InShort, Term, Timestamp, TxLink } from '~components'
 import { useChain, type ProcessView } from '~data/hooks'
-import { Address, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar, SkeletonText, UriLink } from '~kit'
+import { useMetadataCheck } from '~data/queries'
+import { Address, Badge, BlockCell, Callout, Hash, KeyValue, Panel, ProgressBar, SkeletonText, UriLink } from '~kit'
 import { formatDuration, formatNumber, formatTimestamp } from '~lib/format'
 import { NUM_FIELDS } from '~protocol/limits'
 import { browsableUri } from '~protocol/metadata'
 import { parseProcessId } from '~protocol/process-id'
-import { CENSUS_ORIGIN_INFO, type CensusOriginName } from '~protocol/types'
+import { CENSUS_ORIGIN_INFO, KEY_MODE_INFO, type CensusOriginName } from '~protocol/types'
 import { describeBallotMode } from '../ballot-mode'
+import { metadataPreset } from '../metadata'
 import { MetadataPanel } from '../MetadataPanel'
 
 /** Result cap of `newProcess`: maxValue ≤ 10^12 / maxVoters. */
 const MAX_POSSIBLE_RESULT = 1_000_000_000_000n
 
 const CENSUS_ROOT_RULE: Record<CensusOriginName, MessageDescriptor> = {
-  unknown: msg`Not an origin the registry accepts.`,
-  'merkle-static': msg`Every batch must be proven against the root fixed at creation.`,
-  'merkle-dynamic': msg`The organizer may replace the root while the process is Ready or Paused and before its end; each batch must use the current root.`,
-  'onchain-dynamic': msg`Each batch may use any root the census contract recorded at or after the creation block; the registry asks the contract at every settlement.`,
-  csp: msg`Every vote carries a signature from the CSP signer; the root is that signer’s address and never changes.`,
+  unknown: msg`Not a kind of list the registry accepts.`,
+  'merkle-static': msg`The list was fixed when the process was created. Every batch of votes is checked against that same list.`,
+  'merkle-dynamic': msg`The organizer can replace the list while the process is open or paused, until the end. Each batch of votes is checked against the list current at the time.`,
+  'onchain-dynamic': msg`A batch may use any root the census contract recorded at or after the creation block: any version of the list since the process was created. The registry asks the contract at every batch.`,
+  csp: msg`Each vote carries a signature from the credential service. The service’s signing address stands for the list and never changes.`,
+}
+
+/** davinci-sdk's election presets, by the `type` it writes in the metadata. */
+const PRESET_LABEL: Record<string, MessageDescriptor> = {
+  single_choice: msg`Single choice`,
+  multiple_choice: msg`Multiple choice`,
+  approval: msg`Approval`,
+  rating: msg`Rating`,
+  ranking: msg`Ranking`,
+  quadratic: msg`Quadratic voting`,
 }
 
 function Label({ children, help }: { children: ReactNode; help: ReactNode }) {
@@ -55,6 +67,9 @@ export function OverviewTab({ view }: { view: ProcessView }) {
   }
   return (
     <div data-testid='tab-overview' className='grid items-start gap-6 lg:grid-cols-2'>
+      <div className='min-w-0 lg:col-span-2'>
+        <ProcessInShort view={view} />
+      </div>
       <div className='flex min-w-0 flex-col gap-6'>
         <BallotPanel view={view} />
         <CensusPanel view={view} />
@@ -71,18 +86,96 @@ export function OverviewTab({ view }: { view: ProcessView }) {
   )
 }
 
+/** The process in a few plain sentences: where voting stands, who voted, what a ballot is, who holds the key. */
+function ProcessInShort({ view }: { view: ProcessView }) {
+  const { row } = view
+  const s = view.process.state!
+  const end = row.endTime
+  const start = row.startTime
+  const voters = row.votersCount
+  const overwrites = row.overwrittenVotesCount
+  const most = formatNumber(s.maxVoters)
+  const phase =
+    row.phase === 'upcoming' ? (
+      <Trans>
+        Voting opens <Timestamp value={start} relative={false} />.
+      </Trans>
+    ) : row.phase === 'open' ? (
+      <Trans>
+        Voting is open until <Timestamp value={end} relative={false} />.
+      </Trans>
+    ) : row.phase === 'paused' ? (
+      <Trans>
+        The organizer paused voting, which is due to end <Timestamp value={end} relative={false} />.
+      </Trans>
+    ) : row.phase === 'closed' || row.phase === 'ended' ? (
+      <Trans>Voting has ended; the results are not published yet.</Trans>
+    ) : row.phase === 'canceled' ? (
+      <Trans>The organizer canceled this process, so there will be no results.</Trans>
+    ) : row.phase === 'results' ? (
+      <Trans>Voting has ended and the results are published.</Trans>
+    ) : null
+  return (
+    <InShort>
+      <p data-testid='process-in-short'>
+        {phase}{' '}
+        {overwrites > 0 ? (
+          <Trans>
+            <Plural value={voters} one='# voter' other='# voters' /> of at most {most} took part, and{' '}
+            <Plural value={overwrites} one='# vote' other='# votes' /> replaced an earlier one.
+          </Trans>
+        ) : (
+          <Trans>
+            <Plural value={voters} one='# voter' other='# voters' /> of at most {most} took part.
+          </Trans>
+        )}{' '}
+        {describeBallotMode(s.ballotMode).summary} {KEY_MODE_INFO[s.keyMode].description}
+      </p>
+    </InShort>
+  )
+}
+
 function BallotPanel({ view }: { view: ProcessView }) {
-  const { t } = useLingui()
-  const bm = view.process.state!.ballotMode
+  const { i18n, t } = useLingui()
+  const s = view.process.state!
+  const bm = s.ballotMode
   const d = describeBallotMode(bm)
+  const metadata = useMetadataCheck(s.metadataURI, s.metadataHash)
+  // Only from the document the organizer committed to; another one's label says nothing.
+  const preset = metadata.status === 'matches' ? metadataPreset(metadata.doc) : null
+  const declared = preset ? (PRESET_LABEL[preset] ? i18n._(PRESET_LABEL[preset]) : preset) : null
   const pattern = d.label
   const capacity = NUM_FIELDS
   return (
-    <Panel
-      title={t`Ballot`}
-      label={d.kind === 'unsatisfiable' ? pattern : t`Reads as: ${pattern}`}
-      description={d.summary}
-    >
+    <Panel title={t`Ballot`} label={d.kind === 'unsatisfiable' ? pattern : t`Ballot rules`} description={d.summary}>
+      <div className='mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-ash' data-testid='ballot-kind'>
+        <span className='inline-flex flex-wrap items-center gap-1.5'>
+          <Trans>
+            Reads as: <Badge size='sm'>{pattern}</Badge>
+          </Trans>
+          <Explain>
+            <Trans>
+              The chain stores the rules, not a name for them, so the explorer names the pattern the rules follow.
+            </Trans>
+          </Explain>
+        </span>
+        {declared ? (
+          <span className='inline-flex flex-wrap items-center gap-1.5' data-testid='ballot-kind-declared'>
+            <Trans>
+              Declared by the organizer:{' '}
+              <Badge size='sm' tone='slate'>
+                {declared}
+              </Badge>
+            </Trans>
+            <Explain>
+              <Trans>
+                The kind the organizer’s app wrote in the metadata document, whose fingerprint matches the one on chain.
+                It is a label: the rules above are what every ballot proof enforces.
+              </Trans>
+            </Explain>
+          </span>
+        ) : null}
+      </div>
       <ul className='flex flex-col gap-1.5 text-[13px] leading-relaxed text-silver' data-testid='ballot-rules'>
         {d.rules.map((r) => (
           <li key={r} className='flex gap-2'>
@@ -93,9 +186,9 @@ function BallotPanel({ view }: { view: ProcessView }) {
       </ul>
       <p className='mt-3 text-xs leading-relaxed text-ash'>
         <Trans>
-          Each voter&apos;s ballot proof enforces these rules on the encrypted ballot, and the batch program checks
-          every ballot proof against the ballot mode pinned in state leaf 0x02, so a ballot built for other rules is
-          rejected.
+          A ballot that breaks these rules cannot be counted. Each voter’s app proves that the encrypted ballot follows
+          them (a <Term id='ballot-proof'>ballot proof</Term>), and every batch checks those proofs against the rules
+          stored with the process, in state leaf 0x02.
         </Trans>
       </p>
       <KeyValue
@@ -104,7 +197,9 @@ function BallotPanel({ view }: { view: ProcessView }) {
         items={[
           {
             label: (
-              <Label help={t`Numbers per ballot, 1 to ${capacity}. Unused capacity is padded and skipped.`}>
+              <Label
+                help={t`How many numbers a ballot holds, usually one per option (1 to ${capacity}). The unused places are padding and are skipped.`}
+              >
                 <Trans>Fields</Trans>
               </Label>
             ),
@@ -140,7 +235,9 @@ function BallotPanel({ view }: { view: ProcessView }) {
           },
           {
             label: (
-              <Label help={t`Each value is raised to this power before summing: 2 makes votes cost their square.`}>
+              <Label
+                help={t`What a vote costs: each value is raised to this power before the values are added up. With 2, putting 3 votes on one option costs 9.`}
+              >
                 <Trans>Cost exponent</Trans>
               </Label>
             ),
@@ -149,7 +246,9 @@ function BallotPanel({ view }: { view: ProcessView }) {
           },
           {
             label: (
-              <Label help={t`Groups of fields for multi-question ballots; 0 when unused.`}>
+              <Label
+                help={t`Fields per question, for a ballot with several questions: 0 when unused, or the field count for a single question.`}
+              >
                 <Trans>Group size</Trans>
               </Label>
             ),
@@ -158,7 +257,7 @@ function BallotPanel({ view }: { view: ProcessView }) {
           },
           {
             label: (
-              <Label help={t`Lower bound of the cost sum; 0 means none.`}>
+              <Label help={t`The least a voter must give in total, adding up the costs. 0 means no minimum.`}>
                 <Trans>Min sum</Trans>
               </Label>
             ),
@@ -167,7 +266,9 @@ function BallotPanel({ view }: { view: ProcessView }) {
           },
           {
             label: (
-              <Label help={t`Upper bound of the cost sum; 0 means the voter's census weight.`}>
+              <Label
+                help={t`The most a voter may give in total, adding up the costs. 0 means up to the voter’s weight in the census.`}
+              >
                 <Trans>Max sum</Trans>
               </Label>
             ),
@@ -203,10 +304,10 @@ function CensusPanel({ view }: { view: ProcessView }) {
               <Label
                 help={
                   isCsp
-                    ? t`The address of the credential service provider whose signatures admit voters, stored as a big-endian integer.`
+                    ? t`The credential service whose signature lets a voter vote. The registry stores its address as the census root, a big-endian integer.`
                     : c.origin === 'onchain-dynamic'
-                      ? t`The census contract’s root when the process was created, kept for information: batches are checked against the contract instead.`
-                      : t`Root of the lean-IMT Merkle tree of eligible voters and their weights, a big-endian integer. Voters prove membership against it.`
+                      ? t`The fingerprint of the contract’s list when the process was created, kept for information. Batches are checked against the contract instead.`
+                      : t`The fingerprint of the list of voters and their weights. Each voter proves they are on the list against it (the root of a lean-IMT Merkle tree, as a big-endian integer).`
                 }
               >
                 {isCsp ? t`CSP signer` : c.origin === 'onchain-dynamic' ? t`Root at creation` : t`Census root`}
@@ -219,7 +320,7 @@ function CensusPanel({ view }: { view: ProcessView }) {
                 {
                   label: (
                     <Label
-                      help={t`The ICensusValidator contract the registry asks, at every settlement, whether it held the batch’s census root.`}
+                      help={t`The contract that keeps the list. At every batch the registry asks it whether it held the list the batch used (ICensusValidator).`}
                     >
                       <Trans>Census contract</Trans>
                     </Label>
@@ -234,7 +335,7 @@ function CensusPanel({ view }: { view: ProcessView }) {
                 help={
                   isCsp
                     ? t`Where voters get their signatures.`
-                    : t`Where sequencers download the census; they check its root before serving votes.`
+                    : t`Where the full list can be downloaded. Sequencers fetch it and check its fingerprint before they accept votes.`
                 }
               >
                 <Trans>Census URI</Trans>
@@ -251,7 +352,7 @@ function CensusPanel({ view }: { view: ProcessView }) {
           </div>
           {updates.length === 0 ? (
             <p className='text-[13px] text-ash'>
-              <Trans>The organizer has not replaced the census root.</Trans>
+              <Trans>The organizer has not replaced the list.</Trans>
             </p>
           ) : (
             <ul className='flex flex-col divide-y divide-charcoal/60 text-[13px]'>
@@ -294,7 +395,7 @@ function DatesPanel({ view }: { view: ProcessView }) {
           { label: t`Start`, value: <Timestamp value={s.startTime} />, hint: formatTimestamp(s.startTime) },
           {
             label: (
-              <Label help={t`Start time plus duration. Batches settle only inside this window.`}>
+              <Label help={t`The start time plus the duration. Votes are recorded only between the start and the end.`}>
                 <Trans>End</Trans>
               </Label>
             ),
@@ -309,8 +410,8 @@ function DatesPanel({ view }: { view: ProcessView }) {
           <Trans>Duration changes</Trans>
           <Explain>
             <Trans>
-              While a process is Ready or Paused and before its end, the organizer may only extend it. Ending it early
-              (status Ended) sets the duration to the time elapsed since the start.
+              Before the end, the organizer can only make voting last longer. Ending it early (status Ended) sets the
+              duration to the time since the start.
             </Trans>
           </Explain>
         </div>
@@ -357,7 +458,7 @@ function LimitsPanel({ view }: { view: ProcessView }) {
       <ProgressBar
         value={row.votersCount}
         total={Math.max(s.maxVoters, 1)}
-        label={t`Voters against the maximum`}
+        label={t`Voters so far, of the maximum`}
         tone={row.votersCount >= s.maxVoters ? 'warn' : 'accent'}
       />
       <KeyValue
@@ -366,7 +467,7 @@ function LimitsPanel({ view }: { view: ProcessView }) {
           {
             label: (
               <Label
-                help={t`The registry refuses a batch that would take the voter count above this. The organizer may change it while the process is Ready or Paused, but never below the current voter count.`}
+                help={t`The most voters this process accepts: the registry refuses a batch that would go above it. The organizer can change it while the process is open or paused, but never below the voters so far.`}
               >
                 <Trans>Max voters</Trans>
               </Label>
@@ -381,7 +482,7 @@ function LimitsPanel({ view }: { view: ProcessView }) {
           {
             label: (
               <Label
-                help={t`Every ballot carries ${capacity} encrypted fields; the process uses the first numFields and the rest are fixed padding.`}
+                help={t`Every ballot has room for ${capacity} encrypted numbers. The process uses the first ones (numFields); the rest are fixed padding.`}
               >
                 <Trans>Fields in use</Trans>
               </Label>
@@ -392,14 +493,20 @@ function LimitsPanel({ view }: { view: ProcessView }) {
           {
             label: (
               <Label
-                help={t`The registry requires maxValue × maxVoters to stay within 10^12, so any tally stays inside the bounded search that decrypts it.`}
+                help={
+                  <Trans>
+                    The highest total one option could reach if every voter gave it the maximum. The registry keeps it
+                    at or below one trillion, so the final count can always be decrypted:{' '}
+                    <Formula expr='maxValue × maxVoters ≤ 10^12' />.
+                  </Trans>
+                }
               >
                 <Trans>Largest possible tally per field</Trans>
               </Label>
             ),
             value: formatNumber(worst),
             mono: true,
-            hint: t`cap ${cap}`,
+            hint: t`limit ${cap}`,
           },
         ]}
       />
@@ -417,7 +524,7 @@ function ProcessIdPanel({ view }: { view: ProcessView }) {
     <Panel
       title={t`Process id`}
       label={t`Decoded`}
-      description={t`31 bytes: the organizer’s address, a 4-byte prefix of this registry and chain, and the organizer’s nonce.`}
+      description={t`The id has three parts: the organizer’s address, a code for this registry and chain, and a count of the organizer’s earlier processes (31 bytes in all).`}
     >
       <KeyValue
         items={[
@@ -425,7 +532,13 @@ function ProcessIdPanel({ view }: { view: ProcessView }) {
           {
             label: (
               <Label
-                help={t`The last 4 bytes of keccak256(chainId ‖ registry address). The registry refuses ids with another prefix, so an id cannot be replayed on another chain or registry.`}
+                help={
+                  <Trans>
+                    Ties the id to this registry and chain: the registry refuses ids with another prefix, so an id
+                    cannot be reused anywhere else. It is the last 4 bytes of{' '}
+                    <Formula expr='keccak256(chainId ‖ registry)' />.
+                  </Trans>
+                }
               >
                 <Trans>Registry prefix</Trans>
               </Label>

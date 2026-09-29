@@ -71,6 +71,9 @@ export function Donut({
                   key={i}
                   d={d}
                   fill={colors[i]}
+                  // A hairline in the card's colour keeps two neighbours of one hue apart.
+                  stroke='var(--color-carbon)'
+                  strokeWidth={1.5}
                   onMouseMove={(e) =>
                     show(
                       e,

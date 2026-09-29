@@ -33,7 +33,7 @@ test.describe('overview', () => {
     const errors = noPageErrors(page)
     await demo(page, '/')
     const root = page.getByTestId('page-overview')
-    await expect(root.getByText('Ballots settled', { exact: true })).toBeVisible()
+    await expect(root.getByText('Votes recorded', { exact: true })).toBeVisible()
     await expect(root.getByText(/matches davinci-zkvm/)).toBeVisible()
     await expect(
       root.getByRole('list', { name: 'Release pin checks' }).getByRole('img', { name: 'passed' })
@@ -134,7 +134,7 @@ test.describe('process page', () => {
     await demo(page, `/processes/${AWAITING_REVEAL}/key`)
     const tab = page.getByTestId('tab-key')
     await expect(tab.getByText('sealed', { exact: true })).toBeVisible()
-    await expect(tab).toContainText('waiting for partials')
+    await expect(tab).toContainText('waiting for partial decryptions')
     await expect(tab.getByRole('link', { name: /Open in the DKG explorer/ })).toHaveAttribute(
       'href',
       /^https:\/\/dkg\.example\.org\/applications\/0x[0-9a-f]{24}\/0x[0-9a-f]{64}$/
@@ -164,7 +164,7 @@ test.describe('process page', () => {
 
     const box = page.getByRole('textbox', { name: 'Vote id' })
     await box.fill('12')
-    await expect(page.getByText(/A vote id is a number from 2\^63/)).toBeVisible()
+    await expect(page.getByText(/A vote id is 0x followed by 16 hex digits/)).toBeVisible()
     await box.fill(voteId)
     await page.getByRole('button', { name: 'Look up this vote' }).click()
     await expect(page).toHaveURL(new RegExp(`/verify/vote\\?pid=${OPEN}&voteId=${voteId}`))
@@ -178,7 +178,7 @@ test.describe('process page', () => {
     await expect(tab.getByRole('img', { name: 'passed' })).toHaveCount(4)
 
     await demo(page, `/processes/${DKG_RESULTS}/results`)
-    await expect(page.getByTestId('tab-results')).toContainText('Every submitted ciphertext is combined')
+    await expect(page.getByTestId('tab-results')).toContainText('Every value sent to the committee is decrypted')
 
     await demo(page, `/processes/${OPEN}/results`)
     await expect(page.getByTestId('no-results')).toContainText('No results yet')

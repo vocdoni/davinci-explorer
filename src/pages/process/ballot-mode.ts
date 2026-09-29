@@ -185,7 +185,7 @@ export function describeBallotMode(bm: BallotMode): BallotModeDescription {
   if (bm.groupSize > 1 && bm.groupSize !== fields) {
     const size = formatNumber(bm.groupSize)
     rules.push(
-      t`Fields come in groups of ${size} (a multi-question layout); the ballot proof only checks the group size does not exceed the field count.`
+      t`Fields come in groups of ${size}, one group per question. The ballot proof only checks that a group is not larger than the whole ballot.`
     )
   }
   rules.push(
@@ -225,7 +225,8 @@ export function describeBallotMode(bm: BallotMode): BallotModeDescription {
   const cap = formatNumber(capValue)
   if (e >= 2 && bm.maxValue > 1n) {
     const exponent = e
-    const cost = e === 2 ? 'v²' : `v^${e}`
+    // v², v³, …: a superscript, not a caret, in running text.
+    const cost = `v${String(e).replace(/\d/g, (d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[Number(d)]!)}`
     let summary: string
     if (bm.maxValueSum === 0n) {
       summary = t`Each voter spends as many credits as their census weight across ${plural(options, { one: '# option', other: '# options' })}; putting v votes on one option costs ${cost} credits, at most ${cap} votes per option.`

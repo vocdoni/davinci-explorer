@@ -66,4 +66,9 @@ describe('Formula', () => {
     rerender(<Formula expr='y = f(x)' block />)
     expect(container.querySelector('div[data-formula]')).toHaveTextContent('y = f(x)')
   })
+  it('sets an exponent as a superscript and keeps the caret for copying', () => {
+    const { container } = render(<Formula expr='10^12 / maxVoters' />)
+    expect(container.querySelector('sup')).toHaveTextContent('12')
+    expect(container.textContent).toBe('10^12 / maxVoters')
+  })
 })

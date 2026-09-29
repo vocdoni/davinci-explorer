@@ -554,29 +554,29 @@ function feedEntry(store: IndexerStore, ev: IndexedEvent): FeedEntry | null {
     case 'ProcessStatusChanged': {
       const from = PROCESS_STATUS_INFO[ev.data.oldStatus].label
       const to = PROCESS_STATUS_INFO[ev.data.newStatus].label
-      return { ...base, kind: 'status', label: t`Status ${from} → ${to}` }
+      return { ...base, kind: 'status', label: t`Status changed from ${from} to ${to}` }
     }
     case 'ResultsDecryptionRequested': {
       const count = ev.data.count
       return {
         ...base,
         kind: 'decryption',
-        label: t`Tally sent to the DKG committee (${plural(count, { one: '# ciphertext', other: '# ciphertexts' })})`,
+        label: t`Encrypted count sent to the DKG committee to decrypt (${plural(count, { one: '# field', other: '# fields' })})`,
         href: paths.process(ev.processId, 'results'),
       }
     }
     case 'CensusUpdated':
-      return { ...base, kind: 'census', label: t`Census root replaced` }
+      return { ...base, kind: 'census', label: t`List of voters replaced` }
     case 'ProcessMetadataUpdated': {
       const created = store.processes[processKey(ev.processId)]?.createdTx
       if (ev.tx != null && ev.tx === created) return null
-      return { ...base, kind: 'metadata', label: t`Metadata document replaced` }
+      return { ...base, kind: 'metadata', label: t`New description published` }
     }
     case 'ProcessDurationChanged':
-      return { ...base, kind: 'duration', label: t`Duration changed` }
+      return { ...base, kind: 'duration', label: t`End time changed` }
     case 'ProcessMaxVotersChanged': {
       const maxVoters = formatNumber(ev.data.maxVoters)
-      return { ...base, kind: 'max-voters', label: t`Max voters set to ${maxVoters}` }
+      return { ...base, kind: 'max-voters', label: t`Voter limit set to ${maxVoters}` }
     }
   }
 }
@@ -658,15 +658,15 @@ export function onchainRoots(store: IndexerStore, pid: string): Set<Hex> {
 // ── search ───────────────────────────────────────────────────────────────────
 
 export interface SearchHit {
-  kind: 'process' | 'transition' | 'organizer' | 'contract' | 'vote' | 'block'
+  kind: 'process' | 'transition' | 'organizer' | 'sequencer' | 'contract' | 'vote' | 'block'
   label: string
   href: string
 }
 
 /**
  * What the store knows about a query: a process id, a settlement or creation
- * transaction, an organizer or contract address, a vote id, or a block with a
- * transition. Shape-only routing (and the block-explorer fallback) is the
+ * transaction, an organizer, sequencer or contract address, a vote id, or a
+ * block with a transition. Shape-only routing (and the block-explorer fallback) is the
  * shell's `resolveSearch`; this runs first.
  */
 export function searchStore(store: IndexerStore, raw: string, limit = 8): SearchHit[] {
@@ -705,6 +705,19 @@ export function searchStore(store: IndexerStore, raw: string, limit = 8): Search
         kind: 'organizer',
         label: t`Organizer of ${plural(owned, { one: '# process', other: '# processes' })}`,
         href: paths.processes({ organizer: q }),
+      })
+    }
+    // An account that settled a batch or published results is a sequencer, whoever it is.
+    const settled = store.transitionOrder.filter((k) => store.transitions[k]!.sender.toLowerCase() === q).length
+    const published = store.processOrder.some((k) => store.processes[k]!.results?.sender.toLowerCase() === q)
+    if (settled > 0 || published) {
+      push({
+        kind: 'sequencer',
+        label:
+          settled > 0
+            ? t`Sequencer that recorded ${plural(settled, { one: '# batch', other: '# batches' })}`
+            : t`Sequencer that published results`,
+        href: paths.sequencer(q),
       })
     }
   }

@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router'
 import { HashLink } from '~components/HashLink'
 import { EmptyState, Input } from '~kit'
 import { cn } from '~lib/cn'
-import { filterGlossary, readGlossary } from '../glossary'
+import { filterGlossary, readGlossary } from '~content/glossary'
 import { Rich } from '../prose'
 
 export function Glossary() {

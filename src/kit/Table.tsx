@@ -252,6 +252,23 @@ function HeaderRow<T>({
   )
 }
 
+/** Narrowest a flexible column gets in a virtualised table before the table scrolls sideways. */
+const FLEX_MIN_WIDTH = 120
+
+/**
+ * The width a virtualised table needs: fixed tracks, a minimum per flexible
+ * track, the gaps and the side padding. Below it the rows scroll sideways
+ * inside the table instead of squeezing every cell to nothing.
+ */
+function minTableWidth<T>(headers: Headers<T>): number {
+  let width = 32 + 16 * Math.max(0, headers.length - 1)
+  for (const h of headers) {
+    const fixed = /^(\d+(?:\.\d+)?)px$/.exec(h.column.columnDef.meta?.width ?? '')
+    width += fixed ? Number(fixed[1]) : FLEX_MIN_WIDTH
+  }
+  return width
+}
+
 function VirtualBody<T>({
   rows,
   headers,
@@ -275,10 +292,16 @@ function VirtualBody<T>({
     overscan: 12,
   })
 
+  // One scroller for both axes: the header sticks to the top and moves sideways with the rows.
   return (
-    <div className={cn('w-full', className)}>
-      <HeaderRow headers={headers} sticky={false} onSort={undefined} />
-      <div ref={scrollRef} className='overflow-y-auto scroll-slim' style={{ maxHeight }}>
+    <div
+      ref={scrollRef}
+      data-virtualized=''
+      className={cn('w-full overflow-auto scroll-slim', className)}
+      style={{ maxHeight }}
+    >
+      <div style={{ minWidth: minTableWidth(headers) }}>
+        <HeaderRow headers={headers} sticky onSort={undefined} />
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {virtualizer.getVirtualItems().map((virtualRow) => {
             const row = rows[virtualRow.index]

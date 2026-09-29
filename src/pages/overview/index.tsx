@@ -1,7 +1,7 @@
 import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
-import { Explain, Timestamp } from '~components'
+import { Explain, Term, Timestamp } from '~components'
 import { useNetworkName } from '~config/config-context'
 import { useIndexer, useNetworkStats } from '~data/hooks'
 import { buttonClasses, Callout, SectionHeader, Stack, StatCell, StatRow } from '~kit'
@@ -44,10 +44,10 @@ export function OverviewPage() {
         <div data-testid='empty-registry'>
           <Callout tone='info' title={t`No processes on this registry yet`}>
             <Trans>
-              The registry is deployed and the explorer is watching it. When an organizer creates a process it shows up
-              here with its ballot rules, census and key. Each batch a sequencer settles then appears as a state
-              transition with its blobs, and the tally appears once the process ends. Meanwhile you can already check
-              the deployment itself.
+              The registry is set up and the explorer is watching it. When an organizer creates a{' '}
+              <Term id='process'>process</Term>, it appears here with its ballot rules, its list of voters and its key.
+              Each <Term id='batch'>batch</Term> of votes then shows up as it is recorded, and the results once voting
+              ends. Meanwhile you can already check the deployment itself.
             </Trans>
           </Callout>
         </div>
@@ -62,7 +62,7 @@ export function OverviewPage() {
           hint={t`${plural(open, { one: '# open', other: '# open' })} · ${withResults} with results`}
         />
         <StatCell
-          label={t`Ballots settled`}
+          label={t`Votes recorded`}
           value={formatNumber(stats.ballots)}
           loading={loading}
           mono
@@ -74,8 +74,8 @@ export function OverviewPage() {
           aside={
             <Explain>
               <Trans>
-                Votes in settled batches. A voter counts once however often they vote again; each later vote is an
-                overwrite that replaces the previous one.
+                Votes in the batches recorded on chain. A voter counts once however often they vote; each later vote is
+                an overwrite that replaces their previous one.
               </Trans>
             </Explain>
           }
@@ -89,8 +89,8 @@ export function OverviewPage() {
           aside={
             <Explain>
               <Trans>
-                A transition is one batch of votes a sequencer proved and settled on the registry. Its data travels in
-                EIP-4844 blobs, so anyone can rebuild the state.
+                A transition is one batch of votes, proven by a sequencer and recorded on the registry. Its data is
+                published in blobs (EIP-4844), so anyone can rebuild the count.
               </Trans>
             </Explain>
           }

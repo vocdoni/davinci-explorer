@@ -60,6 +60,17 @@ export function metadataChoices(doc: Json, numFields: number): string[] | null {
 }
 
 /**
+ * The kind of ballot the organizer declared: `meta.electionPreset.type` as
+ * davinci-sdk writes it (`single_choice`, `quadratic`, …), or null. It is a
+ * label from the document; the rules that count are the ballot mode on chain.
+ */
+export function metadataPreset(doc: Json): string | null {
+  if (!isObject(doc) || !isObject(doc.meta)) return null
+  const preset = doc.meta.electionPreset
+  return isObject(preset) ? text(preset.type) : null
+}
+
+/**
  * A version the organizer set once voting had opened: votes cast before it
  * were cast under the previous one. Never the version set at creation.
  */

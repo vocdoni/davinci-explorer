@@ -2,22 +2,25 @@ import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
+import { PHASE_TONE } from '~components/badges'
+import { Term } from '~components'
 import { useIndexer, useNetworkStats } from '~data/hooks'
 import type { ProcessPhase } from '~indexer/selectors'
 import { EmptyState, Panel } from '~kit'
-import { CHART_COLORS, Donut, type DonutSlice } from '~kit/charts'
+import { Donut, TONE_COLORS, type DonutSlice } from '~kit/charts'
 import { formatNumber } from '~lib/format'
 import { CENSUS_ORIGIN_INFO, KEY_MODE_INFO, type CensusOriginName, type KeyModeName } from '~protocol/types'
 import { paths } from '~routes/paths'
 
-const PHASES: Array<{ phase: ProcessPhase; label: MessageDescriptor; color: string }> = [
-  { phase: 'open', label: msg({ message: 'open', context: 'process phase' }), color: CHART_COLORS.emerald },
-  { phase: 'upcoming', label: msg({ message: 'upcoming', context: 'process phase' }), color: CHART_COLORS.teal },
-  { phase: 'paused', label: msg({ message: 'paused', context: 'process phase' }), color: CHART_COLORS.amber },
-  { phase: 'closed', label: msg({ message: 'voting closed', context: 'process phase' }), color: CHART_COLORS.warmGray },
-  { phase: 'ended', label: msg({ message: 'ended', context: 'process phase' }), color: CHART_COLORS.pewter },
-  { phase: 'results', label: msg({ message: 'results', context: 'process phase' }), color: CHART_COLORS.slate },
-  { phase: 'canceled', label: msg({ message: 'canceled', context: 'process phase' }), color: CHART_COLORS.red },
+// Slices in the colours of the phase tags (PHASE_TONE), in the order a process goes through them.
+const PHASES: Array<{ phase: ProcessPhase; label: MessageDescriptor }> = [
+  { phase: 'upcoming', label: msg({ message: 'upcoming', context: 'process phase' }) },
+  { phase: 'open', label: msg({ message: 'open', context: 'process phase' }) },
+  { phase: 'paused', label: msg({ message: 'paused', context: 'process phase' }) },
+  { phase: 'closed', label: msg({ message: 'voting closed', context: 'process phase' }) },
+  { phase: 'ended', label: msg({ message: 'ended', context: 'process phase' }) },
+  { phase: 'results', label: msg({ message: 'results', context: 'process phase' }) },
+  { phase: 'canceled', label: msg({ message: 'canceled', context: 'process phase' }) },
 ]
 
 const KEY_MODES: KeyModeName[] = ['sequencer', 'dkg-automatic', 'dkg-locked']
@@ -45,13 +48,19 @@ export function ProcessesPanel() {
   const slices: DonutSlice[] = PHASES.filter((p) => stats.byPhase[p.phase] > 0).map((p) => ({
     label: i18n._(p.label),
     value: stats.byPhase[p.phase],
-    color: p.color,
+    color: TONE_COLORS[PHASE_TONE[p.phase]],
   }))
 
   return (
     <Panel
       title={t`Processes`}
       label={t`By phase, key and census`}
+      description={
+        <Trans>
+          How many processes are in each phase, who holds their key (the <Term id='key-mode'>key mode</Term>) and where
+          their voters come from (the <Term id='census'>census</Term>). Each line opens the matching list.
+        </Trans>
+      }
       actions={
         <Link to={paths.processes()} className='text-[13px] text-emerald hover:underline'>
           <Trans>All processes</Trans>
@@ -62,7 +71,7 @@ export function ProcessesPanel() {
         <EmptyState
           compact
           title={t`No processes yet`}
-          description={t`Each process an organizer creates will be counted here by phase, key mode and census.`}
+          description={t`Each process an organizer creates will be counted here by phase, key mode and list of voters.`}
         />
       ) : (
         <div className='flex flex-col gap-5'>

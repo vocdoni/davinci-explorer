@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { CheckMark, Timestamp, TxLink, UnverifiedMark } from '~components'
+import { CheckMark, Term, Timestamp, TxLink, UnverifiedMark } from '~components'
 import { CodeBlock, Disclosure } from '~components/code'
 import { useChain, type ProcessView } from '~data/hooks'
 import { useMetadataCheck, type MetadataCheck } from '~data/queries'
@@ -140,7 +140,14 @@ export function MetadataPanel({ view }: { view: ProcessView }) {
     <Panel
       title={t`Metadata`}
       label={t`Published by the organizer`}
-      description={t`The title, the question and the option names live in this document, not on the chain, which only knows field 1, field 2 and so on. The registry stores the document’s address and the SHA-256 of its exact bytes; the explorer downloads it and compares.`}
+      description={
+        <Trans>
+          The title, the question and the option names are not on the chain, which only knows field 1, field 2 and so
+          on. They are in this document, published by the organizer. The registry stores where it is and its{' '}
+          <Term id='metadata-hash'>fingerprint</Term> (the SHA-256 of its exact bytes), and the explorer downloads it
+          and compares.
+        </Trans>
+      }
     >
       <div className='flex flex-col gap-4'>
         <MetadataVerdict check={check} history={history} />
@@ -159,7 +166,7 @@ export function MetadataPanel({ view }: { view: ProcessView }) {
             {
               label: t`Committed hash`,
               value: <Hash value={s.metadataHash} chars={10} />,
-              hint: t`metadataHash in getProcess: SHA-256 of the exact bytes`,
+              hint: t`the fingerprint the organizer recorded on chain (metadataHash)`,
             },
             ...(served
               ? [
@@ -171,7 +178,7 @@ export function MetadataPanel({ view }: { view: ProcessView }) {
                         <Hash value={served.hash} chars={10} />
                       </span>
                     ),
-                    hint: t`SHA-256 of the bytes downloaded (${size}), computed in your browser`,
+                    hint: t`the fingerprint of what the address serves now (${size}), computed in your browser`,
                   },
                 ]
               : []),
@@ -184,9 +191,9 @@ export function MetadataPanel({ view }: { view: ProcessView }) {
             <div className='flex flex-col gap-3 text-[13px] leading-relaxed text-ash'>
               <p>
                 <Trans>
-                  The first line hashes what the address serves; the second prints the registry’s record, whose
-                  fourteenth value is the committed hash. They must be equal (sha256sum leaves out the 0x). The last
-                  command lists every version the organizer set.
+                  The first command computes the fingerprint of what the address serves; the second prints the
+                  registry’s record, whose fourteenth value is the committed fingerprint. They must be equal (sha256sum
+                  leaves out the 0x). The last command lists every version the organizer set.
                 </Trans>
               </p>
               <CodeBlock
@@ -274,8 +281,8 @@ function MetadataHistory({ view }: { view: ProcessView }) {
         </h3>
         <p className='mt-1 text-xs leading-relaxed text-ash'>
           <Trans>
-            Every version the registry recorded. The organizer may replace the document while the process is Ready or
-            Paused and before its end; after that it is frozen.
+            Every version recorded on chain. The organizer can publish a new one while the process is open or paused,
+            until the end; after that it cannot change.
           </Trans>
         </p>
       </div>

@@ -363,7 +363,7 @@ describe('describeBallotMode', () => {
     expect(cubic.label).toBe('Cost exponent 3')
     // 3³ = 27 fits in 50 credits, 4³ = 64 does not.
     expect(cubic.summary).toBe(
-      'Each voter spends up to 50 credits across 4 options; putting v votes on one option costs v^3 credits, at most 3 votes per option.'
+      'Each voter spends up to 50 credits across 4 options; putting v votes on one option costs v³ credits, at most 3 votes per option.'
     )
     expect(describeBallotMode(mode({ numFields: 1, maxValue: 1n })).summary).toBe(
       'Each voter enters one value between 0 and 1.'

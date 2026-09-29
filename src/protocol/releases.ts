@@ -55,15 +55,19 @@ export const PIN_NAMES: PinName[] = [
   'ballotVKHash',
 ]
 
-/** Each pin's name for people, in the active language (it translates on read). */
+/**
+ * Each pin's plain name, in the active language (it translates on read). The
+ * pin's own name (`batchProgramVK`, ...) is the technical one: show it beside,
+ * in code style, where the reader may need it.
+ */
 export const PIN_LABELS: Readonly<Record<PinName, string>> = withText(
   {},
   {
-    batchProgramVK: msg`Vote-batch program vk`,
-    resultsProgramVK: msg`Results program vk`,
-    rootCVadcopFinal: msg`ZisK setup root (rootCVadcopFinal)`,
-    ziskVerifierCodeHash: msg`Verifier code hash`,
-    ballotVKHash: msg`Ballot VK hash`,
+    batchProgramVK: msg`Vote-batch program`,
+    resultsProgramVK: msg`Results program`,
+    rootCVadcopFinal: msg`ZisK proving setup`,
+    ziskVerifierCodeHash: msg`Verifier contract code`,
+    ballotVKHash: msg`Ballot proof key`,
   }
 )
 

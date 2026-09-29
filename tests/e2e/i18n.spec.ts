@@ -88,6 +88,6 @@ test.describe('first visit', () => {
     await expect(html(page)).toHaveAttribute('lang', 'en')
     await page.reload()
     await expect(html(page)).toHaveAttribute('lang', 'en')
-    await expect(page.getByTestId('page-overview').getByText('Ballots settled', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('page-overview').getByText('Votes recorded', { exact: true })).toBeVisible()
   })
 })

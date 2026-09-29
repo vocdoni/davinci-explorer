@@ -114,7 +114,7 @@ export function TransitionSummary({
           {t`Settled by`}
         </Label>
       ),
-      value: <Address value={tr.sender} />,
+      value: <Address value={tr.sender} to={paths.sequencer(tr.sender)} />,
     },
     {
       label: <Label explain={t`The status the settlement transaction ended with.`}>{t`Status`}</Label>,

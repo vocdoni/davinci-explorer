@@ -177,7 +177,8 @@ src/
 ├── app/                  shell: TopBar, ThemeToggle, LanguageSelect, ChainPill, GlobalSearch, StatusBanners, Footer
 ├── routes/               paths.ts (URL table), router.tsx
 ├── pages/<view>/         one folder per view
-├── components/           domain components shared by the pages (badges, links, check marks)
+├── components/           domain components shared by the pages (badges, links, check marks, Term, Formula)
+├── content/              the glossary, shared by the Learn page and every Term
 ├── kit/                  design-system primitives; kit/charts: SVG charts
 ├── data/                 data source, services, store hooks, on-demand hooks
 ├── indexer/              in-browser event indexer, reducers, selectors, persistence
@@ -188,12 +189,12 @@ src/
 tests/
 ├── vectors/              test vectors from the davinci-zkvm Rust SDK and a live Gnosis transition
 └── e2e/                  Playwright smoke suite
-docs/                     translations.md
+docs/                     translations.md, writing.md (how the pages speak)
 scripts/                  i18n-check.mjs
 docker/                   render.sh (entrypoint) and its test
 ```
 
-Path aliases (`~app`, `~components`, `~config`, `~contracts`, `~data`,
+Path aliases (`~app`, `~components`, `~config`, `~content`, `~contracts`, `~data`,
 `~fixtures`, `~hooks`, `~i18n`, `~indexer`, `~kit`, `~lib`, `~pages`,
 `~protocol`, `~routes`, `~theme`) are defined in `tsconfig.paths.json`.
 

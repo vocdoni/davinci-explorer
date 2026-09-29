@@ -52,6 +52,9 @@ the branch name; a `vX.Y.Z` tag also moves `:latest`, prereleases don't.
 - Stage by explicit filename. Never read or print secrets (`.env` values).
 - Plain, human voice in comments, docs and UI copy. Terse; one short line above
   a function is usually enough. Sparing em-dashes.
+- UI copy follows `docs/writing.md`: the meaning first in everyday words, the
+  mechanism one layer down, `<Term id='…'>` on the first use of a protocol
+  word, `<Formula expr='…' />` for every expression.
 - Build every link with `paths` from `~routes/paths`, never a string literal.
 - Theme tokens only (`obsidian`, `carbon`, `emerald`, ... from
   `src/styles/index.css`), never raw hex in a component: both themes set them.
@@ -104,5 +107,7 @@ patterns and examples, `src/locales/GLOSSARY.md` the words.
   (`KNOWN_RELEASES`, newest first), copied from davinci-zkvm
   `rust-sdk/src/release.rs`. Add a row with every davinci-zkvm release.
 - `src/contracts/abi/*.json` are copies of davinci-sequencer `sequencer/abi/`.
+- The glossary (`Term` tooltips and the Learn glossary page) is
+  `src/content/glossary.ts`.
 - `tests/vectors/` holds files copied from davinci-zkvm `rust-sdk/testdata/` and
   one recorded Gnosis transition (see its README).

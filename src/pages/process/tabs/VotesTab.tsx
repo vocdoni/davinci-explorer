@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link, useNavigate, useSearchParams } from 'react-router'
-import { Explain, Timestamp } from '~components'
+import { Explain, Term, Timestamp } from '~components'
+import { Disclosure } from '~components/code'
 import { useDataSource } from '~data/context'
 import type { ProcessView } from '~data/hooks'
 import { useTransitionBlobs } from '~data/queries'
@@ -54,7 +55,13 @@ export function VotesTab({ view }: { view: ProcessView }) {
       <Panel
         title={t`Find a vote`}
         label={t`Vote lookup`}
-        description={t`Your voting app gives you a vote id when you cast. The vote page finds the batch whose blob lists it and checks the sequencer’s tracker proof against an on-chain root.`}
+        description={
+          <Trans>
+            Your voting app shows a <Term id='vote-id'>vote id</Term> when you vote. Enter it to check your vote: the
+            explorer finds the batch that recorded it and checks the sequencer’s proof that it is in a state the
+            registry accepted.
+          </Trans>
+        }
       >
         <form onSubmit={submit} className='flex flex-col gap-2 sm:flex-row sm:items-start' role='search'>
           <Input
@@ -63,7 +70,11 @@ export function VotesTab({ view }: { view: ProcessView }) {
             mono
             value={lookup}
             onChange={(e) => setLookup(e.target.value)}
-            error={lookupInvalid ? t`A vote id is a number from 2^63 to 2^64 − 1, in hex (0x…) or decimal.` : undefined}
+            error={
+              lookupInvalid
+                ? t`A vote id is 0x followed by 16 hex digits, the first one 8 to f, or the same number in decimal.`
+                : undefined
+            }
             wrapperClassName='flex-1'
           />
           <Button type='submit' variant='primary' disabled={lookupId == null}>
@@ -75,13 +86,51 @@ export function VotesTab({ view }: { view: ProcessView }) {
       <Panel
         title={t`Vote ids per transition`}
         label={t`From the blobs`}
-        description={t`Each transition publishes its data in EIP-4844 blobs: the vote ids of the batch, then every ballot slot it wrote with the new ciphertexts, then the new encrypted tally. An overwrite and a silent refresh look the same, so nobody can tell a revote from a routine re-randomization. A slot’s first write is public, and with a Merkle census the slot follows from the address, so who voted and when is public.`}
+        description={
+          <Trans>
+            Each batch publishes the vote ids it recorded in its <Term id='blob'>blobs</Term>, so anyone can find a
+            vote.
+          </Trans>
+        }
       >
+        <dl className='mb-4 grid gap-2 text-[13px] leading-relaxed sm:grid-cols-2' data-testid='votes-privacy'>
+          <div className='rounded-sm border border-charcoal bg-onyx/40 px-3 py-2'>
+            <dt className='label-caps text-[10px] text-pewter'>
+              <Trans>Public</Trans>
+            </dt>
+            <dd className='mt-1 text-silver'>
+              <Trans>
+                Every vote id, and who voted and when: a first vote fills an empty slot, and with a Merkle census a
+                voter’s slot follows from their address.
+              </Trans>
+            </dd>
+          </div>
+          <div className='rounded-sm border border-charcoal bg-onyx/40 px-3 py-2'>
+            <dt className='label-caps text-[10px] text-pewter'>
+              <Trans>Hidden</Trans>
+            </dt>
+            <dd className='mt-1 text-silver'>
+              <Trans>
+                Which later votes changed a ballot. An <Term id='overwrite'>overwrite</Term> and a{' '}
+                <Term id='silent-refresh'>silent refresh</Term> look the same in the data, so nobody can tell a revote
+                from routine re-encryption.
+              </Trans>
+            </dd>
+          </div>
+        </dl>
+        <Disclosure summary={<Trans>Technical details</Trans>} variant='plain' className='mb-4'>
+          <p className='text-[13px] leading-relaxed text-ash'>
+            <Trans>
+              Each transition publishes its data in EIP-4844 blobs: the vote ids of the batch, then every ballot slot it
+              wrote with the new ciphertexts, then the new encrypted tally.
+            </Trans>
+          </p>
+        </Disclosure>
         {transitions.length === 0 ? (
           <EmptyState
             compact
             title={t`No transitions yet`}
-            description={t`Vote ids appear here once a sequencer settles the first batch of this process.`}
+            description={t`Vote ids appear here once a sequencer records the first batch of this process.`}
           />
         ) : (
           <div className='flex flex-col gap-4'>
@@ -157,7 +206,7 @@ function TransitionVotes({ view, index, highlight }: { view: ProcessView; index:
   const header = (
     <p className='text-[13px] text-ash'>
       <Trans>
-        Settled <Timestamp value={row.timestamp} /> in block {block}:{' '}
+        Recorded <Timestamp value={row.timestamp} /> in block {block}:{' '}
         <Plural value={newVoters} one='# new voter' other='# new voters' /> and{' '}
         <Plural value={overwrites} one='# overwrite' other='# overwrites' />, in{' '}
         <Plural value={nBlobs} one='# blob' other='# blobs' />.
@@ -171,7 +220,7 @@ function TransitionVotes({ view, index, highlight }: { view: ProcessView; index:
         {header}
         <p className='text-[13px] text-ash'>
           {waitingForTx
-            ? t`Reading the settlement transaction for its blob hashes…`
+            ? t`Reading the batch’s transaction to find its blobs…`
             : t`${plural(nBlobs, { one: 'Fetching # blob…', other: 'Fetching # blobs…' })}`}
         </p>
         <SkeletonText lines={4} />
@@ -186,9 +235,9 @@ function TransitionVotes({ view, index, highlight }: { view: ProcessView; index:
           <p>{blobs.error instanceof Error ? blobs.error.message : String(blobs.error)}</p>
           <p className='mt-1'>
             <Trans>
-              Beacon nodes prune blobs after about 15 days on Gnosis Chain (16384 epochs of 80 s) and about 18 on
-              Ethereum mainnet. After that only a sequencer that stored them (or an archive) can serve them; the
-              transaction still carries their versioned hashes.
+              The network keeps blobs for about two weeks: about 15 days on Gnosis Chain (16384 epochs of 80 s) and
+              about 18 on Ethereum mainnet. After that only a sequencer that stored them, or an archive, can serve them.
+              The transaction still carries their fingerprints (versioned hashes).
             </Trans>
           </p>
         </Callout>
@@ -230,19 +279,19 @@ function TransitionVotes({ view, index, highlight }: { view: ProcessView; index:
         <Explain className='ml-1'>
           <Trans>
             The counts are public (the registry event carries them), and so is a slot’s first write, since refreshes
-            only touch occupied slots. Which occupied slots were overwritten and which were only refreshed is not: every
-            batch re-randomizes a random sample of occupied slots it did not write, so an overwrite hides among the
-            refreshes.
+            only touch slots that already hold a ballot. Which of those got a new vote and which were only refreshed is
+            not: every batch re-encrypts a random sample of occupied slots it did not write, so an overwrite hides among
+            the refreshes.
           </Trans>
         </Explain>
       </p>
       <p className='text-xs text-ash'>
         {data.source === 'sequencer'
-          ? t`Served by the sequencer ${sourceUrl} from its archive, tied to this transition by position only, not checked against the transaction's blob hashes.`
+          ? t`Served by the sequencer ${sourceUrl} from its archive. It is matched to this batch by position only, not checked against the blob fingerprints in the transaction.`
           : data.source === 'beacon'
             ? data.blobs.some((b) => b.binding === 'beacon-filter')
-              ? t`From the beacon API ${sourceUrl}, which selected each blob by a versioned hash the transaction carries.`
-              : t`From the beacon API ${sourceUrl}; each blob's commitment hashes to a versioned hash the transaction carries.`
+              ? t`From the beacon node ${sourceUrl}, which picked each blob by a fingerprint (versioned hash) the transaction carries.`
+              : t`From the beacon node ${sourceUrl}. Each blob’s commitment matches a fingerprint (versioned hash) the transaction carries.`
             : t`From the demo network.`}
       </p>
       {missing != null ? (

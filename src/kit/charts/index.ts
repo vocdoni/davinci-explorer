@@ -3,7 +3,7 @@ export { useChartTooltip, type ChartTooltipState } from './chart-tooltip'
 export { StackedBars, type BarDatum, type BarSeries, type StackedBarsProps } from './StackedBars'
 export { Sparkline, type SparklineProps } from './Sparkline'
 export { Donut, type DonutProps, type DonutSlice } from './Donut'
-export { CHART_COLORS, SERIES_COLORS, hexToRgb, mix, rgbToHex, seriesColor } from './colors'
+export { CHART_COLORS, SERIES_COLORS, TONE_COLORS, hexToRgb, mix, rgbToHex, seriesColor } from './colors'
 export {
   arcPath,
   areaPath,

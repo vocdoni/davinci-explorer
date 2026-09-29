@@ -3,7 +3,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
-import { CheckMark, Explain, Timestamp, TxLink, UnverifiedMark } from '~components'
+import { CheckMark, Explain, Formula, NumberedList, Term, Timestamp, TxLink, UnverifiedMark } from '~components'
 import type { ProcessView } from '~data/hooks'
 import { useMetadataCheck } from '~data/queries'
 import type { CheckState } from '~indexer/selectors'
@@ -38,29 +38,74 @@ function CheckList({ checks }: { checks: Check[] }) {
   )
 }
 
-/** What the registry enforced before storing a tally, from ProcessRegistry.sol. */
-const CONTRACT_RULES: Record<'sequencer' | 'dkg', MessageDescriptor[]> = {
-  sequencer: [
-    msg`setProcessResults accepts only a sequencer-key process that is not canceled and has no results yet.`,
-    msg`The process must have ended: status Ended, or its end time passed.`,
-    msg`The public values must report that every check of the results program passed (ok = 1, fail mask 0).`,
-    msg`The state root the proof was made for must be the process’s latest state root, so the tally covers every settled batch.`,
-    msg`The PLONK must verify against the registry’s results program vk and ZisK setup root.`,
-    msg`It then stores the first numFields tallies from the public values and sets the status to Results.`,
-  ],
-  dkg: [
-    msg`requestResultsDecryption accepts only a DKG-key process that is not canceled, has no results and was not requested before, once it has ended by status or by time.`,
-    msg`It checks the submitted accumulator (the encrypted sum of all ballots) is leaf 0x04 of the latest state root, with every coordinate in range, so nobody can send another ciphertext for decryption.`,
-    msg`It moves the process to Ended, out of the organizer’s hands: the plaintexts become public on the DKG before they reach the registry, and a Ready process could otherwise be canceled after its organizer saw the tally.`,
-    msg`It submits one ciphertext per field to the committee through the DKG adapter. A field that is the identity is recorded as 0; only a process that never tallied a ballot has one, since every ballot and refresh adds a ciphertext to every field, even an option nobody picked.`,
-    msg`finalizeResultsFromDKG stores the result only when every submitted ciphertext has a completed combine on the DKG, whose partial decryptions and combine each carried a Groth16 proof the DKG contracts verified.`,
-  ],
+/** What the registry enforced before storing a tally, from ProcessRegistry.sol, in its order. */
+function ContractRules({ mode }: { mode: 'sequencer' | 'dkg' }) {
+  const rules: Record<'sequencer' | 'dkg', ReactNode[]> = {
+    sequencer: [
+      <Trans key='1'>
+        Only for a process with a sequencer key that is not canceled and has no results yet (
+        <code>setProcessResults</code>).
+      </Trans>,
+      <Trans key='2'>The process must have ended: status Ended, or its end time passed.</Trans>,
+      <Trans key='3'>
+        The results program must report that every one of its checks passed: <Formula expr='ok = 1, fail_mask = 0' />.
+      </Trans>,
+      <Trans key='4'>
+        The proof must be for the process’s latest state root, so the count covers every recorded batch.
+      </Trans>,
+      <Trans key='5'>
+        The proof must verify under the results program and the proving setup the registry fixes (
+        <code>resultsProgramVK</code> and
+        <code>rootCVadcopFinal</code>).
+      </Trans>,
+      <Trans key='6'>
+        The registry then stores one total per field in use (the first <code>numFields</code> values of the proof) and
+        sets the status to Results.
+      </Trans>,
+    ],
+    dkg: [
+      <Trans key='1'>
+        Only for a process with a committee key that is not canceled, has no results and was not sent before, once
+        voting has ended by status or by time (<code>requestResultsDecryption</code>).
+      </Trans>,
+      <Trans key='2'>
+        The <Term id='accumulator'>encrypted total</Term> sent must be the one in the latest state (leaf 0x04 of the
+        latest state root), with every coordinate in range, so nobody can get anything else decrypted.
+      </Trans>,
+      <Trans key='3'>
+        It moves the process to Ended, out of the organizer’s hands. The decrypted totals become public on the
+        committee’s side before they reach the registry, and an organizer could otherwise cancel a process after seeing
+        its results.
+      </Trans>,
+      <Trans key='4'>
+        It sends one encrypted value per field to the committee, through the DKG adapter. An empty field (the identity)
+        is recorded as 0; only a process that never counted a ballot has one, since every ballot and refresh adds to
+        every field, even an option nobody picked.
+      </Trans>,
+      <Trans key='5'>
+        The result is stored (<code>finalizeResultsFromDKG</code>) only when every value sent is fully decrypted on the
+        committee’s side, where each member’s partial decryption and the final combine carried a Groth16 proof the DKG
+        contracts verified.
+      </Trans>,
+    ],
+  }
+  return <NumberedList items={rules[mode]} />
 }
 
-const RESULTS_PROGRAM = msg`The results program proves, from the final state root alone, that the encryption key is leaf 0x03 and the accumulator leaf 0x04 of that tree, and that each tally is the decryption of the accumulator under that key (one Chaum–Pedersen proof per field). The key holder never reveals the key.`
+function ResultsProgramText() {
+  return (
+    <Trans>
+      The key holder proves that the results are the true decryption of the{' '}
+      <Term id='accumulator'>encrypted total</Term>, without revealing the key. The proof starts from the final state
+      root alone: it shows that the encryption key (leaf 0x03) and the encrypted total (leaf 0x04) are in that state,
+      and that each total decrypts correctly (one <Term id='chaum-pedersen-proof'>Chaum–Pedersen proof</Term> per
+      field).
+    </Trans>
+  )
+}
 
 export function ResultsTab({ view }: { view: ProcessView }) {
-  const { i18n, t } = useLingui()
+  const { t } = useLingui()
   const s = view.process.state
   if (!s) {
     return (
@@ -78,13 +123,9 @@ export function ResultsTab({ view }: { view: ProcessView }) {
         <Panel
           title={t`What the contract checked`}
           label={t`On-chain rules`}
-          description={t`The rules the registry enforces before it stores a tally. A result on-chain means all of them held.`}
+          description={t`The registry stores a result only if all of these hold, so a result on chain means every one of them passed.`}
         >
-          <ol className='flex list-decimal flex-col gap-2 pl-5 text-[13px] leading-relaxed text-silver marker:text-ash'>
-            {CONTRACT_RULES[s.keyMode === 'sequencer' ? 'sequencer' : 'dkg'].map((r, i) => (
-              <li key={i}>{i18n._(r)}</li>
-            ))}
-          </ol>
+          <ContractRules mode={s.keyMode === 'sequencer' ? 'sequencer' : 'dkg'} />
         </Panel>
       </div>
     </div>
@@ -113,7 +154,7 @@ function TallyPanel({ view }: { view: ProcessView }) {
       description={
         <>
           {mode.summary}{' '}
-          <Trans>Each total is the sum of the values voters gave that field, over every voter’s latest ballot.</Trans>
+          <Trans>Each total adds up what voters gave that option, counting only each voter’s latest ballot.</Trans>
         </>
       }
       actions={
@@ -164,13 +205,15 @@ function TallyPanel({ view }: { view: ProcessView }) {
         {labels ? (
           <>
             {' '}
-            <Trans>Option names come from the organizer’s metadata document, whose hash is committed on-chain.</Trans>
+            <Trans>
+              The option names come from the organizer’s description document, which matches its fingerprint on chain.
+            </Trans>
           </>
         ) : unverified ? (
           <>
             {' '}
             <Trans>
-              The names in quotes come from a document that does not match the hash committed on-chain, so each total is
+              The names in quotes come from a document that does not match the fingerprint on chain, so each total is
               shown by its field number instead.
             </Trans>
           </>
@@ -193,9 +236,9 @@ function TallyPanel({ view }: { view: ProcessView }) {
 }
 
 const NEXT: Record<KeyModeName, MessageDescriptor> = {
-  sequencer: msg`After the end, the holder of the election key (normally the sequencer node that issued it) decrypts the accumulator, proves the tally with the zkVM results program and calls setProcessResults. Only the key holder can.`,
-  'dkg-automatic': msg`After the end, anyone can send the accumulator to the committee with requestResultsDecryption; sequencers do it on their first heartbeat after the end. A threshold of members then post partial decryptions and a combine per field, and anyone can call finalizeResultsFromDKG to store the tally.`,
-  'dkg-locked': msg`After the end, anyone can send the accumulator to the committee with requestResultsDecryption; sequencers do it on their first heartbeat after the end. The committee can decrypt only after the organizer reveals its secret (revealProcessKey); then anyone can call finalizeResultsFromDKG.`,
+  sequencer: msg`After voting ends, the holder of the key (normally the sequencer node that issued it) decrypts the encrypted total, proves the result with the zkVM results program and publishes it (setProcessResults). Only the key holder can.`,
+  'dkg-automatic': msg`After voting ends, anyone can send the encrypted total to the committee (requestResultsDecryption); sequencers do it on their first heartbeat after the end. Enough members then decrypt it together, field by field, and anyone can store the result on chain (finalizeResultsFromDKG).`,
+  'dkg-locked': msg`After voting ends, anyone can send the encrypted total to the committee (requestResultsDecryption); sequencers do it on their first heartbeat after the end. The committee can decrypt it only after the organizer reveals its secret (revealProcessKey); then anyone can store the result on chain (finalizeResultsFromDKG).`,
 }
 
 function NoResultsPanel({ view }: { view: ProcessView }) {
@@ -214,8 +257,8 @@ function NoResultsPanel({ view }: { view: ProcessView }) {
     title = t`Decryption requested`
     body =
       s.keyMode === 'dkg-locked'
-        ? t`The accumulator went to the committee. Its members post partial decryptions once the organizer reveals its secret; after every field is combined, anyone can finalize the result.`
-        : t`The accumulator went to the committee. Once a threshold of members have posted partial decryptions and each field is combined, anyone can finalize the result.`
+        ? t`The encrypted total went to the committee. Its members can decrypt it once the organizer reveals the secret; when every field is decrypted, anyone can store the result on chain.`
+        : t`The encrypted total went to the committee. Once enough members have posted their partial decryptions and every field is combined, anyone can store the result on chain.`
   } else if (phase === 'ended' || phase === 'closed') {
     title = t`Voting is over; results pending`
   }
@@ -248,18 +291,20 @@ function NoResultsPanel({ view }: { view: ProcessView }) {
 }
 
 function SequencerProofPanel({ view }: { view: ProcessView }) {
-  const { i18n, t } = useLingui()
+  const { t } = useLingui()
   const results = view.process.results
   const { checks, decodeError } = useSequencerResultsChecks(view)
 
   if (!results) {
     return (
       <Panel title={t`How the result is produced`} label={t`zkVM results proof`}>
-        <p className='text-[13px] leading-relaxed text-silver'>{i18n._(RESULTS_PROGRAM)}</p>
+        <p className='text-[13px] leading-relaxed text-silver'>
+          <ResultsProgramText />
+        </p>
         <p className='mt-2 text-[13px] leading-relaxed text-ash'>
           <Trans>
-            The proof is wrapped as a PLONK and checked by the same verifier as the batches, under the registry’s
-            results program vk.
+            The proof is wrapped as a PLONK and checked by the same verifier as the batches, under the results program
+            the registry fixes (resultsProgramVK).
           </Trans>
         </p>
       </Panel>
@@ -267,7 +312,7 @@ function SequencerProofPanel({ view }: { view: ProcessView }) {
   }
 
   return (
-    <Panel title={t`How the result was produced`} label={t`zkVM results proof`} description={i18n._(RESULTS_PROGRAM)}>
+    <Panel title={t`How the result was produced`} label={t`zkVM results proof`} description={<ResultsProgramText />}>
       <KeyValue
         items={[
           { label: t`Transaction`, value: results.tx ? <TxLink hash={results.tx} /> : '—' },
@@ -280,7 +325,7 @@ function SequencerProofPanel({ view }: { view: ProcessView }) {
                 </Explain>
               </span>
             ),
-            value: <Address value={results.sender} />,
+            value: <Address value={results.sender} to={paths.sequencer(results.sender)} />,
           },
           { label: t`Block`, value: <BlockCell block={results.block} /> },
           { label: t`Time`, value: <Timestamp value={results.timestamp} /> },
@@ -312,7 +357,7 @@ function DkgDecryptionPanel({ view }: { view: ProcessView }) {
     <Panel
       title={results ? t`How the result was produced` : t`How the result will be produced`}
       label={t`DKG threshold decryption`}
-      description={t`The committee decrypts only the final accumulator, one ciphertext per field, and never reconstructs the election secret. There is no results PLONK in the DKG modes: the committee’s Groth16 proofs and the registry’s inclusion check replace it.`}
+      description={t`The committee decrypts only the final encrypted total, one value per field, and never rebuilds the whole key. There is no results program proof here: the committee’s own proofs (Groth16) and the registry’s check that the total is the one in the final state take its place.`}
     >
       {request ? (
         <KeyValue
@@ -328,7 +373,7 @@ function DkgDecryptionPanel({ view }: { view: ProcessView }) {
               hint: t`block ${requestBlock}`,
             },
             {
-              label: t`Ciphertexts`,
+              label: t`Encrypted values sent`,
               value: t`${requestCount} from DKG index ${requestFirst}`,
               mono: true,
             },

@@ -11,12 +11,12 @@ export function NotFoundPage() {
       <SectionHeader
         size='page'
         label='404'
-        title={t`No such page`}
-        description={t`Nothing is routed at ${pathname}.`}
+        title={t`Page not found`}
+        description={t`The explorer has no page at ${pathname}. The link may be mistyped, or from an older version of the explorer.`}
       />
       <EmptyState
-        title={t`Try the overview`}
-        description={t`Or search for a process id, vote id, transaction, address or block in the bar above.`}
+        title={t`Start from the overview`}
+        description={t`Or paste a process id, vote id, transaction, address or block number into the search bar at the top.`}
         action={
           <Link to={paths.home()} className={buttonClasses('ghost', 'sm')}>
             <Trans>Go to the overview</Trans>

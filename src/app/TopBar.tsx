@@ -34,18 +34,20 @@ export function TopBar() {
         aria-current={active ? 'page' : undefined}
         className={cn(
           'text-[13px] font-medium transition-colors',
-          // The call to action: an accent pill, filled while you are on it.
+          // The call to action: an accent pill, filled while you are on it. In
+          // the phone menu its text lines up with the rows above (12 px, less
+          // the 1 px border).
           item.primary
             ? cn(
                 'rounded-pill border',
-                mobile ? 'mt-1 w-fit px-4 py-1.5' : 'ml-2 px-3.5 py-1',
+                mobile ? 'mt-1 w-fit px-[11px] py-1.5' : 'ml-2 px-3.5 py-1',
                 active
                   ? 'border-emerald bg-emerald text-on-accent'
                   : 'border-emerald/60 text-emerald hover:border-emerald hover:bg-emerald/10'
               )
             : cn(
                 'rounded-sm',
-                mobile ? 'px-2 py-2' : 'px-3 py-1.5',
+                mobile ? 'px-3 py-2' : 'px-3 py-1.5',
                 active ? 'text-emerald' : 'text-pewter hover:text-ghost'
               )
         )}

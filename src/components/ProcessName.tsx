@@ -1,9 +1,10 @@
 import { Link } from 'react-router'
-import { ProcessIdLink, UnverifiedMark } from '~components'
+import { ProcessIdLink } from './values'
+import { UnverifiedMark } from './Unverified'
 import { useMetadataCheck } from '~data/queries'
 import type { Hex } from '~indexer/types'
 import { paths } from '~routes/paths'
-import { metadataTitle } from '../process/metadata'
+import { metadataTitle } from '~pages/process/metadata'
 
 /**
  * The title from the process's metadata over its short id; the id alone until

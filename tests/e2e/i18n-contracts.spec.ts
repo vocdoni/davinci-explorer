@@ -29,7 +29,7 @@ const TEXT: Record<
     pinnedValues: 'Pinned values',
     consistent: '7 of 7',
     source: 'Source',
-    batchVk: 'Vote-batch program vk',
+    batchVk: 'Vote-batch program',
     passed: 'passed',
     epochLength: '17,280',
     observer: 'Observer',

@@ -14,6 +14,9 @@
       "~config/*": [
         "src/config/*"
       ],
+      "~content/*": [
+        "src/content/*"
+      ],
       "~contracts/*": [
         "src/contracts/*"
       ],

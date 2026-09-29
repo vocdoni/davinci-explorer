@@ -38,7 +38,7 @@ import { CHART_COLORS, StackedBars, type BarDatum } from '~kit/charts'
 import { explorerAddressUrl } from '~lib/explorer'
 import { formatDate, formatNumber } from '~lib/format'
 import { paths } from '~routes/paths'
-import { ProcessName } from '~pages/processes/ProcessName'
+import { ProcessName } from '~components/ProcessName'
 import { findSequencerEntry, sequencerEntries } from './model'
 import { NodeBadges, SequencerCard } from './SequencerCard'
 

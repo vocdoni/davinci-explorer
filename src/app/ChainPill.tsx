@@ -26,14 +26,14 @@ export function ChainPill({ className }: { className?: string }) {
   const chainId = config.chainId
   // Block numbers and chain ids are identifiers: printed as they are, never grouped.
   const title = mismatch
-    ? t`The RPC is on chain ${actual}, not ${expected}`
+    ? t`Wrong network: the RPC is on chain ${actual}, not ${expected}`
     : error
-      ? (status.errors[status.errors.length - 1]?.message ?? t`The RPC is not answering`)
+      ? (status.errors[status.errors.length - 1]?.message ?? t`The chain is not answering`)
       : syncing
-        ? t`Indexing: ${progress}`
+        ? t`Reading the registry’s history: ${progress}`
         : lag > 0
-          ? t`Indexed to block ${lastBlock} (${behind} behind the head)`
-          : t`Indexed to block ${lastBlock}`
+          ? t`Up to date: read to block ${lastBlock}, ${behind} behind the newest block`
+          : t`Up to date: read to block ${lastBlock}`
 
   return (
     <div

@@ -64,7 +64,7 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
       time: last?.timestamp ?? null,
       detail:
         batches > 0
-          ? t`${plural(batches, { one: '# batch', other: '# batches' })}, ${plural(ballots, { one: '# ballot', other: '# ballots' })}`
+          ? t`${plural(batches, { one: '# batch', other: '# batches' })}, ${plural(ballots, { one: '# vote', other: '# votes' })}`
           : phase === 'open'
             ? t`No batch settled yet`
             : t`No batch settled`,
@@ -78,7 +78,7 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
       detail: canceled
         ? t`Canceled by the organizer`
         : phase === 'closed'
-          ? t`End time passed; the status still reads Ready`
+          ? t`End time passed; the chain still reads Ready`
           : phase === 'paused'
             ? t`Paused by the organizer`
             : endChange
@@ -98,7 +98,7 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
           label: t`Results`,
           state: 'done',
           time: results.timestamp,
-          detail: t`Tally on-chain`,
+          detail: t`Published on chain`,
           tx: results.tx,
         }
       : canceled
@@ -109,7 +109,7 @@ export function processLifecycle(view: Pick<ProcessView, 'process' | 'row' | 'tr
               label: t`Results`,
               state: 'current',
               time: p.decryptionRequest.timestamp,
-              detail: t`Decryption requested`,
+              detail: t`Sent to the committee to decrypt`,
               tx: p.decryptionRequest.tx,
             }
           : {

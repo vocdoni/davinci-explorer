@@ -38,9 +38,13 @@ A piece more than one view uses goes in `src/components/`, a shared hook in
 | `pages/transition/` | `/processes/:pid/transitions/:index`, and `/tx/:hash` (`tx.tsx`, resolves a hash to its transition or process) |
 | `pages/verify/` | `/verify` (the three checks), `/verify/vote?pid=&voteId=`, `/verify/election/:pid?` and `/verify/deployment`; one folder per flow. The old `/votes?pid=&voteId=` and `/votes/:pid/:voteId` redirect to the vote check, and the old `/learn/verify-*` guides to the matching flow |
 | `pages/contracts/` | `/contracts`: the addresses and parameters, as reference |
-| `pages/sequencers/` | `/sequencers` |
+| `pages/sequencers/` | `/sequencers` (every account that settled a transition or published results, with the configured sequencer nodes beside them) and `/sequencers/:address` (`detail.tsx`, one account) |
 | `pages/learn/` | `/learn/:topic`; `/learn` opens on the first topic |
 | `pages/kit/` | `/kit`, the design review page |
+
+The top bar always shows Sequencers, whether or not the deployment configures
+sequencer APIs: the accounts come from the registry events, and a configured
+node only adds its own view.
 
 Every page root carries `data-testid="page-<name>"`; the Playwright suite
 (`tests/e2e/smoke.spec.ts`) relies on them and on `process-count`,
@@ -50,7 +54,9 @@ suite in the same change.
 Build every link with `paths` from `~routes/paths` (`paths.process(pid, 'results')`,
 `paths.transition(pid, i)`, `paths.vote(pid, voteId)` (the vote check),
 `paths.verifyElection(pid)`, `paths.tx(hash)`, `paths.processes({ organizer })`,
-...), never from string literals.
+`paths.sequencer(address)`, ...), never from string literals. The sender of a
+transition or of a results transaction links to `paths.sequencer(sender)`; a
+glossary entry is `glossaryHref(id)` (`~content/glossary`).
 
 The Verify flows share one frame (`pages/verify/frame.tsx`: the stepper
 1 Choose · 2 Check · 3 Redo it yourself, numbered sections, "What this
@@ -185,8 +191,12 @@ query key: a new version at the same URI is downloaded again.
 | `not-browsable` | not an http(s) or ipfs URI, so a browser cannot fetch it |
 | `loading` | the process is not read yet, or the download is running |
 
-Only `matches` makes the document's text the organizer's. With `differs` the
-process header, `ProcessName` (the processes list and the sequencer pages),
+Only `matches` makes the document's text the organizer's, and only then does
+the process's ballot panel show the kind of ballot the organizer declared
+(`meta.electionPreset.type`, as davinci-sdk writes it; `metadataPreset` in
+`pages/process/metadata.ts`) next to the kind the explorer reads from the
+ballot mode. With `differs` the
+process header, `ProcessName` (`~components`: the processes list and the sequencer pages),
 the pickers and the Verify flows show the title with `UnverifiedMark`, and the
 results tab names each total by its field, with the document's names beside
 it as unverified. `metadataHashCommand` and `metadataHistoryCommand`
@@ -201,7 +211,12 @@ Pure functions, unit-tested; use them directly when a hook does not fit.
   `rootChain` (genesis → every transition → the registry root, with `gaps`
   and `headMatches`), `transitionDetail`, `transitionByTx`, `networkStats`,
   `activityFeed`, `votesPerDay`, `blockTimestamp` (exact or estimated from the
-  head), `deploymentPins`, `releaseCheck`, `onchainRoots`, `searchStore`.
+  head), `deploymentPins`, `releaseCheck`, `onchainRoots`, `searchStore` (a
+  process, a transaction, an organizer, a sequencer, a contract, a vote id or
+  a block), and for the sequencer pages `sequencerRows` (every account that
+  settled a transition or published results, busiest first), `sequencerRow`,
+  `sequencerActivity` (per UTC day), `sequencerTransitions` and
+  `sequencerResults`.
 - `transitionDetail(...).checks` recomputes, from public data, what
   `submitStateTransition` enforced: the guest passed (`ok`, fail mask), root
   continuity, the proven root is the new root, the census root (the current
@@ -218,7 +233,9 @@ Pure functions, unit-tested; use them directly when a hook does not fit.
   `publicValues`), `decodeBatchPublicsRegisters` (the prover's 256-byte
   view), the results guest equivalents, `failBits`, and `BATCH_REGISTERS`, a
   table of every register with its name, span, meaning and who reads it (the
-  contract, the fold guest, or nobody). Ported from davinci-zkvm
+  contract, the fold guest, or nobody). A register or fail bit whose rule is an
+  expression carries it in `formula` (never translated): render it with
+  `Formula` beside the `description`. Ported from davinci-zkvm
   `rust-sdk/src/publics.rs`.
 - `~protocol/blob`: `decodeTransitionBlobs(blobs, numFields)` (the DA cell
   layout, `CIRCUIT.md` §8), `unpackBallot(cells)` (decompress one slot
@@ -244,7 +261,8 @@ Pure functions, unit-tested; use them directly when a hook does not fit.
 - `~protocol/releases`: `KNOWN_RELEASES` (the davinci-zkvm pins from
   `rust-sdk/src/release.rs`: both program vks, `rootCVadcopFinal`, the
   verifier code hash, the ballot VK hash) and `matchRelease`. Add a row per
-  release, newest first.
+  release, newest first. `PIN_LABELS` are the pins' plain names ("Vote-batch
+  program"); the pin's own name (`batchProgramVK`) is the technical one.
 - `~protocol/limits`: protocol constants (`NUM_FIELDS`, `MAX_BLOBS`,
   `TX_BLOB_CAP`, vote-id and slot namespaces, the refresh rule).
 
@@ -269,28 +287,61 @@ close that gap.
 
 `~kit` is the davinci-dkg kit with theme-aware tokens: `Card`, `CardHeader`,
 `CardBody`, `Panel`, `KeyValue`, `Stat` / `StatRow` / `StatCell`,
-`DataTable` (sortable, `virtualized` above ~50 rows), `Tabs`, `Timeline` /
-`TimelineRow`, `Badge`, `Callout`, `Tooltip`, `CopyButton`, `Address`,
-`Hash`, `TxCell`, `BlockCell`, `Input`, `Select`, `Toggle`, `Button` /
-`ButtonLink` / `buttonClasses`, `Dialog`, `Popover`, `ProgressBar`,
+`DataTable` (sortable; `virtualized` above ~50 rows, when it scrolls sideways
+inside its panel below the width its columns need), `Tabs`, `Timeline` /
+`TimelineRow`, `Badge`, `Callout`, `Tooltip` (optionally controlled with
+`open` / `onOpenChange`), `CopyButton`, `Address`, `Hash`, `TxCell`,
+`BlockCell`, `UriLink` (a URI as a compact link: what it opens and its host,
+the full URI on hover, a copy button), `Input`, `Select`, `Toggle`, `Button`
+/ `ButtonLink` / `buttonClasses`, `Dialog`, `Popover`, `ProgressBar`,
 `Pagination`, `Skeleton`, `EmptyState`, `PageContainer`, `SectionHeader`,
 `Stack`, icons. Charts in `~kit/charts`: `StackedBars`, `Sparkline`, `Donut`
 (with `ChartFrame` and the scale helpers). `/kit` renders all of them; check
 it in both themes after a design change.
 
+Badge tones are tinted fills, one meaning each: `ok` / `accent` emerald for
+live and verified, `done` the results green, `info` blue for what has not
+started or is only information (an upcoming phase, a creation), `warn` amber
+for attention, `danger` red for failure, `neutral` for the rest, and two
+category tints, `slate` for census origins and `violet` for key modes. A tag
+anywhere uses these through `Badge` or the badge components; a chart whose
+marks stand for the same states takes the same colours from `TONE_COLORS`
+(`~kit/charts`) and `PHASE_TONE` (`~components/badges`), as the overview's
+phases donut does. `Callout` tones follow the same rule, each with its own
+icon: `info` context, `ok` verified, `warn` attention, `danger` failure.
+
 `~components` holds the domain pieces: `ProcessPhaseBadge`, `KeyModeBadge`,
 `CensusOriginBadge` (each with its explanation on hover), `ProcessIdLink`,
+`ProcessName` (a process's title over its short id, with `UnverifiedMark`
+when the title comes from a document that does not match its hash),
 `TxLink` (in-app `/tx/:hash` plus the block explorer), `Timestamp` (UTC, and
 "5 min ago" against the chain head), `NativeAmount` (wei in xDAI/ETH),
 `CheckMark` (pass / fail / unknown), `UnverifiedMark` (the red mark beside
-organizer text from a document that does not match its hash), `Formula` (a formula in the mono font,
-its parts coloured, `||` as ‖), `Explain` (the "what is this" info
-glyph), `MissingEntity` (skeleton until the first poll, then "not found"),
-`CodeBlock` (a command with a copy button) and `HashLink`. Link to a section
+organizer text from a document that does not match its hash), `Explain` (the
+"what is this" info glyph), `MissingEntity` (skeleton until the first poll,
+then "not found"), `CodeBlock` (a command with a copy button), `HashLink`,
+and the reading aids of [docs/writing.md](docs/writing.md):
+
+- `Term` (`<Term id='vote-id'>vote id</Term>`): a protocol word with a dotted
+  underline; hover or keyboard focus shows the glossary's short definition,
+  a click opens the entry, and on a touch screen the first tap shows the
+  definition. The glossary is data in `src/content/glossary.ts` (`GLOSSARY`,
+  each entry with a `short` and a full `text`; `GlossaryId`, `glossaryEntry`,
+  `glossaryHref`, `readGlossary`, `filterGlossary`), which the Learn glossary
+  page renders too.
+- `Formula` (`<Formula expr='sha256(a ‖ b)' />`): an expression in the mono
+  font, each kind of token in its own colour, `||` as ‖, `2^63` as a
+  superscript; `block` sets it on its own line.
+- `InShort`, the plain lead of a long page; `NumberedList`, steps or rules
+  in order; `RichText`, translated text whose `backtick` spans are
+  identifiers. Link to a section
 of the page with `HashLink`, never a plain `href="#id"`: the router's scroll
 restoration sends a plain fragment link to the top of the page.
 
 ## Text and languages
+
+How the pages speak (plain meaning first, the mechanism one layer down, the
+words, the callout tones) is in [docs/writing.md](docs/writing.md).
 
 The pages are in English, Spanish and Catalan (Lingui v5). Every string a
 user sees goes through a macro, the English in the code being the source,

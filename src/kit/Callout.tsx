@@ -1,14 +1,19 @@
 import type { ReactNode } from 'react'
 import { cn } from '~lib/cn'
-import { InfoIcon, WarningIcon } from './icons'
+import { CheckCircleIcon, ErrorIcon, InfoIcon, WarningIcon, type IconProps } from './icons'
 
+/**
+ * One meaning per tone, the same on every page: `info` is context, `ok` is
+ * something verified, `warn` (amber) asks for attention without anything
+ * having failed, `danger` is a failure.
+ */
 export type CalloutTone = 'info' | 'ok' | 'warn' | 'danger'
 
-const TONES: Record<CalloutTone, { box: string; icon: string }> = {
-  info: { box: 'border-charcoal bg-onyx/40', icon: 'text-pewter' },
-  ok: { box: 'border-emerald/20 bg-emerald/[0.04]', icon: 'text-emerald' },
-  warn: { box: 'border-amber/20 bg-amber/[0.04]', icon: 'text-amber' },
-  danger: { box: 'border-red/20 bg-red/[0.04]', icon: 'text-red' },
+const TONES: Record<CalloutTone, { box: string; icon: string; Glyph: (p: IconProps) => ReactNode }> = {
+  info: { box: 'border-charcoal bg-onyx/40', icon: 'text-blue', Glyph: InfoIcon },
+  ok: { box: 'border-emerald/25 bg-emerald/[0.05]', icon: 'text-emerald', Glyph: CheckCircleIcon },
+  warn: { box: 'border-amber/25 bg-amber/[0.05]', icon: 'text-amber', Glyph: WarningIcon },
+  danger: { box: 'border-red/25 bg-red/[0.05]', icon: 'text-red', Glyph: ErrorIcon },
 }
 
 export interface CalloutProps {
@@ -19,17 +24,17 @@ export interface CalloutProps {
   children?: ReactNode
 }
 
-/** Inline notice. Borders and a tinted wash — never a shadowed toast. */
+/** Inline notice with its tone's icon. Borders and a tinted wash, never a shadowed toast. */
 export function Callout({ tone = 'info', title, actions, className, children }: CalloutProps) {
   const style = TONES[tone]
-  const Glyph = tone === 'warn' || tone === 'danger' ? WarningIcon : InfoIcon
+  const Glyph = style.Glyph
   return (
     <div className={cn('flex gap-3 rounded-md border p-4', style.box, className)}>
       <Glyph className={cn('mt-0.5 shrink-0', style.icon)} />
       <div className='min-w-0 flex-1'>
         {title ? <div className='text-[13px] font-semibold text-ghost'>{title}</div> : null}
         {children ? (
-          <div className={cn('text-[13px] leading-relaxed text-ash', title && 'mt-1')}>{children}</div>
+          <div className={cn('text-[13px] leading-relaxed text-pewter', title && 'mt-1')}>{children}</div>
         ) : null}
       </div>
       {actions ? <div className='flex shrink-0 items-start gap-2'>{actions}</div> : null}

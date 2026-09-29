@@ -167,6 +167,13 @@ describe('searchStore', () => {
     expect(searchStore(store, pid.slice(0, 20)).some((h) => h.href === `/processes/${pid}`)).toBe(true)
     expect(searchStore(store, 'nothing')).toEqual([])
   })
+
+  it('knows the accounts that settled transitions', () => {
+    const sender = store.transitions[store.transitionOrder[0]!]!.sender
+    const hits = searchStore(store, sender)
+    expect(hits.find((h) => h.kind === 'sequencer')).toMatchObject({ href: `/sequencers/${sender.toLowerCase()}` })
+    expect(searchStore(store, sender.toUpperCase().replace('0X', '0x')).some((h) => h.kind === 'sequencer')).toBe(true)
+  })
 })
 
 describe('a live Gnosis transition', () => {

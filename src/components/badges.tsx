@@ -19,19 +19,24 @@ const PHASE: Record<
     { description: MessageDescriptor } | { status: ProcessStatusName }
   )
 > = {
-  loading: { label: msg`Loading`, tone: 'neutral', description: msg`The process state has not been read yet.` },
-  upcoming: { label: msg`Upcoming`, tone: 'info', description: msg`Ready, but the voting window has not opened.` },
+  loading: { label: msg`Loading`, tone: 'neutral', description: msg`Still reading this process from the chain.` },
+  upcoming: { label: msg`Upcoming`, tone: 'info', description: msg`Voting has not started yet.` },
   open: { label: msg`Open`, tone: 'ok', dot: true, status: 'ready' },
   paused: { label: msg`Paused`, tone: 'warn', status: 'paused' },
   closed: {
     label: msg`Voting closed`,
     tone: 'warn',
-    description: msg`The end time has passed. The registry still says Ready until someone ends it or posts results.`,
+    description: msg`The voting time is over. The registry still reads Ready until someone ends the process or publishes the results.`,
   },
   ended: { label: msg`Ended`, tone: 'neutral', status: 'ended' },
   canceled: { label: msg`Canceled`, tone: 'danger', status: 'canceled' },
   results: { label: msg`Results`, tone: 'done', status: 'results' },
 }
+
+/** A phase's badge tone; the overview's phase chart uses the same, so a slice and a tag look alike. */
+export const PHASE_TONE: Readonly<Record<ProcessPhase, BadgeTone>> = Object.fromEntries(
+  Object.entries(PHASE).map(([phase, p]) => [phase, p.tone])
+) as Record<ProcessPhase, BadgeTone>
 
 /** A process's phase (on-chain status plus the clock), with its meaning on hover. */
 export function ProcessPhaseBadge({ phase, size }: { phase: ProcessPhase; size?: 'sm' | 'md' }) {

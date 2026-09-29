@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { plural } from '@lingui/core/macro'
-import { useLingui } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { Term } from '~components'
 import { useIndexer, useVotesPerDay } from '~data/hooks'
 import { EmptyState, Panel } from '~kit'
 import { CHART_COLORS, StackedBars, type BarDatum } from '~kit/charts'
@@ -31,16 +32,21 @@ export function VotesPerDayPanel() {
 
   return (
     <Panel
-      title={t`Ballots settled per day`}
+      title={t`Votes recorded per day`}
       label={t`Last ${DAYS} days, UTC`}
-      description={t`A ballot is a new voter or an overwrite of an earlier vote. The silent refreshes each batch adds are not votes and are not counted.`}
+      description={
+        <Trans>
+          Each vote is a new voter or an <Term id='overwrite'>overwrite</Term> of an earlier vote. The{' '}
+          <Term id='silent-refresh'>silent refreshes</Term> each batch adds are not votes and are not counted.
+        </Trans>
+      }
       actions={<span className='font-mono text-[12px] text-ash tnum'>{t`${total} in total`}</span>}
     >
       {!loading && empty ? (
         <EmptyState
           compact
-          title={t`No ballots settled in the last ${DAYS} days`}
-          description={t`Each batch a sequencer settles adds its votes to the day it landed on.`}
+          title={t`No votes recorded in the last ${DAYS} days`}
+          description={t`Each batch of votes counts on the day it was recorded on chain.`}
         />
       ) : (
         <StackedBars

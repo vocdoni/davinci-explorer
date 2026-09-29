@@ -9,7 +9,7 @@ import { BJJ_K, BJJ_K_INV, reducedToCircom } from '~protocol/babyjubjub'
 import { dkgApplicationUrl, dkgEpochUrl } from './dkg-links'
 import { toJson } from './json'
 import { browsableUri, readServedDocument } from '~protocol/metadata'
-import { localized, metadataChoices, metadataDescription, metadataTitle } from './metadata'
+import { localized, metadataChoices, metadataDescription, metadataPreset, metadataTitle } from './metadata'
 import { tallyRows } from './tally'
 import { processLifecycle } from './timeline'
 
@@ -37,6 +37,13 @@ describe('metadata', () => {
     expect(metadataChoices(doc, 2)).toEqual(['A', 'B'])
     expect(metadataChoices(doc, 3)).toBeNull()
     expect(metadataChoices('nope', 2)).toBeNull()
+  })
+
+  it('reads the ballot kind the organizer declared', () => {
+    expect(metadataPreset({ meta: { electionPreset: { type: 'quadratic', budget: 100 } } })).toBe('quadratic')
+    expect(metadataPreset(doc)).toBeNull()
+    expect(metadataPreset({ meta: { electionPreset: 'quadratic' } })).toBeNull()
+    expect(metadataPreset({ meta: { electionPreset: { type: 3 } } })).toBeNull()
   })
 
   it('prefers the language asked for, then default, then the first with text', () => {
@@ -146,14 +153,14 @@ describe('processLifecycle', () => {
 
   it('a tally waiting for the reveal shows the decryption request', () => {
     const steps = lifecycle(f.featured.awaitingReveal)
-    expect(steps[4]).toMatchObject({ state: 'current', detail: 'Decryption requested' })
+    expect(steps[4]).toMatchObject({ state: 'current', detail: 'Sent to the committee to decrypt' })
   })
 
   it('counts batches and ballots in one phrase', () => {
     const steps = lifecycle(f.featured.openProcess)
     const transitions = transitionRows(f.store, f.featured.openProcess)
     const ballots = transitions.reduce((n, t) => n + t.votes, 0)
-    expect(steps[2]!.detail).toBe(`${transitions.length} batches, ${formatNumber(ballots)} ballots`)
+    expect(steps[2]!.detail).toBe(`${transitions.length} batches, ${formatNumber(ballots)} votes`)
     expect(steps[0]!.detail).toMatch(/^Block [\d,]+$/)
   })
 

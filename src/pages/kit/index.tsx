@@ -1,6 +1,17 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { CensusOriginBadge, CheckMark, Explain, KeyModeBadge, NativeAmount, ProcessPhaseBadge } from '~components'
+import {
+  CensusOriginBadge,
+  CheckMark,
+  Explain,
+  Formula,
+  InShort,
+  KeyModeBadge,
+  NativeAmount,
+  NumberedList,
+  ProcessPhaseBadge,
+  Term,
+} from '~components'
 import {
   Address,
   Badge,
@@ -260,6 +271,36 @@ export function KitPage() {
           </Callout>
         </Stack>
       </div>
+
+      <Panel
+        title={t`Reading aids`}
+        description={t`The pieces docs/writing.md asks for: a plain lead, glossary terms, formulas and numbered steps.`}
+      >
+        <div className='grid gap-6 lg:grid-cols-2'>
+          <Stack>
+            <InShort>
+              <Trans>
+                Every vote in this batch was checked and recorded. Your <Term id='vote-id'>vote id</Term> is in its
+                published data, so you can find it yourself.
+              </Trans>
+            </InShort>
+            <p className='text-[13px] leading-relaxed text-pewter'>
+              <Trans>
+                A blob is bound to the transaction by its <Term id='versioned-hash'>versioned hash</Term>,{' '}
+                <Formula expr='0x01 ‖ sha256(commitment)[1..]' />, and a vote id is at least <Formula expr='2^63' />.
+              </Trans>
+            </p>
+            <Formula block expr='sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)' />
+          </Stack>
+          <NumberedList
+            items={[
+              <Trans key='1'>The registry checks the proof.</Trans>,
+              <Trans key='2'>It checks the batch starts where the previous one ended.</Trans>,
+              <Trans key='3'>It stores the new state root.</Trans>,
+            ]}
+          />
+        </div>
+      </Panel>
 
       <Panel title={t`Charts`} description={t`Colours follow the theme through CSS variables.`}>
         <StackedBars

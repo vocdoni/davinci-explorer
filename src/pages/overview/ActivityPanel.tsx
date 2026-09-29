@@ -7,13 +7,15 @@ import { useActivityFeed, useIndexer } from '~data/hooks'
 import type { FeedKind } from '~indexer/selectors'
 import { Badge, EmptyState, Panel, SkeletonText, type BadgeTone } from '~kit'
 
+// The same tinted tones as every other tag: results in the results green, the
+// census and key tints of their badges, creation as information.
 const KIND: Record<FeedKind, { label: MessageDescriptor; tone: BadgeTone }> = {
-  created: { label: msg({ message: 'created', context: 'activity kind' }), tone: 'accent' },
+  created: { label: msg({ message: 'created', context: 'activity kind' }), tone: 'info' },
   transition: { label: msg({ message: 'transition', context: 'activity kind' }), tone: 'ok' },
-  results: { label: msg({ message: 'results', context: 'activity kind' }), tone: 'accent' },
+  results: { label: msg({ message: 'results', context: 'activity kind' }), tone: 'done' },
   status: { label: msg({ message: 'status', context: 'activity kind' }), tone: 'neutral' },
-  decryption: { label: msg({ message: 'decryption', context: 'activity kind' }), tone: 'warn' },
-  census: { label: msg({ message: 'census', context: 'activity kind' }), tone: 'neutral' },
+  decryption: { label: msg({ message: 'decryption', context: 'activity kind' }), tone: 'violet' },
+  census: { label: msg({ message: 'census', context: 'activity kind' }), tone: 'slate' },
   metadata: { label: msg({ message: 'metadata', context: 'activity kind' }), tone: 'neutral' },
   duration: { label: msg({ message: 'duration', context: 'activity kind' }), tone: 'neutral' },
   'max-voters': { label: msg({ message: 'limit', context: 'activity kind' }), tone: 'neutral' },
@@ -29,7 +31,7 @@ export function ActivityPanel({ limit = 12 }: { limit?: number }) {
     <Panel
       title={t`Recent activity`}
       label={t`Registry events`}
-      description={t`Every process creation, settled batch, status change and result, newest first.`}
+      description={t`What happened on the registry, newest first: new processes, batches of votes recorded, status changes and results.`}
       bodyClassName='p-0'
     >
       {loading ? (
@@ -38,7 +40,7 @@ export function ActivityPanel({ limit = 12 }: { limit?: number }) {
         <EmptyState
           compact
           title={t`No activity yet`}
-          description={t`Process creations, the batches sequencers settle, status changes and results will be listed here as the registry emits them.`}
+          description={t`New processes, batches of votes, status changes and results will be listed here as they happen on the registry.`}
         />
       ) : (
         <ul className='divide-y divide-charcoal/60'>

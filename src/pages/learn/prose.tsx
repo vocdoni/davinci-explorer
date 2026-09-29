@@ -7,7 +7,6 @@ import { Link } from 'react-router'
 import { HashLink } from '~components/HashLink'
 import { ChevronRightIcon, ExternalIcon } from '~kit'
 import { cn } from '~lib/cn'
-import { paths } from '~routes/paths'
 
 const LINK =
   'text-silver underline decoration-charcoal underline-offset-3 transition-colors hover:text-emerald hover:decoration-emerald'
@@ -65,14 +64,8 @@ export function A({ to, children }: { to: string; children: ReactNode }) {
   )
 }
 
-/** A link to a glossary entry. */
-export function Term({ id, children }: { id: string; children: ReactNode }) {
-  return (
-    <Link to={{ pathname: paths.learn('glossary'), hash: `term-${id}` }} className={cn(LINK, 'decoration-dotted')}>
-      {children}
-    </Link>
-  )
-}
+/** A glossary term: the shared one, with its definition on hover. */
+export { Term } from '~components/Term'
 
 export function Ext({ href, children }: { href: string; children: ReactNode }) {
   return (

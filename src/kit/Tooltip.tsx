@@ -21,15 +21,27 @@ export interface TooltipProps {
   value?: boolean
   side?: 'top' | 'right' | 'bottom' | 'left'
   align?: 'start' | 'center' | 'end'
+  /** Controlled open state, for a trigger that also opens on tap (see `Term`). */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   /** Rendered as-is; must accept a ref (Radix asChild). */
   children: ReactNode
   className?: string
 }
 
-export function Tooltip({ content, value = false, side = 'top', align = 'center', children, className }: TooltipProps) {
+export function Tooltip({
+  content,
+  value = false,
+  side = 'top',
+  align = 'center',
+  open,
+  onOpenChange,
+  children,
+  className,
+}: TooltipProps) {
   if (content == null || content === '') return <>{children}</>
   return (
-    <RadixTooltip.Root>
+    <RadixTooltip.Root open={open} onOpenChange={onOpenChange}>
       <RadixTooltip.Trigger asChild>{children}</RadixTooltip.Trigger>
       <RadixTooltip.Portal>
         <RadixTooltip.Content

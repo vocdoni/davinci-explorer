@@ -17,7 +17,12 @@ export function RouteError() {
   return (
     <PageContainer className='py-16'>
       <Stack>
-        <SectionHeader size='page' label={t`Error`} title={t`Something broke while rendering this page`} />
+        <SectionHeader
+          size='page'
+          label={t`Error`}
+          title={t`This page could not be shown`}
+          description={t`Something went wrong in the explorer while it built this page. Reloading often helps; if it keeps happening, the details below say what failed.`}
+        />
         <Callout tone='danger' title={message}>
           {stack ? (
             <pre className='mt-2 max-h-64 overflow-auto rounded-sm border border-charcoal bg-obsidian p-3 text-[11px] leading-relaxed scroll-slim'>

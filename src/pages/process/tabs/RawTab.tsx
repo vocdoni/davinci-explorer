@@ -55,7 +55,7 @@ export function RawTab({ view }: { view: ProcessView }) {
         json={state}
         description={
           p.stateBlock
-            ? t`The registry’s getProcess(${pid}…) read at block ${block}, with field names normalised: enums as names, the DKG fields grouped under dkg.`
+            ? t`What the registry returns for this process, getProcess(${pid}…), read at block ${block}. The field names are tidied up: enums as names, the DKG fields grouped under dkg.`
             : t`Not read yet.`
         }
       />
@@ -63,7 +63,7 @@ export function RawTab({ view }: { view: ProcessView }) {
         title={t`Indexed entity`}
         testId='raw-entity'
         json={entity}
-        description={t`Everything the explorer derived for this process from the registry events: creation, transitions (keys), status, duration, max-voter and census changes, results and the decryption request.`}
+        description={t`Everything the explorer built for this process from the registry’s events: creation, transitions (by key), status, duration, voter-limit and census changes, results and the decryption request.`}
       />
     </div>
   )

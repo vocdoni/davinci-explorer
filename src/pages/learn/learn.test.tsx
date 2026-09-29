@@ -4,7 +4,7 @@ import { i18n } from '@lingui/core'
 import { Route, Routes } from 'react-router'
 import { activateLocale } from '~i18n/i18n'
 import { renderWithProviders } from '../../test-utils'
-import { GLOSSARY, filterGlossary, readGlossary } from './glossary'
+import { GLOSSARY, filterGlossary, readGlossary } from '~content/glossary'
 import { pickExamples } from './examples'
 import { LearnPage } from './index'
 import { TOPIC_GROUPS, TOPICS, findTopic, neighbours } from './topics'
@@ -85,7 +85,7 @@ describe('glossary', () => {
   })
 
   it('has an entry for every term the guide links to', () => {
-    const ids = new Set(GLOSSARY.map((e) => e.id))
+    const ids = new Set<string>(GLOSSARY.map((e) => e.id))
     const used = Object.values(sources).flatMap((src) =>
       [...src.matchAll(/<Term id='([a-z0-9-]+)'/g)].map((m) => m[1]!)
     )

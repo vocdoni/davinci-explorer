@@ -11,6 +11,7 @@ import { useDkgApplication } from '~data/queries'
 import type { DkgApplicationView } from '~data/services'
 import type { CheckState } from '~indexer/selectors'
 import { txKey } from '~indexer/types'
+import { Formula } from '~components/Formula'
 import { Hash } from '~kit'
 import { formatNumber } from '~lib/format'
 import { decodeResultsPublicValues, resultsFailBits, type ResultsPublics } from '~protocol/publics'
@@ -70,11 +71,17 @@ export function useSequencerResultsChecks(view: ProcessView | null): SequencerRe
       id: 'program-ok',
       label: t`The results program passed every check`,
       state: pub ? (pub.ok && pub.failMask === 0 ? 'pass' : 'fail') : 'unknown',
-      detail: pub
-        ? failMask
-          ? t`ok = ${ok}, fail mask = ${failMask} (${failBits})`
-          : t`ok = ${ok}, fail mask = ${failMask}`
-        : t`Waiting for the transaction’s calldata`,
+      detail: pub ? (
+        failMask ? (
+          <Trans>
+            <Formula expr={`ok = ${ok}, fail_mask = ${failMask}`} />, failed: {failBits}
+          </Trans>
+        ) : (
+          <Formula expr={`ok = ${ok}, fail_mask = ${failMask}`} />
+        )
+      ) : (
+        t`Waiting for the transaction’s data`
+      ),
     },
     {
       id: 'final-root',
@@ -88,11 +95,12 @@ export function useSequencerResultsChecks(view: ProcessView | null): SequencerRe
       detail: pub ? (
         <span className='inline-flex flex-wrap items-center gap-1'>
           <Trans>
-            public values register 2..9 <Hash value={pub.stateRoot} chars={6} /> against the last transition’s root
+            The state root the proof was made for (registers 2 to 9) is the last batch’s root:{' '}
+            <Hash value={pub.stateRoot} chars={6} />
           </Trans>
         </span>
       ) : (
-        t`public values register 2..9 against the last transition’s root`
+        t`The state root the proof was made for (registers 2 to 9) against the last batch’s root.`
       ),
     },
     {
@@ -103,13 +111,13 @@ export function useSequencerResultsChecks(view: ProcessView | null): SequencerRe
           ? 'pass'
           : 'fail'
         : 'unknown',
-      detail: t`registers 10..${lastRegister}, one 64-bit value per field, against the ProcessResultsSet event`,
+      detail: t`The totals in the proof (registers 10 to ${lastRegister}, one 64-bit value per field) against the ProcessResultsSet event.`,
     },
     {
       id: 'plonk',
       label: t`The PLONK verified on-chain`,
       state: 'pass',
-      detail: t`The registry emits ProcessResultsSet only after the verifier accepted the proof under the results program vk.`,
+      detail: t`The registry emits ProcessResultsSet only after the verifier accepted the proof under the results program (resultsProgramVK).`,
     },
   ]
   return { checks, publics: pub, decodeError: decoded.error }
@@ -145,9 +153,9 @@ export function useDkgResultsChecks(view: ProcessView | null): DkgResults {
     ? [
         {
           id: 'accumulator',
-          label: t`The accumulator is the one in the final state root`,
+          label: t`The encrypted total is the one in the final state`,
           state: 'pass',
-          detail: t`ResultsDecryptionRequested is emitted only after the registry verified the accumulator’s inclusion as leaf 0x04.`,
+          detail: t`The registry emits ResultsDecryptionRequested only after checking that the encrypted total (the accumulator) is leaf 0x04 of the final state root.`,
         },
         ...(locked
           ? [
@@ -155,18 +163,22 @@ export function useDkgResultsChecks(view: ProcessView | null): DkgResults {
                 id: 'revealed' as const,
                 label: t`The organizer revealed its secret`,
                 state: (app ? (app.revealed ? 'pass' : 'unknown') : 'unknown') as CheckState,
-                detail: app?.revealed
-                  ? t`The DKG checked sk·G = PK_org when it accepted the reveal.`
-                  : t`Until the reveal the DKG refuses every partial decryption and combine.`,
+                detail: app?.revealed ? (
+                  <Trans>
+                    The DKG checked <Formula expr='sk · G = PK_org' /> when it accepted the reveal.
+                  </Trans>
+                ) : (
+                  t`Until the reveal the committee cannot decrypt: the DKG refuses every partial decryption and combine.`
+                ),
               },
             ]
           : []),
         {
           id: 'combined',
-          label: t`Every submitted ciphertext is combined`,
+          label: t`Every value sent to the committee is decrypted`,
           state: (app ? (completed === submitted ? 'pass' : 'unknown') : 'unknown') as CheckState,
           detail: app
-            ? t`${combined} of ${total} combined on the DKG`
+            ? t`${combined} of ${total} combined on the DKG, each from the members’ partial decryptions`
             : dkg.isLoading
               ? t`Reading the DKG contracts…`
               : t`The DKG state could not be read`,
@@ -175,11 +187,11 @@ export function useDkgResultsChecks(view: ProcessView | null): DkgResults {
           ? [
               {
                 id: 'tally-plaintexts' as const,
-                label: t`The stored tally is the committee’s plaintexts`,
+                label: t`The stored totals are the committee’s decrypted values`,
                 state: (app.ciphertexts.every((c) => c.completed && results.values[c.field] === c.plaintext)
                   ? 'pass'
                   : 'fail') as CheckState,
-                detail: t`Each combined plaintext against its field in ProcessResultsSet.`,
+                detail: t`Each decrypted value against its field in the ProcessResultsSet event.`,
               },
             ]
           : []),

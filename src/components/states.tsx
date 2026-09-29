@@ -39,7 +39,7 @@ export function MissingEntity(props: MissingEntityProps) {
         title={t`No sequencer found`}
         description={
           id
-            ? t`No account ${id} settled a transition or published results on this registry, and no configured sequencer API reports it.`
+            ? t`The account ${id} has not recorded a batch of votes or published results on this registry, and no sequencer the explorer is set up to ask reports it.`
             : t`The registry knows no such sequencer.`
         }
       />

@@ -3,8 +3,8 @@ import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { SortingState } from '@tanstack/react-table'
 import { useNavigate, useSearchParams } from 'react-router'
-import { CensusOriginBadge, Explain, KeyModeBadge, ProcessPhaseBadge, Timestamp } from '~components'
-import { ProcessName } from './ProcessName'
+import { CensusOriginBadge, Explain, KeyModeBadge, ProcessPhaseBadge, Term, Timestamp } from '~components'
+import { ProcessName } from '~components/ProcessName'
 import { useIndexer, useNetworkStats, useProcesses } from '~data/hooks'
 import type { ProcessRow } from '~indexer/selectors'
 import {
@@ -66,7 +66,7 @@ export function ProcessesPage() {
         ),
         meta: {
           width: '240px',
-          headerTooltip: t`Process id: organizer address, registry prefix and nonce. Sorts by creation.`,
+          headerTooltip: t`The process’s title and id. Sorts by creation time.`,
         },
       },
       {
@@ -93,7 +93,7 @@ export function ProcessesPage() {
         header: t`Key`,
         accessorFn: (r) => r.keyMode ?? '',
         cell: ({ row }) => (row.original.keyMode ? <KeyModeBadge mode={row.original.keyMode} size='sm' /> : '—'),
-        meta: { headerTooltip: t`Who holds the election key and who can decrypt the tally.` },
+        meta: { headerTooltip: t`Who holds the key the ballots are encrypted to, and so who can decrypt the results.` },
       },
       {
         id: 'census',
@@ -128,7 +128,7 @@ export function ProcessesPage() {
         meta: {
           numeric: true,
           headerWrap: true,
-          headerTooltip: t`Distinct voters, and votes that replaced an earlier vote of the same voter.`,
+          headerTooltip: t`How many people voted, and how many later votes replaced someone’s earlier vote.`,
         },
       },
       {
@@ -143,7 +143,10 @@ export function ProcessesPage() {
         header: t`End`,
         accessorFn: (r) => r.endTime ?? 0,
         cell: ({ row }) => <Timestamp value={row.original.endTime} className='text-[12px]' />,
-        meta: { align: 'right', headerTooltip: t`Start time plus duration; ending early shortens the duration.` },
+        meta: {
+          align: 'right',
+          headerTooltip: t`When voting ends: the start time plus the duration. Ending early brings it forward.`,
+        },
       },
       {
         id: 'results',
@@ -151,7 +154,7 @@ export function ProcessesPage() {
         accessorFn: (r) => (r.hasResults ? 1 : 0),
         cell: ({ row }) =>
           row.original.hasResults ? (
-            <Badge tone='accent' size='sm'>
+            <Badge tone='done' size='sm'>
               <Trans>yes</Trans>
             </Badge>
           ) : (
@@ -171,7 +174,13 @@ export function ProcessesPage() {
         size='page'
         label={t`Processes`}
         title={t`Every voting process on the registry`}
-        description={t`Each process fixes its ballot rules, census and encryption key at creation. Sequencers then settle batches of votes on it until it ends and its tally is published.`}
+        description={
+          <Trans>
+            Each process sets its <Term id='ballot-mode'>ballot rules</Term>, its list of voters (the{' '}
+            <Term id='census'>census</Term>) and its <Term id='encryption-key'>encryption key</Term> when it is created.
+            Votes are then recorded in <Term id='batch'>batches</Term> until voting ends and the results are published.
+          </Trans>
+        }
       />
 
       <Card className='flex flex-col gap-4'>
@@ -246,8 +255,8 @@ export function ProcessesPage() {
             )}
             <Explain className='ml-1'>
               <Trans>
-                Phases combine the on-chain status with the clock: a process stays Ready after its end time until
-                someone ends it or publishes results, which is shown as Voting closed.
+                The phase combines the status on chain with the clock. After its end time a process still reads Ready on
+                chain until someone ends it or publishes the results; the explorer shows that as Voting closed.
               </Trans>
             </Explain>
           </p>
@@ -284,7 +293,7 @@ export function ProcessesPage() {
             ) : (
               <EmptyState
                 title={t`No processes yet`}
-                description={t`When an organizer calls newProcess on the registry, the process appears here with its phase, key mode, census and progress.`}
+                description={t`When an organizer creates a process (newProcess on the registry), it appears here with its phase, key mode, list of voters and progress.`}
               />
             )
           }

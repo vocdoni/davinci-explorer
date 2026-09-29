@@ -2,7 +2,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router'
-import { CheckMark, Explain, Timestamp } from '~components'
+import { CheckMark, Explain, RichText, Timestamp } from '~components'
 import { useNetworkName } from '~config/config-context'
 import { useChain, useIndexer, useReleaseCheck } from '~data/hooks'
 import { Address, Badge, BlockCell, buttonClasses, Hash, KeyValue, Panel, Skeleton, Tooltip } from '~kit'
@@ -10,12 +10,28 @@ import { formatNumber } from '~lib/format'
 import { PIN_LABELS, type PinCheck } from '~protocol/releases'
 import { paths } from '~routes/paths'
 
+// Plain words first, the pin's own name in `code`.
 const PIN_HELP: Record<PinCheck['pin'], MessageDescriptor> = {
-  batchProgramVK: msg`Identifies the vote-batch zkVM program. The registry verifies every state transition against it, so a proof of any other program fails.`,
-  resultsProgramVK: msg`Identifies the results zkVM program that proves a sequencer-key tally.`,
-  rootCVadcopFinal: msg`Root of the ZisK proving setup both proofs are wrapped under.`,
-  ziskVerifierCodeHash: msg`keccak256 of the PLONK verifier contract code the registry calls.`,
-  ballotVKHash: msg`Hash of the verification key of the voter ballot proofs. It becomes state leaf 0x07 at creation, and the batch program checks the key it uses against it.`,
+  batchProgramVK: msg({
+    message:
+      'The program that checks every batch of votes. The registry accepts a batch only with a proof of exactly this program (`batchProgramVK`).',
+  }),
+  resultsProgramVK: msg({
+    message:
+      'The program that proves the results of a process with a sequencer key. The registry accepts such results only with a proof of this program (`resultsProgramVK`).',
+  }),
+  rootCVadcopFinal: msg({
+    message:
+      'The ZisK proving setup both kinds of proof are wrapped with (`rootCVadcopFinal`). It changes with the ZisK release, not with the programs.',
+  }),
+  ziskVerifierCodeHash: msg({
+    message:
+      'The fingerprint of the code of the verifier contract, which checks every proof for the registry (keccak256 of its runtime code).',
+  }),
+  ballotVKHash: msg({
+    message:
+      'The fingerprint of the key that checks voters’ ballot proofs (`ballotVKHash`). Every process starts with it in its state, as leaf `0x07`, and the batch program accepts ballot proofs only under that key.',
+  }),
 }
 
 /** Chain, head, the deployment's contracts and its pins against the known releases. */
@@ -65,7 +81,7 @@ export function NetworkCard() {
             ) : (
               <Skeleton className='h-3 w-24' />
             ),
-            hint: lastBlock ? t`events indexed to block ${indexedTo}` : undefined,
+            hint: lastBlock ? t`registry read up to block ${indexedTo}` : undefined,
           },
           {
             label: (
@@ -73,8 +89,8 @@ export function NetworkCard() {
                 <Trans>Registry</Trans>
                 <Explain>
                   <Trans>
-                    The ProcessRegistry contract: it stores every process and settles every state transition and result
-                    after verifying its proof.
+                    The voting contract (ProcessRegistry). It keeps every process, and records each batch of votes and
+                    each result only after checking its proof.
                   </Trans>
                 </Explain>
               </span>
@@ -86,7 +102,10 @@ export function NetworkCard() {
               <span className='inline-flex items-center gap-1'>
                 <Trans>Verifier</Trans>
                 <Explain>
-                  <Trans>The ZisK PLONK verifier the registry calls for every batch and results proof.</Trans>
+                  <Trans>
+                    The contract that checks every proof for the registry, for each batch and each result (the ZisK
+                    PLONK verifier).
+                  </Trans>
                 </Explain>
               </span>
             ),
@@ -98,8 +117,8 @@ export function NetworkCard() {
                 <Trans>DKG adapter</Trans>
                 <Explain>
                   <Trans>
-                    The registry's link to the davinci-dkg committee contracts. Without it the two DKG key modes are
-                    disabled.
+                    The registry’s link to the key committee’s contracts (davinci-dkg). Without it, no process can use a
+                    committee key.
                   </Trans>
                 </Explain>
               </span>
@@ -122,12 +141,12 @@ export function NetworkCard() {
       <div className='mt-4 border-t border-charcoal pt-4'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <span className='label-caps inline-flex items-center gap-1 text-[11px] text-pewter'>
-            <Trans>Release pins</Trans>
+            <Trans>Release check</Trans>
             <Explain>
               <Trans>
-                The registry fixes what its proofs must come from: two program keys, the ZisK setup root, the ballot
-                proof key and the verifier code. The explorer compares each with the davinci-zkvm releases it knows. A
-                full match means this registry accepts proofs from that release's programs only.
+                The registry fixes which programs its proofs must come from, with five values set when it was deployed.
+                The explorer compares them with the davinci-zkvm releases it knows: a full match means this registry
+                accepts proofs from that release’s programs, and from nothing else.
               </Trans>
             </Explain>
           </span>
@@ -149,7 +168,7 @@ export function NetworkCard() {
           {release.checks.map((c) => (
             <li key={c.pin} className='flex min-w-0 items-center gap-2 text-[13px]'>
               <CheckMark state={c.ok == null ? 'unknown' : c.ok ? 'pass' : 'fail'} />
-              <Tooltip content={i18n._(PIN_HELP[c.pin])}>
+              <Tooltip content={<RichText text={i18n._(PIN_HELP[c.pin])} codeClassName='bg-carbon' />}>
                 <span className='min-w-0 flex-1 truncate text-silver'>{PIN_LABELS[c.pin]}</span>
               </Tooltip>
               {c.actual ? <Hash value={c.actual} chars={6} /> : <span className='text-[12px] text-ash'>…</span>}
@@ -159,8 +178,8 @@ export function NetworkCard() {
         {release.closest && !release.release && release.complete ? (
           <p className='mt-3 text-xs leading-relaxed text-ash'>
             <Trans>
-              Compared with {closest}, the closest known release. A mismatch is either a newer release this explorer
-              does not list yet or a deployment of other programs; check it on the contracts page.
+              Compared with {closest}, the closest release the explorer knows. A difference means a newer release the
+              explorer does not list yet, or other programs; the contracts page has the details.
             </Trans>
           </p>
         ) : null}

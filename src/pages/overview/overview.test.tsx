@@ -80,7 +80,7 @@ describe('an empty registry', () => {
     renderEmpty(<OverviewPage />)
     expect(screen.getByTestId('empty-registry')).toHaveTextContent('No processes on this registry yet')
     expect(screen.getByText('No activity yet')).toBeInTheDocument()
-    expect(screen.getByText('No ballots settled in the last 30 days')).toBeInTheDocument()
+    expect(screen.getByText('No votes recorded in the last 30 days')).toBeInTheDocument()
     // The deployment itself is still checkable.
     expect(screen.getByText(/matches davinci-zkvm/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Verify the deployment' })).toHaveAttribute('href', '/verify/deployment')
