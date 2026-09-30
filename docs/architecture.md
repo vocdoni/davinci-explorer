@@ -1,14 +1,19 @@
-# Explorer architecture
+# Architecture
 
-How the explorer is put together and what a page builds on. For the dev
-loop, the configuration and Docker, see [README.md](README.md). When this
-note and the code disagree, the code wins. The protocol is described in the
+How the explorer is put together and what a page builds on. Running and configuring it is in the
+[README](../README.md), the development loop in [CONTRIBUTING.md](../CONTRIBUTING.md). When this
+page and the code disagree, the code wins. The protocol is described in the
 [davinci-sequencer README](https://github.com/vocdoni/davinci-sequencer#readme),
 the contracts in davinci-contracts
 ([`src/ProcessRegistry.sol`](https://github.com/vocdoni/davinci-contracts/blob/zkvm/src/ProcessRegistry.sol),
 [`src/libraries/DAVINCITypes.sol`](https://github.com/vocdoni/davinci-contracts/blob/zkvm/src/libraries/DAVINCITypes.sol))
-and the guest in davinci-zkvm
+and the batch program in davinci-zkvm
 [`circuit/CIRCUIT.md`](https://github.com/vocdoni/davinci-zkvm/blob/main/circuit/CIRCUIT.md).
+
+The app is Vite 6, React 18 and TypeScript (strict), with Tailwind CSS v4, Radix primitives,
+TanStack Query / Table / Virtual, viem and react-router 7; vitest and Playwright test it. The
+design system, kit and app shell come from the davinci-dkg explorer, so the two look like one
+family.
 
 ## What it is for
 
@@ -23,6 +28,40 @@ Anyone can see what a DAVINCI deployment is doing and check it themselves:
 The data is technical, so every screen says in plain words what a value is,
 why it matters and how to verify it. Nothing writes, there is no wallet, and
 nothing is hidden: every page has the raw values behind its summary.
+
+## Source layout
+
+```
+src/
+├── main.tsx, App.tsx     entry and provider tree (locale → theme → config → query → data → router)
+├── styles/index.css      Tailwind entry and the design tokens, dark and light
+├── theme/                theme preference (system/light/dark), provider, hook
+├── i18n/                 languages, detection, catalog loading, the Lingui provider
+├── locales/              messages.po per language, and the translation glossary
+├── config/               runtime config loader, <ConfigProvider>, useRuntimeConfig()
+├── app/                  shell: top bar, theme and language switches, chain pill, search, banners, footer
+├── routes/               paths.ts (URL table), router.tsx
+├── pages/<view>/         one folder per view
+├── components/           domain components shared by the pages (badges, links, check marks, Term, Formula)
+├── content/              the glossary, shared by the Learn page and every Term
+├── kit/                  design-system primitives; kit/charts: SVG charts
+├── data/                 data source, services, store hooks, on-demand hooks
+├── hooks/                small React hooks (copy to clipboard, measured width)
+├── indexer/              in-browser event indexer, reducers, selectors, persistence
+├── protocol/             decoders and clients: publics, blobs, calldata, beacon, sequencer API, releases
+├── contracts/            ABIs
+├── fixtures/             the demo network
+└── lib/                  format and URL helpers
+tests/
+├── vectors/              test vectors from the davinci-zkvm Rust SDK and a recorded transition
+└── e2e/                  Playwright suite
+docker/                   render.sh (the image's entrypoint) and its test
+scripts/                  i18n-check.mjs
+```
+
+Path aliases (`~app`, `~components`, `~config`, `~content`, `~contracts`, `~data`, `~fixtures`,
+`~hooks`, `~i18n`, `~indexer`, `~kit`, `~lib`, `~pages`, `~protocol`, `~routes`, `~theme`) are
+defined in `tsconfig.paths.json`.
 
 ## Pages
 
@@ -136,12 +175,12 @@ metadata documents (`fetchBytes`). Pages reach them through the hooks in
 `src/indexer/types.ts` has the full shapes. Blocks, counters and unix times
 are numbers; field elements, tallies and wei are `bigint`; hex is lowercase.
 
-| Entity             | Key           | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entity             | Key           | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ProcessEntity`    | pid (bytes31) | organizer, creation block/tx/time, `state` (the normalised `getProcess`: status, key mode, ballot mode, census, key, times, counters, root, result, `metadataURI` and `metadataHash`, DKG info, `grace` and `lastVoteAt`) and the block it was read at, `genesisRoot`, transition keys, status / duration / max-voters / grace / census changes, `metadataHistory` (below), `results` (`ProcessResultsSet`), `decryptionRequest` (`ResultsDecryptionRequested`), event indices |
-| `TransitionEntity` | `pid:index`   | 0-based index (the sequencer API's), block, tx, time, sender, roots before and after, process totals after, `newVoters` and `overwrites` of this batch, `nBlobs`                                                                                                                                                                                                                                                                             |
-| `TxDetails`        | tx hash       | from, status, gas, blob gas, `fee` (gas·price + blob gas·blob price), `blobVersionedHashes` (null when the RPC omits it), calldata size, the decoded `publicValues`, `proofBytes`, `commitments`, `ys`, `kzgProofs`; for `newProcess`, the census, duration, voter limit and status it was created with (`initialCensusRoot`, `initialCensusURI`, `initialDuration`, `initialMaxVoters`, `initialStatus`)                                    |
-| `ChainMeta`        |               | chain id, network name, registry, start block, head block and time, block time, `registry` (immutables: program vks, `rootCVadcopFinal`, `ballotVKHash`, `ziskVerifier` and its runtime code hash, `dkgAdapter` → DKG manager and app manager, the grace window settings `defaultGrace`, `graceFloor`, `graceCeil`, `graceMaxTotal`, `noticeMin`, `chainID`, `pidPrefix`, `processCount`)                                                            |
+| `TransitionEntity` | `pid:index`   | 0-based index (the sequencer API's), block, tx, time, sender, roots before and after, process totals after, `newVoters` and `overwrites` of this batch, `nBlobs`                                                                                                                                                                                                                                                                                                               |
+| `TxDetails`        | tx hash       | from, status, gas, blob gas, `fee` (gas·price + blob gas·blob price), `blobVersionedHashes` (null when the RPC omits it), calldata size, the decoded `publicValues`, `proofBytes`, `commitments`, `ys`, `kzgProofs`; for `newProcess`, the census, duration, voter limit and status it was created with (`initialCensusRoot`, `initialCensusURI`, `initialDuration`, `initialMaxVoters`, `initialStatus`)                                                                      |
+| `ChainMeta`        |               | chain id, network name, registry, start block, head block and time, block time, `registry` (immutables: program vks, `rootCVadcopFinal`, `ballotVKHash`, `ziskVerifier` and its runtime code hash, `dkgAdapter` → DKG manager and app manager, the grace window settings `defaultGrace`, `graceFloor`, `graceCeil`, `graceMaxTotal`, `noticeMin`, `chainID`, `pidPrefix`, `processCount`)                                                                                      |
 
 `metadataHistory` is every `ProcessMetadataUpdated`, oldest first: the
 document set at creation, then each `setProcessMetadata`. A `MetadataVersion`
@@ -181,7 +220,7 @@ call with `undefined` (they return `null` or `[]`):
 | `useIndexer()`                 | `{ status, kind, loading, scanning, headBlock, lastBlock, progress, refresh, clearCache }`; `status.chainMismatch`, `status.errors`, `status.skippedTx`    |
 | `useChain()` / `useChainNow()` | `ChainMeta`; the head block's unix time (use it as "now")                                                                                                  |
 | `useNetworkStats()`            | processes by status / phase / key mode / census origin, organizers, voters, overwrites, ballots, transitions, blobs, processes with results, last activity |
-| `useProcesses(filter)`         | `ProcessRow[]`, newest first; `filter = { status, keyMode, censusOrigin, organizer, query }`, `status` being `ready` (the on-chain status) or a phase     |
+| `useProcesses(filter)`         | `ProcessRow[]`, newest first; `filter = { status, keyMode, censusOrigin, organizer, query }`, `status` being `ready` (the on-chain status) or a phase      |
 | `useProcess(pid)`              | `{ process, row, transitions, rootChain }`; also asks for a fresh `getProcess`                                                                             |
 | `useTransitions(pid)`          | `TransitionRow[]` in index order, with gas, fee and `continuous` (root continuity)                                                                         |
 | `useTransition(pid, index)`    | `TransitionDetail`: entity, row, process, previous/next, `tx`, decoded `publics`, and `checks` (below); asks for the tx details first                      |
@@ -373,7 +412,7 @@ when the title comes from a document that does not match its hash),
 organizer text from a document that does not match its hash), `Explain` (the
 "what is this" info glyph), `MissingEntity` (skeleton until the first poll,
 then "not found"), `CodeBlock` (a command with a copy button), `HashLink`,
-and the reading aids of [docs/writing.md](docs/writing.md):
+and the reading aids of [writing.md](writing.md):
 
 - `Term` (`<Term id='vote-id'>vote id</Term>`): a protocol word with a dotted
   underline; hover or keyboard focus shows the glossary's short definition,
@@ -395,17 +434,9 @@ and the reading aids of [docs/writing.md](docs/writing.md):
 
 ## Text and languages
 
-How the pages speak (plain meaning first, the mechanism one layer down, the
-words, the callout tones) is in [docs/writing.md](docs/writing.md).
-
-The pages are in English, Spanish and Catalan (Lingui v5). Every string a
-user sees goes through a macro, the English in the code being the source,
-and `src/locales/<locale>/messages.po` holds the translations. Numbers,
-dates and relative times go through `~lib/format`, which follows the active
-language; hex and protocol names never change. A language switch remounts
-the routed tree, so text built outside the Lingui hooks (selectors,
-formatters, memoised rows) follows it. The patterns, with examples, are in
-[docs/translations.md](docs/translations.md).
+How the pages speak is in [writing.md](writing.md), how text reaches the Spanish and Catalan
+catalogs in [translations.md](translations.md). A language switch remounts the routed tree, so text
+built outside the Lingui hooks (selectors, formatters, memoised rows) follows it.
 
 ## Design rules
 

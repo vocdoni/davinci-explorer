@@ -28,3 +28,6 @@ public/config.local.json
 .env
 .env.local
 .env.*.local
+
+# Local notes
+CLAUDE.md

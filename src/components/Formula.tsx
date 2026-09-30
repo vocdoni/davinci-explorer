@@ -1,8 +1,9 @@
 // Formulas in prose: `sha256(programVK ‖ publicValues ‖ rootCVadcopFinal)`
 // set in the mono font with function names, variables, literals and
 // operators in their own colours, `||` shown as ‖, `2^63` and `2^−7.6` as
-// superscripts, and line breaks only at the spaces around operators and after commas. The expression is code: it is
-// never translated, so pass it as `expr` and it stays out of the catalogs.
+// superscripts, and line breaks only at the spaces around operators and after
+// commas. The expression is code: it is never translated, so pass it as `expr`
+// and it stays out of the catalogs.
 
 import { Fragment } from 'react'
 import { cn } from '~lib/cn'

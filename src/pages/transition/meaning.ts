@@ -1,7 +1,8 @@
 // Page copy for the publics: the guest's fail bits in the words of davinci-zkvm
-// `circuit/CIRCUIT.md` §11 (the technical layer under the plain `BATCH_FAIL_BITS`
-// descriptions), and notes on how the registers of §3 are encoded and read. The text is `msg`
-// descriptors, translated where it is rendered (`i18n._`).
+// `circuit/CIRCUIT.md` §11 (the technical layer under the plain
+// `BATCH_FAIL_BITS` descriptions), and notes on how the registers of §3 are
+// encoded and read. The text is `msg` descriptors, translated where it is
+// rendered (`i18n._`).
 
 import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'

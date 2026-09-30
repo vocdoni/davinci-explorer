@@ -14,7 +14,7 @@ it with `loadJsonBig` so they keep full precision.
 
 Refresh them by copying the files again after a change on the Rust side.
 
-`gnosis_transition.json` is recorded from the live Gnosis deployment
+`gnosis_transition.json` is recorded from a Gnosis Chain deployment
 (ProcessRegistry `0x3CDE68c39E26ecf94bD029b6ED3b9F945441daf3`): one
 `submitStateTransition` transaction with its calldata, versioned hashes, the
 `ProcessStateTransitioned` event, the process's `numFields` and the beacon

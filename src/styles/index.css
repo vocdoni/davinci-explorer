@@ -58,7 +58,7 @@
   /* ── Elevation: popovers and tooltips only; cards never cast shadows ── */
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.6);
 
-  /* ── Radii (design package: xs 4, sm 6, md 8, pill) ─────────────────── */
+  /* ── Radii: xs 4, sm 6, md 8, pill ────────────────────────────────────── */
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;

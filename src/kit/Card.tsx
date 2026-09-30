@@ -41,8 +41,7 @@ export interface CardHeaderProps {
 export function CardHeader({ title, label, description, actions, className }: CardHeaderProps) {
   return (
     // Actions sit beside the title from `sm` up and stack under it on a phone,
-    // where a long action string would
-    // otherwise squeeze the title into a sliver.
+    // where a long action string would otherwise squeeze the title into a sliver.
     <div
       className={cn(
         'flex flex-col gap-3 border-b border-charcoal px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4',

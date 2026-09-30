@@ -1,6 +1,6 @@
 # DAVINCI explorer: the Vite build served by nginx. The entrypoint renders
 # /config.json and the nginx site from environment variables at start, so one
-# image serves any deployment (see README.md, "Docker").
+# image serves any deployment (see docs/deployment.md).
 #
 #   docker build -t davinci-explorer .
 #   docker run -p 8080:8080 davinci-explorer

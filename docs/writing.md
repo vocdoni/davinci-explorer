@@ -7,7 +7,7 @@ mechanism one step further down.
 
 This guide covers the words and the layout. How a string reaches the
 translation catalogs is in [translations.md](translations.md); the components
-are described in [EXPLORER.md](../EXPLORER.md).
+are described in [architecture.md](architecture.md#kit-and-components).
 
 ## The rules
 

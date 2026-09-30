@@ -7,8 +7,9 @@
 // drop sidecars), `blobs/{slot}?versioned_hashes=…`, which returns bare blobs
 // the beacon matched itself. Neither path lets the browser check the bytes
 // against the commitment (that needs a KZG library), but the sidecar path at
-// least shows the commitment the beacon claims. Beacons prune blobs after the retention window (about 18 days on
-// Ethereum), so an old slot answers 404.
+// least shows the commitment the beacon claims. Beacons prune blobs after
+// their retention window (about 18 days on Ethereum), so an old slot answers
+// 404.
 
 import { versionedHash } from './blob'
 import { toBytes, type Hex } from './bytes'

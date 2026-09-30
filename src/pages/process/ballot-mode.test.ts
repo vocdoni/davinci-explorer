@@ -222,7 +222,7 @@ describe('davinci-sdk ballot kinds', () => {
     )
     expect(weighted.kind).toBe('points')
     expect(weighted.summary).toBe('Each voter distributes up to 1,000,000 points among 4 options.')
-    // examples/script/src/onchain.ts:367-385: a sum bound that never binds.
+    // The davinci-sdk on-chain census example (examples/script/src/onchain.ts): a sum bound that never binds.
     const onchain = sdk({
       numFields: 2,
       groupSize: 2,
@@ -234,7 +234,7 @@ describe('davinci-sdk ballot kinds', () => {
       maxValueSum: '6',
     })
     expect(describeBallotMode(onchain).kind).toBe('rating')
-    // README.md:119-127: one field holding the index of the chosen option.
+    // The davinci-sdk README's ballot example: one field holding the index of the chosen option.
     const readme = sdk({
       numFields: 1,
       groupSize: 1,

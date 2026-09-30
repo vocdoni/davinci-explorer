@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
-// The reading aids and the small fixes around them, on the demo network
-// (src/fixtures/synthetic.ts): glossary terms, the declared ballot kind,
-// sequencer links and search, and a virtualised table on a phone.
+// The reading aids on the demo network (src/fixtures/synthetic.ts): glossary
+// terms, the declared ballot kind, sequencer links and search, and a
+// virtualised table on a phone.
 const PREFIX = 'b12878d5'
 const pid = (organizer: string, nonce: number) => `0x${organizer}${PREFIX}${nonce.toString(16).padStart(14, '0')}`
 /** "Community fund round": open, 40 transitions, sequencer key, a quadratic preset. */

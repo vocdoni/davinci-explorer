@@ -2,9 +2,9 @@
 //
 // The store is keyed by `chainId:registry` and tagged with `STORE_VERSION`;
 // anything written by an older build (or for another deployment) is ignored
-// and re-scanned rather than migrated. The value is a
-// JSON string with `bigint`s wrapped, so the same code path works against
-// IndexedDB, `idb-keyval`, `localStorage` or an in-memory mock.
+// and re-scanned rather than migrated. The value is a JSON string with
+// `bigint`s wrapped, so the same code path works against IndexedDB,
+// `idb-keyval`, `localStorage` or an in-memory mock.
 
 import { createStore as createIdbKeyvalStore, del as idbDel, get as idbGet, set as idbSet } from 'idb-keyval'
 import { STORE_VERSION, type IndexerStore } from './types'

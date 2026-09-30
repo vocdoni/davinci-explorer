@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computeProcessId, isProcessId, parseProcessId, processIdPrefix } from './process-id'
 
-// A live Gnosis process: organizer 0x42fC…b589 on registry 0x3CDE…daf3.
+// A process recorded on Gnosis Chain: organizer 0x42fC…b589 on registry 0x3CDE…daf3.
 const PID = '0x42fc20654efd78c6887ff0bd1cc50c9ec1dab58980c5bb930000000000000100'.slice(0, 64)
 
 describe('process ids', () => {
