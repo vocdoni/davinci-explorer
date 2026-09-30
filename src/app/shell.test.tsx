@@ -98,7 +98,8 @@ describe('Shell', () => {
   it('resolves a transaction hash to its transition', async () => {
     const t = fixture.store.transitions[fixture.store.transitionOrder[3]!]!
     renderApp(`/tx/${t.tx}`)
-    expect(await screen.findByTestId('page-transition')).toBeInTheDocument()
+    // The lookup plus the lazy page can outlast the default 1 s on a busy runner.
+    expect(await screen.findByTestId('page-transition', {}, { timeout: 5000 })).toBeInTheDocument()
   })
 
   it('sends the old vote lookup and the old guides to the Verify flows', async () => {
