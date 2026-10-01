@@ -37,7 +37,7 @@ export function RedoPanel({ chain, rpc, match }: { chain: ChainMeta; rpc: string
   const chainId = r?.chainID ?? chain.chainId
   const command = verifyDeploymentCommand({ rpc, chainId, registry: chain.registryAddress, pins })
   const setup = [
-    'git clone --recurse-submodules -b zkvm https://github.com/vocdoni/davinci-contracts.git',
+    'git clone --recurse-submodules https://github.com/vocdoni/davinci-contracts.git',
     'cd davinci-contracts',
     'forge build',
     command,

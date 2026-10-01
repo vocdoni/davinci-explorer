@@ -1,6 +1,6 @@
 // Contract ABIs. `abi/*.json` are copies of the sequencer's
 // https://github.com/vocdoni/davinci-sequencer/tree/main/sequencer/abi (forge
-// output of davinci-contracts, branch `zkvm`); refresh them together. The DKG
+// output of davinci-contracts); refresh them together. The DKG
 // fragments are the parts of davinci-dkg's DKGManager / DKGAppManager the
 // explorer reads, from davinci-contracts `src/interfaces/dkg/`.
 

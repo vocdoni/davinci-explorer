@@ -5,8 +5,8 @@ How the explorer is put together and what a page builds on. Running and configur
 page and the code disagree, the code wins. The protocol is described in the
 [davinci-sequencer README](https://github.com/vocdoni/davinci-sequencer#readme),
 the contracts in davinci-contracts
-([`src/ProcessRegistry.sol`](https://github.com/vocdoni/davinci-contracts/blob/zkvm/src/ProcessRegistry.sol),
-[`src/libraries/DAVINCITypes.sol`](https://github.com/vocdoni/davinci-contracts/blob/zkvm/src/libraries/DAVINCITypes.sol))
+([`src/ProcessRegistry.sol`](https://github.com/vocdoni/davinci-contracts/blob/main/src/ProcessRegistry.sol),
+[`src/libraries/DAVINCITypes.sol`](https://github.com/vocdoni/davinci-contracts/blob/main/src/libraries/DAVINCITypes.sol))
 and the batch program in davinci-zkvm
 [`circuit/CIRCUIT.md`](https://github.com/vocdoni/davinci-zkvm/blob/main/circuit/CIRCUIT.md).
 

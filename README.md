@@ -27,7 +27,7 @@ The explorer is one part of the DAVINCI stack:
 | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | [davinci-sequencer](https://github.com/vocdoni/davinci-sequencer)           | The sequencer node: collects ballots, proves each batch and settles it on the registry                     |
 | [davinci-zkvm](https://github.com/vocdoni/davinci-zkvm)                     | The zkVM programs that prove a batch and a tally, the prover service and the SDKs                          |
-| [davinci-contracts](https://github.com/vocdoni/davinci-contracts/tree/zkvm) | `ProcessRegistry`, the PLONK verifier and the DKG adapter (branch `zkvm`)                                  |
+| [davinci-contracts](https://github.com/vocdoni/davinci-contracts)           | `ProcessRegistry`, the PLONK verifier and the DKG adapter                                                  |
 | [davinci-dkg](https://github.com/vocdoni/davinci-dkg)                       | Distributed key generation: the committee that holds the key of a DKG-mode election and decrypts its tally |
 
 ## Quick start
